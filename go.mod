@@ -9,7 +9,6 @@ require (
 )
 
 require (
-	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20250301202403-da16c1255728 // indirect
 	github.com/go-webgpu/goffi v0.6.3 // indirect
 	github.com/go-webgpu/webgpu v0.5.5 // indirect
@@ -22,4 +21,4 @@ require (
 
 replace github.com/memmaker/voxellib => ../VoxelLib
 
-replace github.com/gogpu/wgpu => github.com/memmaker/wgpu v0.0.0-20261017184224-2a1548dbc903
+replace github.com/gogpu/wgpu => github.com/memmaker/wgpu v0.0.0-20261023072902-870db13ffc75
