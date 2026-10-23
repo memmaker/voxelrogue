@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/memmaker/voxellib/importer/mcmodel"
+	"github.com/memmaker/voxellib/importer/bbmodel"
 	"github.com/memmaker/voxellib/model"
 	"github.com/memmaker/voxellib/projectile"
 	"github.com/memmaker/voxellib/voxel/collide"
@@ -195,7 +195,7 @@ func (g *game) shoot(ammo *rogue.Object, speed float64) {
 // loadCrossbow cuts VoxelStealth's crossbow out of the cleannrooster
 // pack (-1 if it is not there).
 func loadCrossbow(mr *render.ModelRenderer, packDir string) (int, error) {
-	p, err := mcmodel.Import(filepath.Join(packDir, "cleannrooster"))
+	p, err := bbmodel.Import(filepath.Join(packDir, "cleannrooster"))
 	if err != nil {
 		return -1, err
 	}

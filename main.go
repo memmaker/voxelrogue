@@ -36,8 +36,8 @@ import (
 	"github.com/memmaker/voxellib/voxel"
 	"github.com/memmaker/voxellib/voxel/collide"
 	"github.com/memmaker/voxellib/voxel/engine"
-	"github.com/memmaker/voxellib/voxel/mcres"
 	"github.com/memmaker/voxellib/voxel/render"
+	"github.com/memmaker/voxellib/voxel/respack"
 	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
 )
@@ -101,7 +101,7 @@ func main() {
 	if err := render.Init(win, true); err != nil {
 		log.Fatal(err)
 	}
-	pack, err := mcres.Open(*libDir + "/assets/rpg16pack")
+	pack, err := respack.Open(*libDir + "/assets/rpg16pack")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func main() {
 		// neighbours are lit, which needs their neighbours loaded.
 		Bounds:        &[2]voxel.ChunkPos{{X: -2, Z: -2}, maxChunk.Add(2, 2)},
 		Textures:      pack,
-		RenderOptions: render.Options{Missing: mcres.MissingTexture, IsGreyscale: mcres.IsGreyscale, BlockBrightness: 0.3},
+		RenderOptions: render.Options{Missing: respack.MissingTexture, IsGreyscale: respack.IsGreyscale, BlockBrightness: 0.3},
 	})
 	if err != nil {
 		log.Fatal(err)
