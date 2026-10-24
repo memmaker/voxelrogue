@@ -13,22 +13,22 @@ gap_x: 0
 gap_y: 0
 
 %rec: weapon
-%doc: Weapons (mod sprites, larger than 16px)
+%doc: Weapons (mod pictures larger than 16px)
 
 id: glaive_hand
-name: glaive hand
+name: glaive (in hand)
 icon: 0
 w: 32
 h: 32
 
 id: greatsword_hand
-name: greatsword hand
+name: greatsword (in hand)
 icon: 1
 w: 24
 h: 24
 
 id: halberd_hand
-name: halberd hand
+name: halberd (in hand)
 icon: 2
 w: 32
 h: 32
@@ -46,7 +46,7 @@ w: 20
 h: 20
 
 id: scythe_hand
-name: scythe hand
+name: scythe (in hand)
 icon: 5
 w: 32
 h: 32

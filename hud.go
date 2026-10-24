@@ -120,7 +120,7 @@ func (g *game) setupGUI(jar string) error {
 	skin := image.NewNRGBA(img.Bounds())
 	draw.Draw(skin, skin.Rect, img, img.Bounds().Min, draw.Src)
 	g.pg.Model, g.pg.EquipAt = (&guientity.Player{Skin: skin}).Draw, rogueEquipAt
-	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["ring_01"]))
+	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["agate ring"]))
 	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
 	g.pg.OnClose = func() {
 		if g.prompt == 'i' {

@@ -14,6 +14,7 @@ package main
 import (
 	"math"
 	"math/rand"
+	"strings"
 	"sync"
 
 	"github.com/memmaker/voxellib/voxel"
@@ -68,8 +69,8 @@ func buildLevels(seed int64) []*dungeon.Level {
 }
 
 type blocks struct {
-	rock, wall, roomFloor, darkFloor, passFloor, ceiling, glow, trap, doorFrame, lantern voxel.StateID
-	stairs                                                                               [2]voxel.StateID // going down east, west
+	rock, wall, roomFloor, darkFloor, passFloor, ceiling, passCeiling, glow, trap, doorFrame, lantern voxel.StateID
+	stairs                                                                                            [2]voxel.StateID // going down east, west
 }
 
 // levelGen implements worldgen.Generator for the stacked levels.
@@ -80,18 +81,29 @@ type levelGen struct {
 	found  map[[3]int]bool // depth, x, y of found secret doors and traps
 }
 
+// cube registers a solid block whose every face shows the texture
+// textures.rec maps under tex (remap_textures.sh).
+func cube(reg *voxel.Registry, tex string, light uint8) voxel.StateID {
+	name := "rogue:" + strings.ReplaceAll(tex, " ", "_")
+	reg.Register(&voxel.BlockDef{Name: name, Shape: voxel.ShapeCube, Textures: [6]string{tex, tex, tex, tex, tex, tex},
+		Opaque: true, Collides: true, LightOpacity: 15, LightEmission: light})
+	return reg.Default(name)
+}
+
 func newLevelGen(reg *voxel.Registry, levels []*dungeon.Level) *levelGen {
 	reg.Register(&voxel.BlockDef{Name: lanternName, Shape: voxel.ShapeNone, Replaceable: true, LightEmission: 8})
 	return &levelGen{levels: levels, found: map[[3]int]bool{}, b: blocks{
-		rock:      reg.Default("stone"),
-		wall:      reg.Default("stone_bricks"),
-		roomFloor: reg.Default("oak_planks"),
-		darkFloor: reg.Default("dark_oak_planks"),
-		passFloor: reg.Default("cobblestone"),
-		ceiling:   reg.Default("stone"),
-		glow:      reg.Default("glowstone"),
+		rock:        cube(reg, "corridor wall", 0),
+		wall:        cube(reg, "room wall", 0),
+		roomFloor:   cube(reg, "room floor", 0),
+		darkFloor:   cube(reg, "dark room floor", 0),
+		passFloor:   cube(reg, "corridor floor", 0),
+		ceiling:     cube(reg, "room ceiling", 0),
+		passCeiling: cube(reg, "corridor ceiling", 0),
+		glow:        cube(reg, "room light", 15),
+		trap:        cube(reg, "trap", 0),
+		// the pack's models, their textures mapped to "stairs" and "door frame" (tiles.go)
 		stairs:    [2]voxel.StateID{reg.Parse("cobblestone_stairs[facing=west,half=bottom]"), reg.Parse("cobblestone_stairs[facing=east,half=bottom]")},
-		trap:      reg.Default("redstone_ore"),
 		doorFrame: reg.Parse("oak_log[axis=y]"),
 		lantern:   reg.Default(lanternName),
 	}}
@@ -232,6 +244,7 @@ func (g *levelGen) column(set func(y int, id voxel.StateID), depth int, l *dunge
 		if strip {
 			set(f, g.b.passFloor)
 			carve(f+1, passHeight)
+			set(f+passHeight+1, g.b.passCeiling)
 		}
 	case dungeon.Door:
 		set(f, g.b.roomFloor)

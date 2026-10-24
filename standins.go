@@ -76,45 +76,44 @@ func boxModel(name string, w, h float32, tex image.Image) *model.Model {
 }
 
 // spriteNames lists every sprite the game uses, loaded from itemDir.
-// weaponSprites by kind; the crossbow has no sprite of its own (in the
-// hand it is VoxelStealth's model), the missiles use the arrow sprites.
-var weaponSprites = [rogue.MaxWeapons]string{"mace_01", "sword_01", "w:bow", "bow_29", "sword_49", "valuable_02",
-	"sword_25", "w:sling", "bow_35", "w:crossbow", "bow_31", "spear_02",
-	"w:broadsword", "w:glaive", "w:greatsword", "w:halberd", "w:katana", "w:scythe", "w:war_spear",
-	"w:great_bow", "w:war_glaive", "w:scimitar", "w:wooden_pole",
-	"w:hatchet", "axe_29", "axe_35", "mace_05", "mace_04", "w:wooden_pole", "staff_26", "spear_09", "spear_05", "w:rapier",
-	"w:sickle", "sword_44", "sword_18", "sword_30", "sword_57", "mace_06", "gloves_04", "w:chain_crossbow"}
+// weaponSprites are the weapons drawn with a mod's picture ("w:" + its
+// id in weapons.rec); "" draws the weapon's own name from items.rec.
+var weaponSprites = [rogue.MaxWeapons]string{rogue.Bow: "w:bow", rogue.Sling: "w:sling", rogue.Crossbow: "w:crossbow",
+	12: "w:broadsword", "w:glaive", "w:greatsword", "w:halberd", "w:katana", "w:scythe", "w:war_spear",
+	"w:great_bow", "w:war_glaive", "w:scimitar", "w:wooden_pole", "w:hatchet",
+	rogue.Battlestaff: "w:wooden_pole", rogue.Rapier: "w:rapier", rogue.Sickle: "w:sickle", rogue.ChainCrossbow: "w:chain_crossbow"}
 
 // handSprites are the sprites with a separate in-hand picture
 // (name+"_hand"), filled by loadSprites.
 var handSprites = map[string]bool{}
 
-// spriteFor is the sprite an object is drawn with; unidentified potions,
-// scrolls and rings look like their colour, title or stone this game.
+// spriteFor is the items.rec id an object is drawn with: its name, or
+// for potions, rings and scrolls the colour, stone or one of 15 looks
+// it has this game; wands are a staff or a wand.
 func spriteFor(g *rogue.Game, o *rogue.Object) string {
 	switch o.Type {
 	case rogue.Weapon:
-		return weaponSprites[o.Which]
+		if s := weaponSprites[o.Which]; s != "" {
+			return s
+		}
+		return rogue.WeaponNames[o.Which]
 	case rogue.Armor:
-		return fmt.Sprintf("armor_%02d", (o.Which+1)*3)
+		return rogue.ArmorNames[o.Which]
 	case rogue.Scroll:
-		return fmt.Sprintf("scroll_%02d", g.SLook[o.Which]%15+1)
+		return fmt.Sprintf("scroll %d", g.SLook[o.Which]%15+1)
 	case rogue.Potion:
-		return fmt.Sprintf("potion_%02d", g.PLook[o.Which]%24*3+1)
+		return g.PColors[o.Which] + " potion"
 	case rogue.Ring:
-		return fmt.Sprintf("ring_%02d", g.RLook[o.Which]%18+1)
+		return g.RStones[o.Which] + " ring"
 	case rogue.Food:
 		if o.Which == 1 {
-			return "misc_21"
+			return "slime-mold"
 		}
-		return "misc_01"
+		return "food ration"
 	case rogue.Stick:
-		if o.Which%2 == 0 {
-			return "staff_01"
-		}
-		return "staff_10"
+		return g.SType[o.Which]
 	case rogue.Gold:
-		return "valuable_09"
+		return "gold"
 	}
-	return "amulet_01"
+	return "amulet of yendor"
 }

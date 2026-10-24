@@ -15,378 +15,382 @@ gap_y: 0
 %rec: item
 %doc: Items
 
-id: misc_01
-name: misc 01
-icon: 329
-
-id: misc_21
-name: misc 21
-icon: 349
-
-id: misc_10
-name: misc 10
-icon: 338
-
-id: valuable_02
-name: valuable 02
-icon: 749
-
-id: valuable_09
-name: valuable 09
-icon: 756
-
-id: amulet_01
-name: amulet 01
+id: mace
+name: mace
 icon: 0
 
-id: staff_01
-name: staff 01
-icon: 658
+id: long sword
+name: long sword
+icon: 1
 
-id: staff_10
-name: staff 10
-icon: 667
+id: arrow
+name: arrow
+icon: 2
 
-id: sword_01
-name: sword 01
-icon: 688
+id: dagger
+name: dagger
+icon: 3
 
-id: sword_25
-name: sword 25
-icon: 712
+id: rock
+name: rock
+icon: 4
 
-id: sword_49
-name: sword 49
-icon: 736
+id: two handed sword
+name: two handed sword
+icon: 5
 
-id: mace_01
-name: mace 01
-icon: 305
+id: dart
+name: dart
+icon: 6
 
-id: spear_02
-name: spear 02
-icon: 639
+id: crossbow bolt
+name: crossbow bolt
+icon: 7
 
-id: bow_29
-name: bow 29
-icon: 136
+id: spear
+name: spear
+icon: 8
 
-id: bow_31
-name: bow 31
-icon: 138
+id: double axe
+name: double axe
+icon: 9
 
-id: bow_35
-name: bow 35
-icon: 142
+id: great axe
+name: great axe
+icon: 10
 
-id: axe_29
-name: axe 29
-icon: 83
+id: maul
+name: maul
+icon: 11
 
-id: axe_35
-name: axe 35
-icon: 89
+id: heavy mace
+name: heavy mace
+icon: 12
 
-id: mace_05
-name: mace 05
-icon: 309
+id: sceptre
+name: sceptre
+icon: 13
 
-id: mace_04
-name: mace 04
-icon: 308
+id: lance
+name: lance
+icon: 14
 
-id: staff_26
-name: staff 26
-icon: 683
+id: trident
+name: trident
+icon: 15
 
-id: spear_09
-name: spear 09
-icon: 646
+id: soul knife
+name: soul knife
+icon: 16
 
-id: spear_05
-name: spear 05
-icon: 642
+id: coral blade
+name: coral blade
+icon: 17
 
-id: sword_44
-name: sword 44
-icon: 731
+id: twin blade
+name: twin blade
+icon: 18
 
-id: sword_18
-name: sword 18
-icon: 705
+id: claw
+name: claw
+icon: 19
 
-id: sword_30
-name: sword 30
-icon: 717
+id: anchor
+name: anchor
+icon: 20
 
-id: sword_57
-name: sword 57
-icon: 744
+id: gauntlet
+name: gauntlet
+icon: 21
 
-id: mace_06
-name: mace 06
-icon: 310
+id: leather armor
+name: leather armor
+icon: 22
 
-id: gloves_04
-name: gloves 04
-icon: 176
+id: ring mail
+name: ring mail
+icon: 23
 
-id: armor_03
-name: armor 03
+id: studded leather armor
+name: studded leather armor
+icon: 24
+
+id: scale mail
+name: scale mail
+icon: 25
+
+id: chain mail
+name: chain mail
 icon: 26
 
-id: armor_06
-name: armor 06
+id: splint mail
+name: splint mail
+icon: 27
+
+id: banded mail
+name: banded mail
+icon: 28
+
+id: plate mail
+name: plate mail
 icon: 29
 
-id: armor_09
-name: armor 09
+id: red potion
+name: red potion
+icon: 30
+
+id: blue potion
+name: blue potion
+icon: 31
+
+id: green potion
+name: green potion
 icon: 32
 
-id: armor_12
-name: armor 12
+id: yellow potion
+name: yellow potion
+icon: 33
+
+id: black potion
+name: black potion
+icon: 34
+
+id: brown potion
+name: brown potion
 icon: 35
 
-id: armor_15
-name: armor 15
+id: orange potion
+name: orange potion
+icon: 36
+
+id: pink potion
+name: pink potion
+icon: 37
+
+id: purple potion
+name: purple potion
 icon: 38
 
-id: armor_18
-name: armor 18
+id: grey potion
+name: grey potion
+icon: 39
+
+id: white potion
+name: white potion
+icon: 40
+
+id: silver potion
+name: silver potion
 icon: 41
 
-id: armor_21
-name: armor 21
+id: gold potion
+name: gold potion
+icon: 42
+
+id: violet potion
+name: violet potion
+icon: 43
+
+id: clear potion
+name: clear potion
 icon: 44
 
-id: armor_24
-name: armor 24
+id: vermilion potion
+name: vermilion potion
+icon: 45
+
+id: ecru potion
+name: ecru potion
+icon: 46
+
+id: turquoise potion
+name: turquoise potion
 icon: 47
 
-id: scroll_01
-name: scroll 01
-icon: 502
+id: magenta potion
+name: magenta potion
+icon: 48
 
-id: scroll_02
-name: scroll 02
-icon: 503
+id: amber potion
+name: amber potion
+icon: 49
 
-id: scroll_03
-name: scroll 03
-icon: 504
+id: topaz potion
+name: topaz potion
+icon: 50
 
-id: scroll_04
-name: scroll 04
-icon: 505
+id: plaid potion
+name: plaid potion
+icon: 51
 
-id: scroll_05
-name: scroll 05
-icon: 506
+id: tan potion
+name: tan potion
+icon: 52
 
-id: scroll_06
-name: scroll 06
-icon: 507
+id: tangerine potion
+name: tangerine potion
+icon: 53
 
-id: scroll_07
-name: scroll 07
-icon: 508
+id: scroll 1
+name: scroll (look 1)
+icon: 54
 
-id: scroll_08
-name: scroll 08
-icon: 509
+id: scroll 2
+name: scroll (look 2)
+icon: 55
 
-id: scroll_09
-name: scroll 09
-icon: 510
+id: scroll 3
+name: scroll (look 3)
+icon: 56
 
-id: scroll_10
-name: scroll 10
-icon: 511
+id: scroll 4
+name: scroll (look 4)
+icon: 57
 
-id: scroll_11
-name: scroll 11
-icon: 512
+id: scroll 5
+name: scroll (look 5)
+icon: 58
 
-id: scroll_12
-name: scroll 12
-icon: 513
+id: scroll 6
+name: scroll (look 6)
+icon: 59
 
-id: scroll_13
-name: scroll 13
-icon: 514
+id: scroll 7
+name: scroll (look 7)
+icon: 60
 
-id: scroll_14
-name: scroll 14
-icon: 515
+id: scroll 8
+name: scroll (look 8)
+icon: 61
 
-id: scroll_15
-name: scroll 15
-icon: 516
+id: scroll 9
+name: scroll (look 9)
+icon: 62
 
-id: potion_01
-name: potion 01
-icon: 379
+id: scroll 10
+name: scroll (look 10)
+icon: 63
 
-id: potion_04
-name: potion 04
-icon: 382
+id: scroll 11
+name: scroll (look 11)
+icon: 64
 
-id: potion_07
-name: potion 07
-icon: 385
+id: scroll 12
+name: scroll (look 12)
+icon: 65
 
-id: potion_10
-name: potion 10
-icon: 388
+id: scroll 13
+name: scroll (look 13)
+icon: 66
 
-id: potion_13
-name: potion 13
-icon: 391
+id: scroll 14
+name: scroll (look 14)
+icon: 67
 
-id: potion_16
-name: potion 16
-icon: 394
+id: scroll 15
+name: scroll (look 15)
+icon: 68
 
-id: potion_19
-name: potion 19
-icon: 397
+id: agate ring
+name: agate ring
+icon: 69
 
-id: potion_22
-name: potion 22
-icon: 400
+id: alexandrite ring
+name: alexandrite ring
+icon: 70
 
-id: potion_25
-name: potion 25
-icon: 403
+id: amethyst ring
+name: amethyst ring
+icon: 71
 
-id: potion_28
-name: potion 28
-icon: 406
+id: carnelian ring
+name: carnelian ring
+icon: 72
 
-id: potion_31
-name: potion 31
-icon: 409
+id: diamond ring
+name: diamond ring
+icon: 73
 
-id: potion_34
-name: potion 34
-icon: 412
+id: emerald ring
+name: emerald ring
+icon: 74
 
-id: potion_37
-name: potion 37
-icon: 415
+id: granite ring
+name: granite ring
+icon: 75
 
-id: potion_40
-name: potion 40
-icon: 418
+id: jade ring
+name: jade ring
+icon: 76
 
-id: potion_43
-name: potion 43
-icon: 421
+id: kryptonite ring
+name: kryptonite ring
+icon: 77
 
-id: potion_46
-name: potion 46
-icon: 424
+id: lapus lazuli ring
+name: lapus lazuli ring
+icon: 78
 
-id: potion_49
-name: potion 49
-icon: 427
+id: moonstone ring
+name: moonstone ring
+icon: 79
 
-id: potion_52
-name: potion 52
-icon: 430
+id: obsidian ring
+name: obsidian ring
+icon: 80
 
-id: potion_55
-name: potion 55
-icon: 433
+id: onyx ring
+name: onyx ring
+icon: 81
 
-id: potion_58
-name: potion 58
-icon: 436
+id: opal ring
+name: opal ring
+icon: 82
 
-id: potion_61
-name: potion 61
-icon: 439
+id: pearl ring
+name: pearl ring
+icon: 83
 
-id: potion_64
-name: potion 64
-icon: 442
+id: ruby ring
+name: ruby ring
+icon: 84
 
-id: potion_67
-name: potion 67
-icon: 445
+id: saphire ring
+name: saphire ring
+icon: 85
 
-id: potion_70
-name: potion 70
-icon: 448
+id: tiger eye ring
+name: tiger eye ring
+icon: 86
 
-id: ring_01
-name: ring 01
-icon: 454
+id: topaz ring
+name: topaz ring
+icon: 69
 
-id: ring_02
-name: ring 02
-icon: 455
+id: turquoise ring
+name: turquoise ring
+icon: 70
 
-id: ring_03
-name: ring 03
-icon: 456
+id: food ration
+name: food ration
+icon: 87
 
-id: ring_04
-name: ring 04
-icon: 457
+id: slime-mold
+name: slime-mold
+icon: 88
 
-id: ring_05
-name: ring 05
-icon: 458
+id: staff
+name: staff
+icon: 89
 
-id: ring_06
-name: ring 06
-icon: 459
+id: wand
+name: wand
+icon: 90
 
-id: ring_07
-name: ring 07
-icon: 460
+id: gold
+name: gold
+icon: 91
 
-id: ring_08
-name: ring 08
-icon: 461
-
-id: ring_09
-name: ring 09
-icon: 462
-
-id: ring_10
-name: ring 10
-icon: 463
-
-id: ring_11
-name: ring 11
-icon: 464
-
-id: ring_12
-name: ring 12
-icon: 465
-
-id: ring_13
-name: ring 13
-icon: 466
-
-id: ring_14
-name: ring 14
-icon: 467
-
-id: ring_15
-name: ring 15
-icon: 468
-
-id: ring_16
-name: ring 16
-icon: 469
-
-id: ring_17
-name: ring 17
-icon: 470
-
-id: ring_18
-name: ring 18
-icon: 471
+id: amulet of yendor
+name: the Amulet of Yendor
+icon: 92

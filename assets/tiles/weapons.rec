@@ -13,120 +13,120 @@ gap_x: 0
 gap_y: 0
 
 %rec: weapon
-%doc: Weapons (mod sprites, 16px)
+%doc: Weapons (mod pictures, 16px)
 
 id: bow
 name: bow
-icon: 142
+icon: 35
 
 id: bow_pulling_0
-name: bow pulling 0
-icon: 143
+name: bow (pulling 0)
+icon: 36
 
 id: bow_pulling_1
-name: bow pulling 1
-icon: 144
+name: bow (pulling 1)
+icon: 37
 
 id: bow_pulling_2
-name: bow pulling 2
-icon: 145
+name: bow (pulling 2)
+icon: 38
 
 id: broadsword
 name: broadsword
-icon: 146
+icon: 39
 
 id: chain_crossbow
 name: chain crossbow
-icon: 147
+icon: 40
 
 id: chain_crossbow_arrow
-name: chain crossbow arrow
-icon: 148
+name: chain crossbow (loaded)
+icon: 41
 
 id: chain_crossbow_pulling_0
-name: chain crossbow pulling 0
-icon: 149
+name: chain crossbow (pulling 0)
+icon: 42
 
 id: chain_crossbow_pulling_1
-name: chain crossbow pulling 1
-icon: 150
+name: chain crossbow (pulling 1)
+icon: 43
 
 id: chain_crossbow_pulling_2
-name: chain crossbow pulling 2
-icon: 151
+name: chain crossbow (pulling 2)
+icon: 44
 
 id: crossbow
 name: crossbow
-icon: 152
+icon: 45
 
 id: crossbow_arrow
-name: crossbow arrow
-icon: 153
+name: crossbow (loaded)
+icon: 46
 
 id: crossbow_pulling_0
-name: crossbow pulling 0
-icon: 154
+name: crossbow (pulling 0)
+icon: 47
 
 id: crossbow_pulling_1
-name: crossbow pulling 1
-icon: 155
+name: crossbow (pulling 1)
+icon: 48
 
 id: crossbow_pulling_2
-name: crossbow pulling 2
-icon: 156
+name: crossbow (pulling 2)
+icon: 49
 
 id: glaive
 name: glaive
-icon: 157
+icon: 50
 
 id: great_bow
 name: great bow
-icon: 158
+icon: 51
 
 id: great_bow_pulling_0
-name: great bow pulling 0
-icon: 159
+name: great bow (pulling 0)
+icon: 52
 
 id: great_bow_pulling_1
-name: great bow pulling 1
-icon: 160
+name: great bow (pulling 1)
+icon: 53
 
 id: great_bow_pulling_2
-name: great bow pulling 2
-icon: 161
+name: great bow (pulling 2)
+icon: 54
 
 id: greatsword
 name: greatsword
-icon: 162
+icon: 55
 
 id: halberd
 name: halberd
-icon: 163
+icon: 56
 
 id: hatchet
 name: hatchet
-icon: 164
+icon: 57
 
 id: rapier
 name: rapier
-icon: 165
+icon: 58
 
 id: scythe
 name: scythe
-icon: 166
+icon: 59
 
 id: sickle
 name: sickle
-icon: 167
+icon: 60
 
 id: sling
 name: sling
-icon: 168
+icon: 61
 
 id: sling_model
-name: sling model
-icon: 169
+name: sling (model texture)
+icon: 62
 
 id: war_spear
 name: war spear
-icon: 170
+icon: 63

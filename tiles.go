@@ -90,17 +90,22 @@ func loadTiles(recPath string) (map[string]image.Image, error) {
 	return tiles, nil
 }
 
-// sheetTextures serves the block textures of textures.rec and leaves
-// the rest (animated strips, anything unassigned) to the resource pack,
-// which also still supplies the block models.
+// sheetTextures serves the block textures of textures.rec (the game's
+// cubes name them directly; the pack's stairs and log models name their
+// own, aliased here) and leaves anything else to the resource pack.
 type sheetTextures struct {
 	pack  *respack.Pack
 	tiles map[string]image.Image
 }
 
+var texAlias = map[string]string{"block/cobblestone": "stairs", "block/oak_log": "door frame", "block/oak_log_top": "door frame top"}
+
 func (s *sheetTextures) tile(name string) image.Image {
 	if _, rel, ok := strings.Cut(name, ":"); ok { // minecraft:block/stone
 		name = rel
+	}
+	if a := texAlias[name]; a != "" {
+		name = a
 	}
 	return s.tiles[name]
 }

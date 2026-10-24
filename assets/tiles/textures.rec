@@ -15,466 +15,50 @@ gap_y: 0
 %rec: block
 %doc: Block textures
 
-id: block/acacia_leaves
-name: acacia leaves
+id: room floor
+name: room floor
 icon: 0
 
-id: block/acacia_log
-name: acacia log
+id: room wall
+name: room wall
 icon: 1
 
-id: block/acacia_log_top
-name: acacia log top
+id: room ceiling
+name: room ceiling
 icon: 2
 
-id: block/acacia_planks
-name: acacia planks
+id: dark room floor
+name: dark room floor
 icon: 3
 
-id: block/allium
-name: allium
+id: room light
+name: room light
 icon: 4
 
-id: block/andesite
-name: andesite
+id: corridor floor
+name: corridor floor
 icon: 5
 
-id: block/bedrock
-name: bedrock
+id: corridor wall
+name: corridor wall
+icon: 1
+
+id: corridor ceiling
+name: corridor ceiling
+icon: 2
+
+id: stairs
+name: stairs
+icon: 5
+
+id: trap
+name: trap
 icon: 6
 
-id: block/birch_leaves
-name: birch leaves
+id: door frame
+name: door frame
 icon: 7
 
-id: block/birch_log
-name: birch log
+id: door frame top
+name: door frame top
 icon: 8
-
-id: block/birch_log_top
-name: birch log top
-icon: 9
-
-id: block/birch_planks
-name: birch planks
-icon: 10
-
-id: block/black_wool
-name: black wool
-icon: 11
-
-id: block/blue_orchid
-name: blue orchid
-icon: 12
-
-id: block/blue_wool
-name: blue wool
-icon: 13
-
-id: block/bookshelf
-name: bookshelf
-icon: 14
-
-id: block/bricks
-name: bricks
-icon: 15
-
-id: block/brown_mushroom
-name: brown mushroom
-icon: 16
-
-id: block/brown_wool
-name: brown wool
-icon: 17
-
-id: block/cactus_bottom
-name: cactus bottom
-icon: 18
-
-id: block/cactus_side
-name: cactus side
-icon: 19
-
-id: block/cactus_top
-name: cactus top
-icon: 20
-
-id: block/calcite
-name: calcite
-icon: 21
-
-id: block/clay
-name: clay
-icon: 22
-
-id: block/coal_block
-name: coal block
-icon: 23
-
-id: block/coal_ore
-name: coal ore
-icon: 24
-
-id: block/coarse_dirt
-name: coarse dirt
-icon: 25
-
-id: block/cobblestone
-name: cobblestone
-icon: 26
-
-id: block/copper_ore
-name: copper ore
-icon: 27
-
-id: block/cornflower
-name: cornflower
-icon: 28
-
-id: block/crafting_table_front
-name: crafting table front
-icon: 29
-
-id: block/crafting_table_side
-name: crafting table side
-icon: 30
-
-id: block/crafting_table_top
-name: crafting table top
-icon: 31
-
-id: block/cyan_wool
-name: cyan wool
-icon: 32
-
-id: block/dandelion
-name: dandelion
-icon: 33
-
-id: block/dark_oak_leaves
-name: dark oak leaves
-icon: 34
-
-id: block/dark_oak_log
-name: dark oak log
-icon: 35
-
-id: block/dark_oak_log_top
-name: dark oak log top
-icon: 36
-
-id: block/dark_oak_planks
-name: dark oak planks
-icon: 37
-
-id: block/dead_bush
-name: dead bush
-icon: 38
-
-id: block/deepslate
-name: deepslate
-icon: 39
-
-id: block/deepslate_coal_ore
-name: deepslate coal ore
-icon: 40
-
-id: block/deepslate_diamond_ore
-name: deepslate diamond ore
-icon: 41
-
-id: block/deepslate_gold_ore
-name: deepslate gold ore
-icon: 42
-
-id: block/deepslate_iron_ore
-name: deepslate iron ore
-icon: 43
-
-id: block/deepslate_top
-name: deepslate top
-icon: 44
-
-id: block/diamond_block
-name: diamond block
-icon: 45
-
-id: block/diamond_ore
-name: diamond ore
-icon: 46
-
-id: block/diorite
-name: diorite
-icon: 47
-
-id: block/dirt
-name: dirt
-icon: 48
-
-id: block/emerald_ore
-name: emerald ore
-icon: 49
-
-id: block/furnace_front
-name: furnace front
-icon: 50
-
-id: block/furnace_side
-name: furnace side
-icon: 51
-
-id: block/furnace_top
-name: furnace top
-icon: 52
-
-id: block/glass
-name: glass
-icon: 53
-
-id: block/glowstone
-name: glowstone
-icon: 54
-
-id: block/gold_block
-name: gold block
-icon: 55
-
-id: block/gold_ore
-name: gold ore
-icon: 56
-
-id: block/granite
-name: granite
-icon: 57
-
-id: block/grass_block_side
-name: grass block side
-icon: 58
-
-id: block/grass_block_snow
-name: grass block snow
-icon: 59
-
-id: block/grass_block_top
-name: grass block top
-icon: 60
-
-id: block/gravel
-name: gravel
-icon: 61
-
-id: block/gray_wool
-name: gray wool
-icon: 62
-
-id: block/green_wool
-name: green wool
-icon: 63
-
-id: block/ice
-name: ice
-icon: 64
-
-id: block/iron_block
-name: iron block
-icon: 65
-
-id: block/iron_ore
-name: iron ore
-icon: 66
-
-id: block/jungle_leaves
-name: jungle leaves
-icon: 67
-
-id: block/jungle_log
-name: jungle log
-icon: 68
-
-id: block/jungle_log_top
-name: jungle log top
-icon: 69
-
-id: block/jungle_planks
-name: jungle planks
-icon: 70
-
-id: block/lapis_ore
-name: lapis ore
-icon: 71
-
-id: block/light_blue_wool
-name: light blue wool
-icon: 72
-
-id: block/light_gray_wool
-name: light gray wool
-icon: 73
-
-id: block/lime_wool
-name: lime wool
-icon: 74
-
-id: block/magenta_wool
-name: magenta wool
-icon: 75
-
-id: block/mossy_cobblestone
-name: mossy cobblestone
-icon: 76
-
-id: block/oak_leaves
-name: oak leaves
-icon: 77
-
-id: block/oak_log
-name: oak log
-icon: 78
-
-id: block/oak_log_top
-name: oak log top
-icon: 79
-
-id: block/oak_planks
-name: oak planks
-icon: 80
-
-id: block/oak_sapling
-name: oak sapling
-icon: 81
-
-id: block/obsidian
-name: obsidian
-icon: 82
-
-id: block/orange_wool
-name: orange wool
-icon: 83
-
-id: block/oxeye_daisy
-name: oxeye daisy
-icon: 84
-
-id: block/packed_ice
-name: packed ice
-icon: 85
-
-id: block/pink_wool
-name: pink wool
-icon: 86
-
-id: block/poppy
-name: poppy
-icon: 87
-
-id: block/purple_wool
-name: purple wool
-icon: 88
-
-id: block/red_mushroom
-name: red mushroom
-icon: 89
-
-id: block/red_sand
-name: red sand
-icon: 90
-
-id: block/red_tulip
-name: red tulip
-icon: 91
-
-id: block/red_wool
-name: red wool
-icon: 92
-
-id: block/redstone_ore
-name: redstone ore
-icon: 93
-
-id: block/sand
-name: sand
-icon: 94
-
-id: block/sandstone
-name: sandstone
-icon: 95
-
-id: block/sandstone_bottom
-name: sandstone bottom
-icon: 96
-
-id: block/sandstone_top
-name: sandstone top
-icon: 97
-
-id: block/sea_lantern
-name: sea lantern
-icon: 98
-
-id: block/short_grass
-name: short grass
-icon: 99
-
-id: block/snow
-name: snow
-icon: 100
-
-id: block/snow_block
-name: snow block
-icon: 101
-
-id: block/spruce_leaves
-name: spruce leaves
-icon: 102
-
-id: block/spruce_log
-name: spruce log
-icon: 103
-
-id: block/spruce_log_top
-name: spruce log top
-icon: 104
-
-id: block/spruce_planks
-name: spruce planks
-icon: 105
-
-id: block/stone
-name: stone
-icon: 106
-
-id: block/stone_bricks
-name: stone bricks
-icon: 107
-
-id: block/sugar_cane
-name: sugar cane
-icon: 108
-
-id: block/terracotta
-name: terracotta
-icon: 109
-
-id: block/tnt_bottom
-name: tnt bottom
-icon: 110
-
-id: block/tnt_side
-name: tnt side
-icon: 111
-
-id: block/tnt_top
-name: tnt top
-icon: 112
-
-id: block/tuff
-name: tuff
-icon: 113
-
-id: block/white_wool
-name: white wool
-icon: 114
-
-id: block/yellow_wool
-name: yellow wool
-icon: 115
