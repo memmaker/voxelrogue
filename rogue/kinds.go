@@ -74,6 +74,10 @@ var (
 	// staff pictures there are to draw a game's kinds from (scrolls.rec's,
 	// rings.rec's and staffs.rec's records); SLook, RLook and StLook index them.
 	ScrollLooks, RingLooks, StaffLooks = 1000, 1000, 1000
+	// StaffAttacks are a held staff's patterns (LoadKinds): the stab it
+	// zaps with (left button, the zap goes off when the stab lands) and
+	// the overhead blows of the right button.
+	StaffAttacks [][]Move
 )
 
 // LoadKinds reads dir's weapons.rec (with animations.rec, its attacks'
@@ -92,6 +96,18 @@ func LoadKinds(dir string) error {
 		if r["%rec"] == "animation" && r["id"] != "" {
 			upswing[r["id"]] = atof(r["upswing"])
 		}
+	}
+	StaffAttacks = nil
+	for _, pat := range [][]string{{"one_handed_stab"}, {"two_handed_slash_vertical_right", "two_handed_slash_vertical_left"}} {
+		var moves []Move
+		for _, anim := range pat {
+			up, ok := upswing[anim]
+			if !ok {
+				return fmt.Errorf("animations.rec: no animation record %s for the staffs", anim)
+			}
+			moves = append(moves, Move{anim, float32(up)})
+		}
+		StaffAttacks = append(StaffAttacks, moves)
 	}
 	Weapons = nil
 	for _, r := range recs {

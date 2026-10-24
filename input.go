@@ -118,12 +118,12 @@ func (g *game) setupInput() {
 		}
 		switch { // melee patterns are polled (wantPattern)
 		case g.dead || g.won || g.noCommand > 0:
+		case b == glfw.MouseButtonLeft && g.zapping != nil && g.attackCD == 0:
+			g.zapStab()
 		case b == glfw.MouseButtonLeft && g.launcher():
 			g.startDraw()
 		case b == glfw.MouseButtonRight && (g.drawing || g.sling.state <= slingCharge && g.sling.frame != 0):
 			g.cancelDraw()
-		case b == glfw.MouseButtonRight && g.zapping != nil && g.attackCD == 0:
-			g.zap(g.zapping)
 		case b == glfw.MouseButtonRight && g.heldUse() != nil && g.attackCD == 0:
 			g.useItem(g.heldUse())
 		}
@@ -288,14 +288,14 @@ func (g *game) wantAttack(b glfw.MouseButton) bool {
 }
 
 // wantPattern is the melee attack pattern held down: 0 left button, 1
-// right button, 2 F; -1 none (a launcher fires instead, and a held wand
-// zaps on the right button).
+// right button, 2 F; -1 none (a launcher fires instead, and a held staff
+// zaps on the left button, with a stab: zapStab).
 func (g *game) wantPattern() int {
 	switch {
-	case g.launcher():
-	case g.wantAttack(glfw.MouseButtonLeft):
+	case g.zapping == nil && g.launcher():
+	case g.zapping == nil && g.wantAttack(glfw.MouseButtonLeft):
 		return 0
-	case g.zapping == nil && g.heldUse() == nil && g.wantAttack(glfw.MouseButtonRight):
+	case g.heldUse() == nil && g.wantAttack(glfw.MouseButtonRight):
 		return 1
 	case g.key(glfw.KeyF):
 		return 2

@@ -343,7 +343,7 @@ func (g *game) useItem(o *rogue.Object) {
 		}
 	case rogue.Stick:
 		g.zapping = o
-		g.msg("You hold " + lowerFirst(g.rg.Name(o)) + ". Right click zaps it; it strikes like a spear.")
+		g.msg("You hold " + lowerFirst(g.rg.Name(o)) + ". Left click zaps it with a stab, right click strikes overhead.")
 	default:
 		g.msg("You can't use that.")
 	}
@@ -752,6 +752,13 @@ func (g *game) lineOfFire(m *monster) bool {
 		last = c
 	}
 	return true
+}
+
+// zapStab is the left button with a held staff: the staff stabs (its
+// first pattern) and the zap goes off when the stab lands (tickCombat).
+func (g *game) zapStab() {
+	g.heroAttack(0)
+	g.pendingZap = g.zapping
 }
 
 // zap uses a staff (sticks.c do_zap; wands are folded into staffs). Light and striking act at

@@ -14,5 +14,8 @@ func presetFor(o *rogue.Object) [][]rogue.Move {
 	if o == nil || o.Type != rogue.Weapon && o.Type != rogue.Stick {
 		return nil
 	}
-	return rogue.Weapons[meleeKind(o)].Attacks
+	if o.Type == rogue.Stick {
+		return rogue.StaffAttacks
+	}
+	return rogue.Weapons[o.Which].Attacks
 }

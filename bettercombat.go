@@ -33,6 +33,7 @@ type combatState struct {
 	comboPat    int // the pattern the combo is in
 	sinceAttack int // ticks since the last attack started (Better Combat's lastAttacked)
 	hitIn       int // ticks until the pending hit lands (0 = none)
+	pendingZap  *rogue.Object // the held staff whose zap goes off when the pending hit (its stab) lands
 	hitReach    float64
 
 	// the vanilla player state the animation plays over
@@ -198,7 +199,11 @@ func (g *game) tickCombat() {
 		g.attack = nil
 	}
 	if g.hitIn > 0 {
-		if g.hitIn--; g.hitIn == 0 && !g.dead {
+		if g.hitIn--; g.hitIn == 0 && !g.dead && g.pendingZap != nil {
+			o := g.pendingZap
+			g.pendingZap = nil
+			g.zap(o)
+		} else if g.hitIn == 0 && !g.dead {
 			w := g.meleeItem()
 			ms := g.monstersInFront(g.hitReach) // the nearest, or every one in an axe's swing
 			if len(ms) > 1 && !sweeps(w, g.comboPat) {

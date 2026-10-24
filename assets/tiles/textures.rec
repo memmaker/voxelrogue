@@ -17,11 +17,11 @@ gap_y: 0
 
 id: room floor
 name: room floor
-icon: 58
+icon: 251
 
 id: room wall
 name: room wall
-icon: 59
+icon: 249
 
 id: room ceiling
 name: room ceiling
@@ -29,7 +29,7 @@ icon: 60
 
 id: dark room floor
 name: dark room floor
-icon: 61
+icon: 251
 
 id: room light
 name: room light
@@ -41,15 +41,15 @@ icon: 63
 
 id: corridor wall
 name: corridor wall
-icon: 60
+icon: 59
 
 id: corridor ceiling
 name: corridor ceiling
-icon: 60
+icon: 58
 
 id: stairs
 name: stairs
-icon: 63
+icon: 252
 
 id: trap
 name: trap

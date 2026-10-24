@@ -273,7 +273,7 @@ type game struct {
 	swingShot int      // -swing: the tick to attack on
 	looseShot int      // -loose: the tick to let a launcher go on
 	throwShot int      // -throw: the tick to throw a missile on
-	zapShot   int      // -zap: the tick to zap the held wand on
+	zapShot   int      // -zap: the tick to zap the held staff on (zapStab: the zap lands with the stab)
 	killShot  int      // -kill-at: the tick killMob dies on
 	killMob   *monster // the first -mobs monster
 	renewAt   int      // -renew: the tick to start a new game on
@@ -299,7 +299,7 @@ func (g *game) newGame(seed int64) {
 	g.clearArrows()
 	g.drawing, g.drawTicks, g.fireHeld, g.reload, g.spanning, g.chambers = false, 0, false, 0, false, nil
 	g.handItem, g.handHeight, g.prevHandHeight, g.fovMod = nil, 0, 0, 0
-	g.attack, g.hitIn, g.combo, g.comboOf, g.sinceAttack = nil, 0, 0, nil, 0
+	g.attack, g.hitIn, g.pendingZap, g.combo, g.comboOf, g.sinceAttack = nil, 0, nil, 0, nil, 0
 	if g.stack != nil {
 		g.stack = newAttackStack()
 	}
@@ -386,7 +386,7 @@ func (g *game) step() {
 		g.throwItem()
 	}
 	if g.tick == g.zapShot {
-		g.zap(g.zapping)
+		g.zapStab()
 	}
 	if g.tick == g.killShot && g.killMob.alive() {
 		g.killMob.hurt = 6 // as the killing blow leaves it

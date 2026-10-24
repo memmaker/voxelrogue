@@ -302,19 +302,25 @@ func TestPatterns(t *testing.T) {
 	}
 }
 
-// TestWandMelee: a held wand strikes like a spear: its reach, cooldown
-// and attack patterns, at 3/5 the damage.
+// TestWandMelee: a held staff strikes like a spear (reach, cooldown, 3/5
+// the damage) with the staffs' patterns: the right button's overhead
+// blow, and the left button's stab whose landing fires the zap.
 func TestWandMelee(t *testing.T) {
 	g := &game{}
 	g.anims, g.weapon = loadAnims(t), &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("dagger")}
 	g.stack = newAttackStack()
 	g.zapping = &rogue.Object{Type: rogue.Stick, Which: 2}
-	if fmt.Sprint(presetFor(g.zapping)) != fmt.Sprint(rogue.Weapons[rogue.WeaponID("spear")].Attacks) {
-		t.Errorf("wand presets %v, want the spear's", presetFor(g.zapping))
+	if fmt.Sprint(presetFor(g.zapping)) != fmt.Sprint(rogue.StaffAttacks) || len(rogue.StaffAttacks) != 2 || rogue.StaffAttacks[1][0].Anim != "two_handed_slash_vertical_right" {
+		t.Errorf("staff presets %v", presetFor(g.zapping))
 	}
-	g.heroAttack(0)
-	if spear := rogue.Weapons[rogue.WeaponID("spear")]; g.hitReach != spear.Reach || g.attackCD != spear.Swing || g.comboOf != g.zapping {
-		t.Errorf("reach %v cd %d combo of %v: the dagger, not the wand, fought", g.hitReach, g.attackCD, g.comboOf)
+	g.heroAttack(1)
+	if spear := rogue.Weapons[rogue.WeaponID("spear")]; g.hitReach != spear.Reach || g.attackCD != spear.Swing || g.comboOf != g.zapping || g.attack != g.anims["two_handed_slash_vertical_right"] {
+		t.Errorf("reach %v cd %d combo of %v: the dagger, not the staff, fought overhead", g.hitReach, g.attackCD, g.comboOf)
+	}
+	g.attackCD, g.sinceAttack = 0, 100
+	g.zapStab()
+	if stab := rogue.StaffAttacks[0][0]; g.attack != g.anims[stab.Anim] || g.pendingZap != g.zapping || g.hitIn != int(math.Round(float64(float32(rogue.Weapons[rogue.WeaponID("spear")].Swing)*stab.Upswing))) {
+		t.Errorf("stab %v pending %v hit in %d: the zap does not wait for the stab", g.attack, g.pendingZap, g.hitIn)
 	}
 }
 
