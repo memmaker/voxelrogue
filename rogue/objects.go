@@ -157,6 +157,7 @@ func NewWeapon(rng *rand.Rand, which int) *Object {
 	if w.Kind == "projectile" {
 		o.Flags |= IsMany
 		o.Count = Rnd(rng, 8) + 8
+		o.Group = -1 - which // plain ammo of a kind is one bundle (Stacks); the level's bundles get serials in NewThing
 	}
 	if len(w.Launchers) > 0 {
 		o.Launch = WeaponID(w.Launchers[0])

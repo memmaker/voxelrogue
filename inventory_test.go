@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/memmaker/voxellib/character"
 	"github.com/memmaker/voxellib/inventory"
 	"github.com/memmaker/voxelrogue/rogue"
 )
@@ -38,5 +39,32 @@ func TestInventorySlots(t *testing.T) {
 	g.cont.Click(5+len(rogueEquip)-1-equipRingL, 0, inventory.Pickup)
 	if g.rings[0] != ring && g.rings[1] != ring || g.packCount() != 3 {
 		t.Fatalf("rings %v, pack %d", g.rings, g.packCount())
+	}
+}
+
+// TestStackPickup: a pebble shot and picked up again tops up the pebble
+// stack instead of taking a slot of its own; the last one empties it.
+func TestStackPickup(t *testing.T) {
+	g := &game{}
+	g.player = &character.Character{}
+	g.resetInv()
+	pebbles := rogue.NewWeapon(rand.New(rand.NewSource(1)), rogue.WeaponID("pebble"))
+	pebbles.Count = 5
+	g.give(pebbles)
+	shot := &rogue.Object{}
+	*shot = *pebbles
+	shot.Count = 1
+	g.removeFromPack(pebbles, false)
+	if n := g.packCount(); n != 1 || pebbles.Count != 4 {
+		t.Fatalf("after a shot: %d objects, %d pebbles", n, pebbles.Count)
+	}
+	if !g.addPack(shot) || g.packCount() != 1 || pebbles.Count != 5 {
+		t.Fatalf("picked up: %d objects, %d pebbles", g.packCount(), pebbles.Count)
+	}
+	for range 5 {
+		g.removeFromPack(pebbles, false)
+	}
+	if g.packCount() != 0 {
+		t.Fatalf("emptied: %d objects left", g.packCount())
 	}
 }

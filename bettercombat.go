@@ -499,20 +499,27 @@ func bcChain(body, arm, item [axes]float32, bodyRot, headYaw, xRot float32, disp
 	return
 }
 
-// drawAttack draws the weapon (sprite) posed by the attack animation at
-// partial tick pt and reports whether it did. With -tp the whole player
-// model is drawn, seen from in front.
-func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
+// attackPose is the player model posed by the attack animation: the held
+// item's unit slab (render.ItemPose) and the model's root relative to the
+// camera, in world orientation, and the body's parts for -tp.
+type attackPose struct {
+	model, root mgl32.Mat4
+	parts       [6]part
+}
+
+// attackPose poses the weapon (sprite) by the attack animation at partial
+// tick pt; false when none plays.
+func (g *game) attackPose(sprite string, pt float32) (attackPose, bool) {
 	switch {
 	case g.dead:
-		return false
+		return attackPose{}, false
 	case g.animName != "":
 		if !g.debugAnim() {
-			return false
+			return attackPose{}, false
 		}
 		pt = g.animAt - float32(math.Floor(float64(g.animAt)))
 	case !g.stack.c.isActive():
-		return false
+		return attackPose{}, false
 	}
 	fp := !g.tp
 	// ponytail: first person follows the camera instead of Better Combat's
@@ -539,27 +546,36 @@ func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
 		d = display{w.Hand3.Rot, w.Hand3.Pos, w.Hand3.Scale}
 	}
 	root, _, itemM := bcChain(body.v, arm.v, item.v, bodyRot, wrapDegrees(g.yRotMC()-bodyRot), follow, d)
-	model := itemM.Mul4(spriteTurn(sprite))
-	if !g.tp {
-		// the lib's first-person pass: the player model in the world with
-		// only the item layer drawn (Better Combat's FirstPersonConfiguration
-		// shows the items but not the arms: isShowingArmsInFirstPerson
-		// defaults to false)
-		g.itemRend.DrawInWorld(sprite, &g.cam, model, sky, blk)
-		return true
-	}
-	view := tpCamera().Mul4(mgl32.HomogRotate3DY(float32(g.cam.Yaw)))
-	render.BeginHands()
-	defer render.EndHands()
-	parts := [6]part{
+	return attackPose{model: itemM.Mul4(spriteTurn(sprite)), root: root, parts: [6]part{
 		bonePart(posed("head", head, initHead), initHead),
 		bonePart(posed("torso", torso, initBody), initBody),
 		bonePart(arm, initRightArm),
 		bonePart(posed("left_arm", lArm, initLeftArm), initLeftArm),
 		bonePart(posed("right_leg", rLeg, initRightLeg), initRightLeg),
 		bonePart(posed("left_leg", lLeg, initLeftLeg), initLeftLeg),
+	}}, true
+}
+
+// drawAttack draws the weapon (sprite) posed by the attack animation at
+// partial tick pt and reports whether it did. With -tp the whole player
+// model is drawn, seen from in front.
+func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
+	a, ok := g.attackPose(sprite, pt)
+	if !ok {
+		return false
 	}
-	g.drawTPBody(view.Mul4(root), parts, float32(g.cam.Aspect))
-	g.itemRend.DrawHandModel(sprite, float32(g.cam.Aspect), view.Mul4(model), 15, 15)
+	if !g.tp {
+		// the lib's first-person pass: the player model in the world with
+		// only the item layer drawn (Better Combat's FirstPersonConfiguration
+		// shows the items but not the arms: isShowingArmsInFirstPerson
+		// defaults to false)
+		g.itemRend.DrawInWorld(sprite, &g.cam, a.model, sky, blk)
+		return true
+	}
+	view := tpCamera().Mul4(mgl32.HomogRotate3DY(float32(g.cam.Yaw)))
+	render.BeginHands()
+	defer render.EndHands()
+	g.drawTPBody(view.Mul4(a.root), a.parts, float32(g.cam.Aspect))
+	g.itemRend.DrawHandModel(sprite, float32(g.cam.Aspect), view.Mul4(a.model), 15, 15)
 	return true
 }

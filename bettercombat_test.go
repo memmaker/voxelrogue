@@ -8,6 +8,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
 	"math"
 	"math/rand"
 	"os"
@@ -272,8 +274,8 @@ func TestCrossbowReload(t *testing.T) {
 	}
 	g.startDraw()
 	g.startDraw()
-	if len(g.chambers) != 1 || len(g.arrowObjs) != 2 || g.packCount() != 7 { // six bolts and the crossbow
-		t.Fatalf("second shot: %d chambers, %d bolts, %d in the pack", len(g.chambers), len(g.arrowObjs), g.packCount())
+	if a := g.findAmmo(); len(g.chambers) != 1 || len(g.arrowObjs) != 2 || g.packCount() != 2 || a.Count != 6 { // the crossbow and six bolts
+		t.Fatalf("second shot: %d chambers, %d bolts, %d in the pack, %d left", len(g.chambers), len(g.arrowObjs), g.packCount(), a.Count)
 	}
 }
 
@@ -321,6 +323,23 @@ func TestWandMelee(t *testing.T) {
 	g.zapStab()
 	if stab := rogue.StaffAttacks[0][0]; g.attack != g.anims[stab.Anim] || g.pendingZap != g.zapping || g.hitIn != int(math.Round(float64(float32(rogue.Weapons[rogue.WeaponID("spear")].Swing)*stab.Upswing))) {
 		t.Errorf("stab %v pending %v hit in %d: the zap does not wait for the stab", g.attack, g.pendingZap, g.hitIn)
+	}
+	// the bolt leaves the top of the staff: the posed sprite's topmost
+	// row, a staff's length before the eye, not the fixed spot by the hand
+	g.rg, g.player, g.sprite = rogue.NewGame(rand.New(rand.NewSource(1))), &character.Character{EyeHeight: 1.62}, map[string]image.Image{}
+	g.cam.Y = 1.62
+	head := image.NewNRGBA(image.Rect(0, 0, 16, 16))
+	head.Set(1, 0, color.White) // the head top left, the stick down to the right
+	head.Set(14, 15, color.White)
+	g.sprite[spriteFor(g.rg, g.zapping)] = head
+	for range g.hitIn {
+		g.stack.handle(0, true, true)
+	}
+	x, y, z := g.wandTip()
+	g.zapping = nil
+	hx, hy, hz := g.wandTip()
+	if d := math.Hypot(math.Hypot(x-hx, y-hy), z-hz); d < 0.3 || d > 2 || x == 0 && y == 0 && z == 0 {
+		t.Errorf("tip at %.2f %.2f %.2f, %.2f from the hand spot %.2f %.2f %.2f", x, y, z, d, hx, hy, hz)
 	}
 }
 

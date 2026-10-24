@@ -58,7 +58,7 @@ var helpLines = [][2]string{
 	{"F1", "this help"},
 	{"F2", "the manual: the rules of the dungeon"},
 	{"F3", "debug: show the monsters' hit boxes"},
-	{"F8 / F9 / F10", "debug: take any staff / weapon / armor"},
+	{"F7 / F8 / F9 / F10", "debug: take any scroll / staff / weapon / armor"},
 	{"Esc", "close panel / release mouse / quit"},
 }
 
@@ -396,7 +396,7 @@ func (g *game) drawHUD(fbW, fbH int) {
 
 	if g.showDebug != 0 {
 		g.debug.show("debug"+string(g.showDebug), func() *image.NRGBA {
-			ls := []line{{"Debug: take one  (letter: take   Esc/F8/F9/F10: close)", white}, {"", white}}
+			ls := []line{{"Debug: take one  (letter: take   Esc/F7/F8/F9/F10: close)", white}, {"", white}}
 			for i, n := range g.debugNames() {
 				ls = append(ls, line{fmt.Sprintf("%c) %s", 'a'+i, n), cyan})
 			}

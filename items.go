@@ -111,7 +111,7 @@ func (g *game) pack() []*rogue.Object {
 // give puts objects into the pack as they are, without a word.
 func (g *game) give(os ...*rogue.Object) {
 	for _, o := range os {
-		g.inv.Add(stackOf(o))
+		g.inv.Add(g.stackOf(o))
 	}
 }
 
@@ -213,33 +213,28 @@ func (g *game) pickUp() {
 	}
 }
 
-// addPack puts an object into the pack, stacking it where it fits. Bare
-// hands wield a hand-held weapon at once: a thrown sword pulled back out
-// of the wall is ready again.
+// addPack puts an object into the pack: the inventory stacks it onto its
+// like (stackOf) or gives it a slot, within Rogue's pack size. False when
+// nothing of it fits (o keeps what did not). Bare hands wield a
+// hand-held weapon at once: a thrown sword pulled back out of the wall is
+// ready again.
 func (g *game) addPack(o *rogue.Object) bool {
-	p := o
-	for _, q := range g.pack() {
-		if rogue.Stacks(q, o) {
-			p = q
-			p.Count += o.Count
-			break
-		}
+	s := g.stackOf(o)
+	if t := g.stackIn(s.Item); (t == nil || t.Count >= s.MaxStack()) && g.packCount() >= maxPack {
+		g.msg("You can't carry anything else.")
+		return false
 	}
-	if p == o {
-		if g.packCount() >= maxPack {
-			g.msg("You can't carry anything else.")
-			return false
-		}
-		if !g.inv.Add(stackOf(o)) {
-			g.msg("You can't carry anything else.")
-			return false
-		}
+	if !g.inv.Add(s) {
+		g.msg("You can't carry anything else.")
+		return false
 	}
+	p := obj(g.stackIn(s.Item))
+	o.Count = s.Count // what did not fit
 	g.msg("You now have " + lowerFirst(g.rg.Name(p)) + fmt.Sprintf(" (%c).", g.packLetter(p)))
 	if g.weapon == nil && p.Type == rogue.Weapon && !rogue.IsAmmo(p.Which) {
 		g.place(p, g.inv.Held)
 	}
-	return true
+	return o.Count == 0
 }
 
 func (g *game) packLetter(o *rogue.Object) byte {
@@ -253,8 +248,9 @@ func (g *game) packLetter(o *rogue.Object) byte {
 
 // removeFromPack takes one of o out of the pack (all if all).
 func (g *game) removeFromPack(o *rogue.Object, all bool) {
-	if o.Count > 1 && !all {
-		o.Count--
+	if s := g.stackIn(itemOf[stackKey(o)]); s != nil && s.Count > 1 && !all {
+		s.Count--
+		o.Count = s.Count
 		return
 	}
 	if g.weapon == o {
@@ -306,7 +302,7 @@ func (g *game) dropItem(o *rogue.Object) {
 		c := *o
 		c.Count = 1
 		drop = &c
-		o.Count--
+		g.removeFromPack(o, false)
 	} else {
 		g.removeFromPack(o, true)
 	}

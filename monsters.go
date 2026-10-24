@@ -565,7 +565,7 @@ func (g *game) monsterAttack(m *monster) {
 				one := *steal
 				one.Count = 1
 				g.msg("She stole " + lowerFirst(g.rg.Name(&one)) + "!")
-				steal.Count--
+				g.removeFromPack(steal, false)
 			} else {
 				g.msg("She stole " + lowerFirst(g.rg.Name(steal)) + "!")
 				g.removeFromPack(steal, true)

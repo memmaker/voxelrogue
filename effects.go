@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 
+	"github.com/go-gl/mathgl/mgl32"
+
 	"github.com/memmaker/voxellib/particles"
 	"github.com/memmaker/voxellib/voxel/render"
 	"github.com/memmaker/voxelrogue/dungeon"
@@ -83,9 +85,18 @@ type fxState struct {
 	glowRoom *dungeon.Room
 }
 
-// wandTip is where a wand's magic leaves the hand: before the eye, a bit
-// right and down.
+// wandTip is where a staff's magic leaves it: the top of the staff (its
+// sprite's topmost opaque row) as the stab poses it, or before the eye, a
+// bit right and down, when no staff is drawn.
 func (g *game) wandTip() (x, y, z float64) {
+	if o := g.zapping; o != nil {
+		name := spriteFor(g.rg, o)
+		if a, ok := g.attackPose(name, 0); ok && g.sprite[name] != nil {
+			col, row := spriteTop(g.sprite[name])
+			t := a.model.Mul4x1(mgl32.Vec4{col - 0.5, 0.5 - row, 0, 1}) // the slab: the sprite's left-bottom at -X,-Y
+			return g.cam.X + float64(t[0]), g.cam.Y + float64(t[1]), g.cam.Z + float64(t[2])
+		}
+	}
 	p := g.player
 	fx, fz := math.Sin(g.cam.Yaw), -math.Cos(g.cam.Yaw)
 	return p.X + fx*0.6 - fz*0.25, p.Y + p.EyeHeight - 0.3, p.Z + fz*0.6 + fx*0.25

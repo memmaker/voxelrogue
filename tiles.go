@@ -177,6 +177,20 @@ func loadSprites(dir string) ([]string, []image.Image, error) {
 	return names, imgs, nil
 }
 
+// spriteTop is the middle of a sprite's topmost opaque row, as fractions
+// of its width and height from the top left.
+func spriteTop(img image.Image) (col, row float32) {
+	b := img.Bounds()
+	t := bbox(img)
+	var sum, n float32
+	for x := t.Min.X; x < t.Max.X; x++ {
+		if _, _, _, a := img.At(x, t.Min.Y).RGBA(); a > 0 {
+			sum, n = sum+float32(x-b.Min.X)+0.5, n+1
+		}
+	}
+	return sum / n / float32(b.Dx()), (float32(t.Min.Y-b.Min.Y) + 0.5) / float32(b.Dy())
+}
+
 // bbox is the rows and columns an image's opaque pixels span.
 func bbox(img image.Image) image.Rectangle {
 	b, r := img.Bounds(), image.Rectangle{}

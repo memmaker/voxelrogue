@@ -124,9 +124,9 @@ attack_1: one_handed_slash_horizontal_right
 attack_1: one_handed_slash_horizontal_left
 attack_2: one_handed_stab
 
-id: rock
-name: rock
-picture: ../weapons/rock.png
+id: pebble
+name: pebble
+picture: ../weapons/pebble.png
 icon: 13
 kind: projectile
 hands: 1

@@ -86,18 +86,18 @@ func (g *game) initHero() {
 	bow := rogue.NewWeapon(g.rng, rogue.WeaponID("long bow"))
 	bow.HPlus, bow.Flags = 1, bow.Flags|rogue.IsKnow
 	arrows := rogue.NewWeapon(g.rng, rogue.WeaponID("arrow"))
-	arrows.Count, arrows.Flags, arrows.Group = 25+rogue.Rnd(g.rng, 15), arrows.Flags|rogue.IsKnow, -1
+	arrows.Count, arrows.Flags = 25+rogue.Rnd(g.rng, 15), arrows.Flags|rogue.IsKnow
 	mail := rogue.NewArmor(rogue.ArmorID("ring mail"))
 	mail.AC--
 	mail.Flags |= rogue.IsKnow
 	food := &rogue.Object{Type: rogue.Food, Count: 1, Launch: -1}
 	sling := rogue.NewWeapon(g.rng, rogue.WeaponID("sling"))
 	sling.Flags |= rogue.IsKnow
-	rocks := rogue.NewWeapon(g.rng, rogue.WeaponID("rock"))
-	rocks.Flags |= rogue.IsKnow
+	pebbles := rogue.NewWeapon(g.rng, rogue.WeaponID("pebble"))
+	pebbles.Flags |= rogue.IsKnow
 	g.weapon, g.armor = mace, mail // before the slots, which then wield and wear nothing new
 	g.resetInv()
-	g.give(mace, bow, arrows, sling, rocks, mail, food)
+	g.give(mace, bow, arrows, sling, pebbles, mail, food)
 	g.place(mail, 36+equipArmor)
 }
 

@@ -52,6 +52,7 @@ type invState struct {
 // resetInv makes the hero's empty inventory: Rogue has no half stacks,
 // and the slot events wear, take off and wield.
 func (g *game) resetInv() {
+	objOf, itemOf = map[*inventory.Item]*rogue.Object{}, map[string]*inventory.Item{}
 	p := inventory.NewPlayer(inventory.PlayerSpec{Equip: rogueEquip})
 	c, _ := inventory.NewPlayerContainer(p, nil)
 	c.NoSplit, c.Deny, c.Drop = true, g.denyClick, func(s *inventory.Stack) { g.dropAll(obj(s)) }
@@ -68,18 +69,67 @@ func (g *game) resetInv() {
 }
 
 // obj is the Rogue object a stack stands for.
+// The pack is VoxelLib's player inventory: an object is a stack of its
+// count under the item of its stacking identity (stackKey), one item per
+// identity, so the inventory stacks alike objects itself (Player.Add tops
+// up a matching stack, the container merges them) and the stack's count
+// is the count. objOf is the object behind each item, itemOf the item of
+// each identity; obj mirrors the stack's count into the object.
+var (
+	objOf  = map[*inventory.Item]*rogue.Object{}
+	itemOf = map[string]*inventory.Item{}
+)
+
 func obj(s *inventory.Stack) *rogue.Object {
 	if s == nil {
 		return nil
 	}
-	o, _ := s.Tag["o"].(*rogue.Object)
+	o := objOf[s.Item]
+	if o != nil {
+		o.Count = s.Count
+	}
 	return o
 }
 
-// stackOf wraps an object as a stack of one: the object keeps its count.
-func stackOf(o *rogue.Object) *inventory.Stack {
-	it := &inventory.Item{Key: fmt.Sprint(o.Type, o.Which), MaxStack: 1}
-	return &inventory.Stack{Item: it, Count: 1, Tag: map[string]any{"o": o}}
+// stackKey is what an object stacks with (rogue.Stacks): potions, scrolls
+// and food of a kind, missiles of a group; anything else only itself.
+func stackKey(o *rogue.Object) string {
+	if !rogue.Stacks(o, o) {
+		return fmt.Sprintf("%p", o)
+	}
+	return fmt.Sprint(o.Type, o.Which, o.Group)
+}
+
+// stackOf is an object as an inventory stack: its count under the item
+// of its identity. The item's object is o unless the pack holds one.
+func (g *game) stackOf(o *rogue.Object) *inventory.Stack {
+	o.Count = max(o.Count, 1) // a bare object is one
+	k := stackKey(o)
+	it := itemOf[k]
+	if it == nil {
+		it = &inventory.Item{Key: k, MaxStack: 1}
+		if rogue.Stacks(o, o) {
+			it.MaxStack = 64
+		}
+		itemOf[k] = it
+	}
+	if g.stackIn(it) == nil {
+		objOf[it] = o
+	}
+	return &inventory.Stack{Item: it, Count: o.Count}
+}
+
+// stackIn is the pack's stack of an item (a slot's, else the cursor's); nil for none.
+func (g *game) stackIn(it *inventory.Item) *inventory.Stack {
+	for i := range g.inv.Size() {
+		if s := g.inv.Get(i); s != nil && s.Item == it {
+			return s
+		}
+	}
+	if s := g.inv.Cursor; s != nil && s.Item == it {
+		return s
+	}
+	return nil
 }
 
 // onEquip puts on what came into the armour and ring slots and takes

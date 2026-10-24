@@ -355,7 +355,7 @@ func (g *game) fovZoom(alpha float64) float64 {
 	return float64(g.prevFovMod + (g.fovMod-g.prevFovMod)*float32(alpha))
 }
 
-// shoot looses an arrow, bolt or rock along the view at speed.
+// shoot looses an arrow, bolt or pebble along the view at speed.
 func (g *game) shoot(ammo *rogue.Object, speed float64) *projectile.Arrow {
 	g.noise(g.player.X, g.player.Z, shotNoise)
 	ex, ey, ez := g.player.Eye()
