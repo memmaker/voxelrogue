@@ -270,8 +270,8 @@ func (g *game) tickMonsters() {
 		}
 		adjacent := abs(m.tile.X-h.X) <= 1 && abs(m.tile.Y-h.Y) <= 1 && m.tile != h && stepOK(l, m.tile, h)
 		if adjacent {
-			mx, _, mz := g.monsterPos(m, 0)
-			adjacent = math.Hypot(mx-g.player.X, mz-g.player.Z) <= monsterReach+float64(g.box(m.letter).r)
+			_, _, d := g.slab(m).nearest(g.player.X, g.player.Z)
+			adjacent = d <= monsterReach
 		}
 		if adjacent && m.attackCD > 0 {
 			continue
@@ -362,8 +362,10 @@ func (m *monster) moveTicks() int {
 	return max(t, 1)
 }
 
-// monsterReach is how far a monster's attack reaches past its body.
-const monsterReach = 1.6
+// monsterReach is how far a monster's attack reaches past its box: from
+// the edge of its square to beyond the middle of the next (a dagger's
+// reach, the hero's shortest).
+const monsterReach = 2.1
 
 // lean moves a monster that is fighting the hero from the next square to
 // the side of its tile facing the hero (staying inside the tile), and
@@ -372,8 +374,10 @@ func (g *game) lean(m *monster, h dungeon.Coord) {
 	var tx, tz float64
 	if m.running && m.moveT == 0 && abs(m.tile.X-h.X) <= 1 && abs(m.tile.Y-h.Y) <= 1 && m.held == 0 {
 		cx, _, cz := tileCenter(g.slot(), m.tile)
-		half := float64(g.box(m.letter).r)
-		ex, ez := math.Max(0, tileW/2.0-half-0.05), math.Max(0, tileD/2.0-half-0.05)
+		// the turned box's half extents: its width across the view, its depth along it
+		b, yaw := g.box(m.letter), math.Atan2(g.player.X-cx, -(g.player.Z-cz))
+		w, d, c, sn := float64(b.r), float64(b.d), math.Abs(math.Cos(yaw)), math.Abs(math.Sin(yaw))
+		ex, ez := math.Max(0, tileW/2.0-(c*w+sn*d)-0.05), math.Max(0, tileD/2.0-(sn*w+c*d)-0.05)
 		tx = math.Max(-ex, math.Min(ex, g.player.X-cx))
 		tz = math.Max(-ez, math.Min(ez, g.player.Z-cz))
 	}
@@ -580,23 +584,26 @@ func meleeKind(o *rogue.Object) int {
 // a bolt), which draws no blood.
 func magic(o *rogue.Object) bool { return o != nil && o.Type == rogue.Stick }
 
-// impact is where a melee blow meets a monster: on the view line, at the
-// near side of its box.
+// impact is where a melee blow meets a monster: where the view line
+// enters its box, else its face nearest the hero at eye height.
 func (g *game) impact(m *monster) (x, y, z float64) {
-	mx, my, mz := g.monsterPos(m, 0)
-	lk := g.box(m.letter)
-	d := math.Max(0, math.Hypot(mx-g.cam.X, mz-g.cam.Z)-float64(lk.r))
+	s := g.slab(m)
 	cp := math.Cos(g.cam.Pitch)
-	x, y, z = g.cam.X+math.Sin(g.cam.Yaw)*cp*d, g.cam.Y+math.Sin(g.cam.Pitch)*d, g.cam.Z-math.Cos(g.cam.Yaw)*cp*d
-	y = math.Min(math.Max(y, my+float64(lk.hover)), my+float64(lk.hover+lk.h))
-	return
+	const far = 20
+	ex, ey, ez := g.cam.X+math.Sin(g.cam.Yaw)*cp*far, g.cam.Y+math.Sin(g.cam.Pitch)*far, g.cam.Z-math.Cos(g.cam.Yaw)*cp*far
+	if f, ok := s.enter(g.cam.X, g.cam.Y, g.cam.Z, ex, ey, ez); ok {
+		return g.cam.X + (ex-g.cam.X)*f, g.cam.Y + (ey-g.cam.Y)*f, g.cam.Z + (ez-g.cam.Z)*f
+	}
+	x, z, _ = s.nearest(g.cam.X, g.cam.Z)
+	return x, math.Min(math.Max(g.cam.Y, s.y), s.y+float64(s.h)), z
 }
 
 // bleed sprays blood from a point.
 func (g *game) bleed(x, y, z float64) { g.parts.Emit(x, y, z, particles.Blood) }
 
-// monsterInFront finds the nearest living monster within reach (plus its
-// size) in a cone around the view direction.
+// monsterInFront finds the living monster whose box is nearest, within
+// reach of the hero and in a cone around the view direction (any way
+// within a block).
 func (g *game) monsterInFront(reach float64) *monster {
 	p := g.player
 	fx, fz := math.Sin(g.cam.Yaw), -math.Cos(g.cam.Yaw)
@@ -606,13 +613,11 @@ func (g *game) monsterInFront(reach float64) *monster {
 		if !m.alive() {
 			continue
 		}
-		mx, _, mz := g.monsterPos(m, 0)
-		dx, dz := mx-p.X, mz-p.Z
-		d := math.Hypot(dx, dz)
-		if d > reach+float64(g.box(m.letter).r) || d < 1e-6 {
+		nx, nz, d := g.slab(m).nearest(p.X, p.Z)
+		if d > reach {
 			continue
 		}
-		if (dx*fx+dz*fz)/d < 0.6 && d > 1 {
+		if d > 1 && ((nx-p.X)*fx+(nz-p.Z)*fz)/d < 0.6 {
 			continue
 		}
 		if d < bd {
@@ -719,29 +724,34 @@ func (g *game) monsterPos(m *monster, alpha float64) (x, y, z float64) {
 	return x, y, z
 }
 
-// pushOutOfMonsters keeps the hero from walking into monsters.
+// pushOutOfMonsters keeps the hero's body out of the monsters' boxes.
 func (g *game) pushOutOfMonsters() {
 	p := g.player
+	r := p.Width/2 + 0.05 // ponytail: the hero as a circle; the box faces him, so his square's corners hardly matter
 	for _, m := range g.monsters {
 		if !m.alive() {
 			continue
 		}
-		mx, _, mz := g.monsterPos(m, 0)
-		r := float64(g.box(m.letter).r) + p.Width/2 + 0.05
-		dx, dz := p.X-mx, p.Z-mz
-		if d := math.Hypot(dx, dz); d < r {
-			if m.disguise != nil { // walked into a mimic
-				g.unmask(m)
-				m.runto()
-			}
-			if d < 1e-6 {
-				dx, dz, d = 1, 0, 1
-			}
-			// back out along the push, but never into a wall
-			nx, nz := mx+dx/d*r, mz+dz/d*r
-			if !g.terrain.Solid(int(math.Floor(nx)), int(math.Floor(p.Y+0.5)), int(math.Floor(nz))) {
-				p.X, p.Z = nx, nz
-			}
+		s := g.slab(m)
+		if p.Y >= s.y+float64(s.h) || p.Y+p.Height <= s.y { // a flyer overhead
+			continue
+		}
+		nx, nz, d := s.nearest(p.X, p.Z)
+		if d >= r {
+			continue
+		}
+		if m.disguise != nil { // walked into a mimic
+			g.unmask(m)
+			m.runto()
+		}
+		ux, uz := math.Sin(s.yaw), -math.Cos(s.yaw) // inside: out through the face, toward the hero
+		if d > 1e-6 {
+			ux, uz = (p.X-nx)/d, (p.Z-nz)/d
+		}
+		// back out, but never into a wall
+		x, z := nx+ux*r, nz+uz*r
+		if !g.terrain.Solid(int(math.Floor(x)), int(math.Floor(p.Y+0.5)), int(math.Floor(z))) {
+			p.X, p.Z = x, z
 		}
 	}
 }
@@ -756,10 +766,10 @@ type monSprite struct{ rows, cy float32 }
 // ceiling.
 const monsterScale = (roomHeight - 0.2) / 2.8
 
-// monsterBox is a monster's hit box from its sprite's opaque outline: h
-// high above hover, and r the half width the outline sweeps as the slab
-// turns to the hero, so the box covers it from every side. The slab
-// itself, turned to the hero, spans x0..x1 across and -d..d through.
+// monsterBox is a monster's hit box from its sprite's opaque outline,
+// in the frame of its slab turned to the hero (slab): x0..x1 across, h
+// high above hover, -d..d (one texel) through. r is its widest half,
+// which a leaning monster keeps inside its square.
 type monsterBox struct{ r, h, hover, x0, x1, d float32 }
 
 // outlineBox is the box of a 16px sprite whose opaque bounds are bb,
@@ -769,6 +779,68 @@ func outlineBox(bb image.Rectangle, h, hover float32) monsterBox {
 	px := h / float32(max(bb.Dy(), 1))
 	return monsterBox{r: float32(max(8-bb.Min.X, bb.Max.X-8)) * px, h: h, hover: hover,
 		x0: float32(bb.Min.X-8) * px, x1: float32(bb.Max.X-8) * px, d: px / 2}
+}
+
+// slab is a monster's hit box where it stands: its sprite's opaque
+// outline (monsterBox) from the foot x, y, z, turned to the hero by yaw
+// as drawMonsters draws it. Arrows, blows and the hero's body all meet
+// this box.
+type slab struct {
+	x, y, z, yaw float64
+	monsterBox
+}
+
+func (g *game) slab(m *monster) slab {
+	b := g.box(m.letter)
+	x, y, z := g.monsterPos(m, 0)
+	return slab{x, y + float64(b.hover), z, math.Atan2(g.player.X-x, -(g.player.Z - z)), b}
+}
+
+// local is world point x, y, z in the slab's frame: the box spans
+// x0..x1, 0..h, -d..d, and the hero is toward -z.
+func (s slab) local(x, y, z float64) (lx, ly, lz float64) {
+	c, sn := math.Cos(s.yaw), math.Sin(s.yaw)
+	dx, dz := x-s.x, z-s.z
+	return c*dx + sn*dz, y - s.y, -sn*dx + c*dz
+}
+
+// world is local's inverse.
+func (s slab) world(lx, ly, lz float64) (x, y, z float64) {
+	c, sn := math.Cos(s.yaw), math.Sin(s.yaw)
+	return s.x + c*lx - sn*lz, s.y + ly, s.z + sn*lx + c*lz
+}
+
+// enter is how far (0..1) along the segment it enters the box.
+func (s slab) enter(x0, y0, z0, x1, y1, z1 float64) (float64, bool) {
+	ax, ay, az := s.local(x0, y0, z0)
+	bx, by, bz := s.local(x1, y1, z1)
+	lo, hi := [3]float64{float64(s.x0), 0, -float64(s.d)}, [3]float64{float64(s.x1), float64(s.h), float64(s.d)}
+	p, d := [3]float64{ax, ay, az}, [3]float64{bx - ax, by - ay, bz - az}
+	enter, exit := 0.0, 1.0
+	for i := range 3 {
+		if d[i] == 0 {
+			if p[i] < lo[i] || p[i] > hi[i] {
+				return 0, false
+			}
+			continue
+		}
+		t0, t1 := (lo[i]-p[i])/d[i], (hi[i]-p[i])/d[i]
+		enter, exit = max(enter, min(t0, t1)), min(exit, max(t0, t1))
+	}
+	return enter, enter <= exit
+}
+
+// nearest is the point of the box's footprint nearest x, z (on its face
+// toward the hero when x, z is inside) and how far x, z is from it.
+func (s slab) nearest(x, z float64) (nx, nz, d float64) {
+	lx, _, lz := s.local(x, 0, z)
+	cx, cz := math.Max(float64(s.x0), math.Min(float64(s.x1), lx)), math.Max(-float64(s.d), math.Min(float64(s.d), lz))
+	d = math.Hypot(lx-cx, lz-cz)
+	if d == 0 {
+		cz = -float64(s.d)
+	}
+	nx, _, nz = s.world(cx, 0, cz)
+	return nx, nz, d
 }
 
 // box is a monster's hit box; a letter without a sprite gets the whole cell.
@@ -830,10 +902,9 @@ func (g *game) drawMonsters(alpha float64) {
 	g.itemRend.DrawPosed(&g.cam, g.insts)
 	if g.showBoxes {
 		for _, m := range g.monsters {
-			t, b := arrowTarget{g, m}, g.box(m.letter)
-			x, y, z, yaw := t.Frame()
-			mat := mgl32.HomogRotate3DY(float32(-yaw)).Mul4(mgl32.Translate3D(b.x0, 0, -b.d)).Mul4(mgl32.Scale3D(b.x1-b.x0, b.h, 2*b.d))
-			g.eng.Renderer.DrawOrientedOutline(&g.cam, x, y, z, mat, mgl32.Vec4{1, 0.2, 0.2, 1})
+			s := g.slab(m)
+			mat := mgl32.HomogRotate3DY(float32(-s.yaw)).Mul4(mgl32.Translate3D(s.x0, 0, -s.d)).Mul4(mgl32.Scale3D(s.x1-s.x0, s.h, 2*s.d))
+			g.eng.Renderer.DrawOrientedOutline(&g.cam, s.x, s.y, s.z, mat, mgl32.Vec4{1, 0.2, 0.2, 1})
 		}
 	}
 }

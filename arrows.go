@@ -113,30 +113,19 @@ type arrowTarget struct {
 	m *monster
 }
 
-// Frame is the slab's foot and its turn to the hero (drawMonsters').
+// Frame is the slab's foot and its turn to the hero.
 func (t arrowTarget) Frame() (x, y, z, yaw float64) {
-	x, y, z = t.g.monsterPos(t.m, 0)
-	return x, y + float64(t.g.box(t.m.letter).hover), z, math.Atan2(t.g.player.X-x, -(t.g.player.Z - z))
-}
-
-// local is world point x, y, z in the slab's frame: the box spans
-// x0..x1, 0..h, -d..d.
-func (t arrowTarget) local(x, y, z float64) (lx, ly, lz float64) {
-	fx, fy, fz, yaw := t.Frame()
-	c, s := math.Cos(yaw), math.Sin(yaw)
-	dx, dz := x-fx, z-fz
-	return c*dx + s*dz, y - fy, -s*dx + c*dz
+	s := t.g.slab(t.m)
+	return s.x, s.y, s.z, s.yaw
 }
 
 // Box is the world box around the turned slab.
 func (t arrowTarget) Box() collide.AABB {
-	x, y, z, yaw := t.Frame()
-	b := t.g.box(t.m.letter)
-	c, s := math.Cos(yaw), math.Sin(yaw)
-	out := collide.AABB{MinX: math.Inf(1), MinZ: math.Inf(1), MaxX: math.Inf(-1), MaxZ: math.Inf(-1), MinY: y, MaxY: y + float64(b.h)}
-	for _, lx := range [2]float32{b.x0, b.x1} {
-		for _, lz := range [2]float32{-b.d, b.d} {
-			wx, wz := x+c*float64(lx)-s*float64(lz), z+s*float64(lx)+c*float64(lz)
+	s := t.g.slab(t.m)
+	out := collide.AABB{MinX: math.Inf(1), MinZ: math.Inf(1), MaxX: math.Inf(-1), MaxZ: math.Inf(-1), MinY: s.y, MaxY: s.y + float64(s.h)}
+	for _, lx := range [2]float32{s.x0, s.x1} {
+		for _, lz := range [2]float32{-s.d, s.d} {
+			wx, _, wz := s.world(float64(lx), 0, float64(lz))
 			out.MinX, out.MaxX = min(out.MinX, wx), max(out.MaxX, wx)
 			out.MinZ, out.MaxZ = min(out.MinZ, wz), max(out.MaxZ, wz)
 		}
@@ -144,28 +133,10 @@ func (t arrowTarget) Box() collide.AABB {
 	return out
 }
 
-// Intersect is where the segment enters the slab's oriented box.
+// Intersect is where the segment enters the slab.
 func (t arrowTarget) Intersect(x0, y0, z0, x1, y1, z1 float64) (x, y, z float64, part int, ok bool) {
-	b := t.g.box(t.m.letter)
-	ax, ay, az := t.local(x0, y0, z0)
-	bx, by, bz := t.local(x1, y1, z1)
-	lo, hi := [3]float64{float64(b.x0), 0, -float64(b.d)}, [3]float64{float64(b.x1), float64(b.h), float64(b.d)}
-	p, d := [3]float64{ax, ay, az}, [3]float64{bx - ax, by - ay, bz - az}
-	enter, exit := 0.0, 1.0
-	for i := range 3 {
-		if d[i] == 0 {
-			if p[i] < lo[i] || p[i] > hi[i] {
-				return 0, 0, 0, -1, false
-			}
-			continue
-		}
-		t0, t1 := (lo[i]-p[i])/d[i], (hi[i]-p[i])/d[i]
-		enter, exit = max(enter, min(t0, t1)), min(exit, max(t0, t1))
-	}
-	if enter > exit {
-		return 0, 0, 0, -1, false
-	}
-	return x0 + (x1-x0)*enter, y0 + (y1-y0)*enter, z0 + (z1-z0)*enter, -1, true
+	f, ok := t.g.slab(t.m).enter(x0, y0, z0, x1, y1, z1)
+	return x0 + (x1-x0)*f, y0 + (y1-y0)*f, z0 + (z1-z0)*f, -1, ok
 }
 
 func (g *game) setupArrows() error {

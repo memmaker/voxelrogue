@@ -74,3 +74,37 @@ func TestSlabHit(t *testing.T) {
 		t.Fatal("an arrow beside the slab hit it")
 	}
 }
+
+// TestSlabReach: a blow reaches a monster by the distance to its box's
+// face, not to a radius around it, and the face is where it lands.
+func TestSlabReach(t *testing.T) {
+	names, imgs, err := loadSprites("assets/tiles")
+	if err != nil {
+		t.Skip(err)
+	}
+	g := &game{}
+	g.sprite = map[string]image.Image{}
+	for i, n := range names {
+		g.sprite[n] = imgs[i]
+	}
+	m := &monster{letter: 'K'}
+	g.monsters = []*monster{m}
+	g.player = character.New(0, 0, 0)
+	x, _, z := g.monsterPos(m, 0)
+	b := g.box('K')
+	for _, c := range []struct {
+		gap  float64 // from the face
+		want bool
+	}{{0.4, true}, {0.6, false}} {
+		g.player.X, g.player.Z = x, z+float64(b.d)+c.gap // south of it
+		g.cam.X, g.cam.Y, g.cam.Z, g.cam.Yaw = g.player.X, float64(b.h)/2, g.player.Z, 0 // looking north at it
+		if got := g.monsterInFront(0.5) != nil; got != c.want {
+			t.Fatalf("%.1f from the face, reach 0.5: hit %v (r %.2f)", c.gap, got, b.r)
+		}
+	}
+	g.player.Z = z + float64(b.d) + 0.4
+	g.cam.Z = g.player.Z
+	if _, _, iz := g.impact(m); math.Abs(iz-(z+float64(b.d))) > 1e-6 {
+		t.Fatalf("the blow lands at z %.3f, the face is at %.3f", iz, z+float64(b.d))
+	}
+}
