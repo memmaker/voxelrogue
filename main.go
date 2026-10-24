@@ -71,6 +71,7 @@ func main() {
 		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
 		mobs    = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
 		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
+		mapMode = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
 		pattern = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
 		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
@@ -201,6 +202,7 @@ func main() {
 		g.pg.In.X, g.pg.In.Y = 141, 203 // over the first hotbar slot (1280x800), for the tooltip
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
+	g.showMap = *mapMode
 	if *mobs != "" {
 		g.lineUp(*mobs)
 	}
@@ -275,7 +277,7 @@ func (g *game) newGame(seed int64) {
 	}
 	g.msgs, g.winLoot = nil, nil
 	g.closeInv()
-	g.showMap, g.showHelp, g.showDebug, g.prompt, g.detect = false, false, false, 0, 0
+	g.showMap, g.showHelp, g.showDebug, g.prompt, g.detect = 0, false, false, 0, 0
 	g.initHero()
 	g.enterLevel(1)
 }

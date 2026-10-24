@@ -17,11 +17,11 @@ import (
 //	food, potion, scroll, ring or armour, F the third pattern, T throw
 //	the wielded weapon, R span a crossbow, 1-9 and the wheel hold a
 //	hotbar slot, C search, < climb (with the Amulet), E/Tab/I inventory,
-//	M map, F1 help, F9 debug weapon menu, Esc release mouse (again:
+//	M map (on a panel, over the view, off), F1 help, F9 debug weapon menu, Esc release mouse (again:
 //	quit), R new game after death or victory.
 type inputState struct {
 	captured  bool
-	showMap   bool
+	showMap   int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
 	showHelp  bool
 	showDebug bool // F9: every weapon, to try them out
 	prompt    byte // 'i' identify, 'g' genocide: the next key answers it
@@ -60,15 +60,15 @@ func (g *game) setupInput() {
 		switch k {
 		case glfw.KeyEscape:
 			switch {
-			case g.showMap || g.showHelp || g.showDebug:
-				g.showMap, g.showHelp, g.showDebug, g.detect = false, false, false, 0
+			case g.showMap != 0 || g.showHelp || g.showDebug:
+				g.showMap, g.showHelp, g.showDebug, g.detect = 0, false, false, 0
 			case g.captured:
 				g.capture(false)
 			default:
 				w.SetShouldClose(true)
 			}
 		case glfw.KeyM:
-			g.showMap = !g.showMap
+			g.showMap = (g.showMap + 1) % 3
 			g.detect = 0
 		case glfw.KeyF1:
 			g.showHelp = !g.showHelp

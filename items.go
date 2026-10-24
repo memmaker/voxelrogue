@@ -473,7 +473,7 @@ func (g *game) quaff(o *rogue.Object) {
 	case rogue.PMFind:
 		if len(g.monsters) > 0 {
 			g.detect = 'm'
-			g.showMap = true
+			g.showMap = 1
 			g.msg("You begin to sense the presence of monsters.")
 		} else {
 			know = false
@@ -493,7 +493,7 @@ func (g *game) quaff(o *rogue.Object) {
 		know = any
 		if magic {
 			g.detect = 'o'
-			g.showMap = true
+			g.showMap = 1
 			g.msg("You sense the presence of magic on this level.")
 		} else {
 			g.msg("You have a strange feeling for a moment, then it passes.")
@@ -563,7 +563,7 @@ func (g *game) read(o *rogue.Object) {
 				}
 			}
 		}
-		g.showMap = true
+		g.showMap = 1
 		g.msg("Oh, now this scroll has a map on it.")
 	case rogue.SLight:
 		know = true
@@ -600,7 +600,7 @@ func (g *game) read(o *rogue.Object) {
 		if gold {
 			know = true
 			g.detect = 'g'
-			g.showMap = true
+			g.showMap = 1
 			g.msg("You begin to feel greedy and you sense gold.")
 		} else {
 			g.msg("You begin to feel a pull downward.")

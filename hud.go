@@ -50,7 +50,7 @@ var helpLines = [][2]string{
 	{"C (hold)", "search for secret doors and traps"},
 	{"E / Tab / I", "inventory: drag items; the left column wears the"},
 	{"", "Amulet, armor and rings; drop outside the window"},
-	{"M", "map"},
+	{"M", "map: on a panel, laid over the view, off"},
 	{"F1", "this help"},
 	{"F9", "debug: take any weapon"},
 	{"F9", "debug: take any weapon"},
@@ -63,10 +63,10 @@ type panel struct {
 }
 
 type hudState struct {
-	msgs                                                 []string
-	msgAge                                               int
-	status, message, mapP, help, debug, tint, tomb, winP panel
-	winLoot                                              []string // total_winner's worth table
+	msgs                                                       []string
+	msgAge                                                     int
+	status, message, mapP, mini, help, debug, tint, tomb, winP panel
+	winLoot                                                    []string // total_winner's worth table
 }
 
 func (g *game) msg(s string) {
@@ -247,14 +247,22 @@ func (g *game) drawHUD(fbW, fbH int) {
 		return textImage([]line{{st, yellow}}, color.NRGBA{0, 0, 0, 160})
 	}, center(fbW), func(w, h int) int { return fbH - h - 6*s - g.hotbarH(fbW) }, s, fbW, fbH) // above the hotbar
 
-	if g.showMap || g.wizard && g.automated {
+	if !g.dead && !g.won {
+		g.mini.show(g.minimapKey(), g.minimap, at(8*s), at(8*s), max(1, s/2), fbW, fbH)
+	}
+
+	if g.showMap != 0 || g.wizard && g.automated {
 		lines := g.mapLines()
-		g.mapP.show(strings.Join(lines, "\n")+string(g.detect), func() *image.NRGBA {
+		bg := color.NRGBA{0, 0, 0, 200}
+		if g.showMap == 2 { // laid over the view
+			bg = color.NRGBA{}
+		}
+		g.mapP.show(fmt.Sprint(g.showMap, g.detect, strings.Join(lines, "\n")), func() *image.NRGBA {
 			var ls []line
 			for _, l := range lines {
 				ls = append(ls, line{l, white})
 			}
-			return textImage(ls, color.NRGBA{0, 0, 0, 200})
+			return textImage(ls, bg)
 		}, center(fbW), middle(fbH), max(1, min(fbW/(80*7+20), fbH/(25*14+20))), fbW, fbH)
 	}
 
