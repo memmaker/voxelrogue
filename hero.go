@@ -518,20 +518,21 @@ func (g *game) checkTrap() {
 	}
 }
 
-// trapHits is a trap's swing at the hero (+1 to hit) and its damage.
+// trapHits is a trap's blow at the hero (move.c: swing(lvl, s_arm, 1)
+// against the bare armour 10, plain dice, no strength) and its damage.
 func (g *game) trapHits(lvl int, dmg string) bool {
-	att := rogue.Stats{Lvl: lvl, Dmg: dmg}
-	hit, _ := rogue.RollEm(g.rng, &att, &g.stats, g.armorClass(), rogue.Attack{HPlus: 1})
-	if hit {
-		g.hurt = 6
-	}
-	return hit
+	att := rogue.Stats{Lvl: lvl, Dmg: dmg, Str: rogue.Str{Str: 10}}
+	rogue.RollEm(g.rng, &att, &g.stats, 10, rogue.Attack{HPlus: 1})
+	g.hurt = 6
+	return true
 }
 
 // teleport moves the hero to a random spot on the level, out of a
 // fungus's grip (wizard.c teleport).
 func (g *game) teleport() {
+	g.vanish(g.player.X, g.player.Y, g.player.Z)
 	g.placeHero(g.level().RandomFloor(g.rng))
+	g.vanish(g.player.X, g.player.Y, g.player.Z)
 	g.releaseFungus()
 	g.msg("You feel a wrenching sensation.")
 }

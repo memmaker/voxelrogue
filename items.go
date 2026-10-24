@@ -41,6 +41,9 @@ func (g *game) setupArt(spriteDir, weaponDir string) error {
 	if g.itemRend, err = render.NewItemRenderer(g.eng.Renderer, names, imgs); err != nil {
 		return err
 	}
+	if g.partRend, err = render.NewParticleRenderer(g.eng.Renderer); err != nil {
+		return err
+	}
 	if err := g.setupMonsterModels(); err != nil {
 		return err
 	}
@@ -542,6 +545,7 @@ func (g *game) lightRoom() {
 		return
 	}
 	g.msg("The room is lit by a shimmering blue light.")
+	g.glow, g.glowRoom = 10, rm // rx1: the light swells over the room
 	if rm.Dark {
 		rm.Dark = false
 		for y := rm.Pos.Y; y < rm.Pos.Y+rm.Max.Y; y++ {
@@ -659,7 +663,9 @@ func (g *game) lineOfFire(m *monster) bool {
 	return true
 }
 
-// zap uses a wand or staff on the monster in front (sticks.c).
+// zap uses a wand or staff (sticks.c do_zap). Light and striking act at
+// once, the bolts walk their squares (fireBolt), the rest fly to the
+// monster in front as a missile and act when it lands (wandHits).
 func (g *game) zap(o *rogue.Object) {
 	g.attackCD = 12
 	if o.Charges <= 0 {
@@ -667,16 +673,12 @@ func (g *game) zap(o *rogue.Object) {
 		return
 	}
 	o.Charges--
-	m := g.monsterInFront(18)
-	if m != nil && !g.lineOfFire(m) {
-		m = nil
-	}
-	know := true
 	switch o.Which {
 	case 0: // light
+		g.rg.WKnow[0] = true
 		g.lightRoom()
 	case 1: // striking
-		if m = g.monsterInFront(2.4); m != nil {
+		if m := g.monsterInFront(2.4); m != nil {
 			if rogue.Rnd(g.rng, 20) == 0 {
 				o.Damage, o.DPlus = "3d8", 9
 			} else {
@@ -684,115 +686,119 @@ func (g *game) zap(o *rogue.Object) {
 			}
 			g.fight(m, o, false)
 		}
-		know = false
 	case 2, 3, 4: // lightning, fire, cold
-		g.bolt([...]string{"bolt", "flame", "ice"}[o.Which-2], m)
-	case 5: // polymorph
-		know = false
-		if m != nil {
-			was := m.letter
-			if m.letter == 'F' {
-				g.held = false
-			}
-			g.initMonster(m, byte('A'+rogue.Rnd(g.rng, 26)))
-			m.runto()
-			know = m.letter != was
-		}
-	case 6: // magic missile
-		if m != nil && !rogue.Save(g.rng, rogue.VSMagic, m.st.Lvl) {
-			missile := rogue.Object{Type: rogue.Weapon, Damage: "", HurlDmg: "1d4", Launch: -1, HPlus: 100}
-			g.fight(m, &missile, true)
-		} else {
-			g.msg("The missile vanishes with a puff of smoke.")
-		}
-	case 7: // haste monster
-		know = false
-		if m != nil {
-			m.speed = min(m.speed+1, 1)
-			m.runto()
-		}
-	case 8: // slow monster
-		know = false
-		if m != nil {
-			m.speed = max(m.speed-1, -1)
-			m.runto()
-		}
+		g.rg.WKnow[o.Which] = true
+		g.fireBolt([...]string{"bolt", "flame", "ice"}[o.Which-2])
 	case 9: // drain life
-		know = false
 		g.drainLife()
 	case 10: // nothing
-		know = false
 		g.msg("What a bizarre schtick!")
-	case 11: // teleport away
-		know = false
-		if m != nil {
-			if m.letter == 'F' {
-				g.held = false
-			}
-			l := g.level()
-			for tries := 0; tries < 50; tries++ {
-				if c := l.RandomFloor(g.rng); g.monsterAt(c) == nil {
-					m.tile, m.from, m.moveT = c, c, 0
-					break
-				}
-			}
-			m.runto()
+		x, y, z := g.wandTip()
+		g.parts.Emit(x, y, z, smoke)
+	default:
+		if o.Which == 6 {
+			g.rg.WKnow[6] = true
 		}
-	case 12: // teleport to
-		know = false
-		if m != nil {
-			if m.letter == 'F' {
-				g.held = false
-			}
-			h := g.heroTile()
-			fx, fz := math.Sin(g.cam.Yaw), -math.Cos(g.cam.Yaw)
-			c := tileAt(g.player.X+fx*tileD, g.player.Z+fz*tileD)
-			if c != h && stepOK(g.level(), h, c) && (g.monsterAt(c) == nil || g.monsterAt(c) == m) {
-				m.tile, m.from, m.moveT = c, c, 0
-			}
-			m.runto()
+		m := g.monsterInFront(18)
+		if m != nil && !g.lineOfFire(m) {
+			m = nil
 		}
-	case 13: // cancellation
-		know = false
-		if m != nil {
-			if m.letter == 'F' {
-				g.held = false
-			}
-			m.cancelled = true
-			m.flags &^= rogue.IsInvis
-		}
-	}
-	if know {
-		g.rg.WKnow[o.Which] = true
+		g.zapAt(o, m)
 	}
 }
 
-// bolt is a wand of lightning, fire or cold: 6d6 to the monster in its
-// path unless it saves, else on to the wall, where it bounces back at the
-// hero if that is close enough for the bolt's 6 squares.
-func (g *game) bolt(name string, m *monster) {
+// zapAt flies a wand's missile to the monster, or to the wall when there is
+// none: rx1's '°' in light cyan for the teleports and light green for the
+// magic missile, the grey '*' for the rest.
+func (g *game) zapAt(o *rogue.Object, m *monster) {
+	var x, y, z float64
 	if m != nil {
-		if !rogue.Save(g.rng, rogue.VSMagic, m.st.Lvl) {
-			bolt := rogue.Object{Type: rogue.Weapon, HurlDmg: "6d6", HPlus: 100, Launch: -1}
-			g.fight(m, &bolt, true)
-			return
+		x, y, z = g.monsterPos(m, 0)
+	} else {
+		x, y, z = tileCenter(g.slot(), g.missileLanding())
+	}
+	col := lightGray
+	switch o.Which {
+	case 6:
+		col = lightGreen
+	case 11, 12:
+		col = lightCyan
+	}
+	tx, _, tz := g.wandTip()
+	g.cast(missileFX(col), max(2, int(math.Hypot(x-tx, z-tz)/1.5)), fxStop{x, y + 1, z, func() { g.wandHits(o, m) }})
+}
+
+// wandHits is a wand's effect on the monster its missile reached, with
+// rx1's effect animation around it.
+func (g *game) wandHits(o *rogue.Object, m *monster) {
+	if m == nil || !m.alive() {
+		return
+	}
+	x, y, z := g.monsterPos(m, 0)
+	switch o.Which {
+	case 5: // polymorph: magenta glow and glitch
+		g.burst(x, y, z, magenta, fade(fxWhite), 1.5)
+		was := m.letter
+		if m.letter == 'F' {
+			g.held = false
 		}
-		g.msg("The " + name + " whizzes past the " + m.name() + ".")
+		g.initMonster(m, byte('A'+rogue.Rnd(g.rng, 26)))
 		m.runto()
-	}
-	h, w := g.heroTile(), g.missileLanding()
-	if 2*(max(abs(w.X-h.X), abs(w.Y-h.Y))+1) >= 6 { // BOLT_LENGTH
-		return
-	}
-	g.msg("The " + name + " bounces.")
-	if rogue.Save(g.rng, rogue.VSMagic, g.stats.Lvl) {
-		g.msg("The " + name + " whizzes by you.")
-		return
-	}
-	g.msg("You are hit by the " + name + ".")
-	g.hurt = 6
-	if g.stats.HP -= rogue.Roll(g.rng, 6, 6); g.stats.HP <= 0 {
-		g.die("a bolt")
+		if m.letter != was {
+			g.rg.WKnow[5] = true
+		}
+	case 6: // magic missile
+		if !rogue.Save(g.rng, rogue.VSMagic, m.st.Lvl) {
+			missile := rogue.Object{Type: rogue.Weapon, Damage: "", HurlDmg: "1d4", Launch: -1, HPlus: 100, DPlus: 1}
+			g.burst(x, y, z, lightGreen, fade(lightGreen), 1)
+			g.fight(m, &missile, true)
+		} else {
+			g.msg("The missile vanishes with a puff of smoke.")
+			g.parts.Emit(x, y+0.8, z, smoke)
+		}
+	case 7: // haste monster: yellow orbit
+		g.ring(x, y+0.5, z, 0.7, 0, 9, fxYellow, fade(darkYellow), 0.8)
+		g.ring(x, y+1.1, z, 0.7, 0, 9, fxWhite, fade(fxYellow), 0.8)
+		m.speed = min(m.speed+1, 1)
+		m.runto()
+	case 8: // slow monster: blue wave closing in, turning the other way
+		g.ring(x, y+0.8, z, 1.3, -1.2, -3, lightCyan, fade(blue), 1)
+		m.speed = max(m.speed-1, -1)
+		m.runto()
+	case 11: // teleport away
+		if m.letter == 'F' {
+			g.held = false
+		}
+		g.vanish(x, y, z)
+		l := g.level()
+		for tries := 0; tries < 50; tries++ {
+			if c := l.RandomFloor(g.rng); g.monsterAt(c) == nil {
+				m.tile, m.from, m.moveT = c, c, 0
+				break
+			}
+		}
+		g.vanish(g.monsterPos(m, 0))
+		m.runto()
+	case 12: // teleport to
+		if m.letter == 'F' {
+			g.held = false
+		}
+		h := g.heroTile()
+		fx, fz := math.Sin(g.cam.Yaw), -math.Cos(g.cam.Yaw)
+		c := tileAt(g.player.X+fx*tileD, g.player.Z+fz*tileD)
+		if c != h && stepOK(g.level(), h, c) && (g.monsterAt(c) == nil || g.monsterAt(c) == m) {
+			g.vanish(x, y, z)
+			m.tile, m.from, m.moveT = c, c, 0
+			g.vanish(g.monsterPos(m, 0))
+		}
+		m.runto()
+	case 13: // cancellation: grey wave closing in
+		g.ring(x, y+0.8, z, 1.3, -1.5, 0, lightGray, fade(darkGray), 0.9)
+		if m.letter == 'F' {
+			g.held = false
+		}
+		m.cancelled = true
+		m.flags &^= rogue.IsInvis
 	}
 }
 
@@ -823,10 +829,16 @@ func (g *game) drainLife() {
 	}
 	each := g.stats.HP / len(hit)
 	g.stats.HP /= 2
-	for _, mm := range hit {
-		if mm.st.HP -= each; mm.st.HP < 1 {
-			g.killed(mm)
-		}
+	g.hurt = 6
+	tx, _, tz := g.wandTip()
+	for _, mm := range hit { // rx1: light red '☼' to each of them
+		x, y, z := g.monsterPos(mm, 0)
+		g.cast(missileFX(lightRed), max(2, int(math.Hypot(x-tx, z-tz)/1.5)), fxStop{x, y + 1, z, func() {
+			g.burst(x, y, z, lightRed, fade(fxRed), 1)
+			if mm.st.HP -= each; mm.st.HP < 1 {
+				g.killed(mm)
+			}
+		}})
 	}
 }
 

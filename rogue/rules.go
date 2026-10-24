@@ -85,10 +85,12 @@ func AddDam(s Str) int {
 }
 
 // swing reports whether an attack of level atLvl hits armour opArm.
-func swing(rng *rand.Rand, atLvl, opArm, wplus int) bool {
-	res := Rnd(rng, 20) + 1
-	need := (21 - atLvl) - opArm
-	return res+wplus >= need
+// HitScale is what the swing roll (fight.c swing: d20 + bonus against
+// 21 - level - armour) used to win on average, in twentieths: with no
+// to-hit roll every blow that reaches lands, and (level + armour +
+// bonus)/20 of its damage counts, so armour and level keep their worth.
+func HitScale(d, atLvl, opArm, wplus int) int {
+	return (d*min(20, max(0, atLvl+opArm+wplus)) + 10) / 20
 }
 
 // Attack is one attacker's roll_em input beyond its stats.
@@ -98,9 +100,9 @@ type Attack struct {
 }
 
 // RollEm rolls every attack term of a against def's armour defArm and
-// applies the damage to def. It returns whether anything hit and the
-// total damage.
-func RollEm(rng *rand.Rand, att *Stats, def *Stats, defArm int, a Attack) (hit bool, dmg int) {
+// applies the damage to def, scaled by HitScale (reach and position decide
+// the hit, not dice). It returns the total damage.
+func RollEm(rng *rand.Rand, att *Stats, def *Stats, defArm int, a Attack) (dmg int) {
 	cp := a.Dmg
 	if cp == "" {
 		cp = att.Dmg
@@ -110,14 +112,11 @@ func RollEm(rng *rand.Rand, att *Stats, def *Stats, defArm int, a Attack) (hit b
 		if !ok {
 			continue
 		}
-		if swing(rng, att.Lvl, defArm, a.HPlus+StrPlus(att.Str)) {
-			d := max(0, a.DPlus+Roll(rng, nd, ns)+AddDam(att.Str))
-			def.HP -= d
-			dmg += d
-			hit = true
-		}
+		d := HitScale(max(0, a.DPlus+Roll(rng, nd, ns)+AddDam(att.Str)), att.Lvl, defArm, a.HPlus+StrPlus(att.Str))
+		def.HP -= d
+		dmg += d
 	}
-	return hit, dmg
+	return dmg
 }
 
 func parseDice(s string) (n, sides int, ok bool) {

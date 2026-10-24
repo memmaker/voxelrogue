@@ -401,19 +401,7 @@ func (g *game) monsterAttack(m *monster) {
 			m.st.HP++
 		}
 	}()
-	hit, _ := rogue.RollEm(g.rng, &m.st, &g.stats, g.armorClass(), rogue.Attack{})
-	if !hit {
-		if m.letter == 'F' {
-			if g.stats.HP -= g.fungHit; g.stats.HP <= 0 {
-				g.die(m.name())
-				return
-			}
-		}
-		if m.letter != 'E' {
-			g.msg("The " + m.name() + " misses.")
-		}
-		return
-	}
+	rogue.RollEm(g.rng, &m.st, &g.stats, g.armorClass(), rogue.Attack{})
 	if m.letter != 'E' {
 		g.msg("The " + m.name() + " hits.")
 		g.hurt = 6
@@ -585,7 +573,7 @@ func (g *game) monsterInFront(reach float64) *monster {
 }
 
 // fight is fight.c fight(): the hero hits a monster with weap (nil =
-// bare hands), thrown or not.
+// bare hands), thrown or not. Reaching it was the hit; nothing misses.
 func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
 	g.quiet = 0
 	m.runto()
@@ -618,15 +606,7 @@ func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
 			}
 		}
 	}
-	hit, _ := rogue.RollEm(g.rng, &g.stats, &m.st, m.st.Arm, a)
-	if !hit {
-		if thrown {
-			g.msg("The missile misses the " + m.name() + ".")
-		} else {
-			g.msg("You miss the " + m.name() + ".")
-		}
-		return false
-	}
+	rogue.RollEm(g.rng, &g.stats, &m.st, m.st.Arm, a)
 	m.hurt = 6
 	if g.confuseHit {
 		g.confuseHit = false

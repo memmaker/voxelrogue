@@ -63,6 +63,8 @@ func main() {
 		wield   = flag.Int("wield", -1, "debug: start wielding this weapon kind")
 		swingAt = flag.Int("swing", -1, "debug: with -shot, swing (draw a wielded launcher) this many ticks before the shot")
 		looseAt = flag.Int("loose", -1, "debug: with -swing, let the launcher go this many ticks before the shot")
+		zapKind = flag.Int("zap", -1, "debug: with -shot, hold a wand of this kind and zap it -zap-at ticks before the shot")
+		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
 		clickAt = flag.Int("click", -1, "debug: with -shot, click the left button (a loaded chain crossbow shoots) this many ticks before the shot")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
 		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
@@ -166,7 +168,13 @@ func main() {
 	if *swingAt >= 0 {
 		g.swingShot = *shotAt - *swingAt
 	}
-	g.looseShot, g.clickShot = -1, -1
+	g.looseShot, g.clickShot, g.zapShot = -1, -1, -1
+	if *zapKind >= 0 {
+		w := &rogue.Object{Type: rogue.Stick, Which: *zapKind, Charges: 9}
+		g.addPack(w)
+		g.zapping = w
+		g.zapShot = *shotAt - *zapAt
+	}
 	if *looseAt >= 0 {
 		g.looseShot = *shotAt - *looseAt
 	}
@@ -203,6 +211,7 @@ type game struct {
 	monsterState
 	itemState
 	arrowState
+	fxState
 	combatState
 	hudState
 	inputState
@@ -213,6 +222,7 @@ type game struct {
 	swingShot int   // -swing: the tick to attack on
 	looseShot int   // -loose: the tick to let a launcher go on
 	clickShot int   // -click: the tick to click the left button on
+	zapShot   int   // -zap: the tick to zap the held wand on
 	renewAt   int   // -renew: the tick to start a new game on
 	renewSeed int64 // its seed
 }
@@ -283,6 +293,7 @@ func (g *game) run(shotPath string, shotAt int) {
 		g.drawMonsters(alpha)
 		g.drawArrows(alpha)
 		g.drawFloorItems(alpha)
+		g.drawEffects(alpha)
 		g.drawHand(alpha)
 		g.eng.Renderer.DrawCrosshair(float32(g.cam.Aspect))
 		g.drawHUD(fw, fh)
@@ -317,6 +328,9 @@ func (g *game) step() {
 	if g.tick == g.clickShot {
 		g.fireChain()
 	}
+	if g.tick == g.zapShot {
+		g.zap(g.zapping)
+	}
 	if g.tick == g.swingShot {
 		if g.launcher() {
 			g.startDraw()
@@ -329,6 +343,7 @@ func (g *game) step() {
 	g.tickHero()
 	g.tickMonsters()
 	g.tickArrows()
+	g.tickEffects()
 	g.tickHUD()
 }
 
