@@ -114,21 +114,29 @@ func (g *game) pickUp() {
 	}
 }
 
-// addPack puts an object into the pack, stacking it where it fits.
+// addPack puts an object into the pack, stacking it where it fits. Bare
+// hands wield a hand-held weapon at once: a thrown sword pulled back out
+// of the wall is ready again.
 func (g *game) addPack(o *rogue.Object) bool {
-	for _, p := range g.pack {
-		if rogue.Stacks(p, o) {
+	p := o
+	for _, q := range g.pack {
+		if rogue.Stacks(q, o) {
+			p = q
 			p.Count += o.Count
-			g.msg("You now have " + lowerFirst(g.rg.Name(p)) + fmt.Sprintf(" (%c).", g.packLetter(p)))
-			return true
+			break
 		}
 	}
-	if g.packCount() >= maxPack {
-		g.msg("You can't carry anything else.")
-		return false
+	if p == o {
+		if g.packCount() >= maxPack {
+			g.msg("You can't carry anything else.")
+			return false
+		}
+		g.pack = append(g.pack, o)
 	}
-	g.pack = append(g.pack, o)
-	g.msg("You now have " + lowerFirst(g.rg.Name(o)) + fmt.Sprintf(" (%c).", g.packLetter(o)))
+	g.msg("You now have " + lowerFirst(g.rg.Name(p)) + fmt.Sprintf(" (%c).", g.packLetter(p)))
+	if g.weapon == nil && p.Type == rogue.Weapon && weaponItem[p.Which] != "" {
+		g.wield(p)
+	}
 	return true
 }
 

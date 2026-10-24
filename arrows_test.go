@@ -62,6 +62,10 @@ func TestThrowWeapon(t *testing.T) {
 	if g.weapon != nil || len(g.pack) != 2 || len(g.arrowObjs) != 2 {
 		t.Fatalf("dagger: wielding %v, pack %d, %d flying", g.weapon, len(g.pack), len(g.arrowObjs))
 	}
+	g.addPack(dagger) // pulled back out of the wall: bare hands wield it
+	if g.weapon != dagger {
+		t.Fatalf("picked-up dagger: wielding %v", g.weapon)
+	}
 	g.weapon = mace
 	g.throwItem()
 	for a, o := range g.arrowObjs {
