@@ -70,6 +70,7 @@ func main() {
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
 		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
 		mobs    = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
+		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
 		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
 		mapMode = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
@@ -203,8 +204,14 @@ func main() {
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
 	g.showMap = *mapMode
+	g.killShot = -1
 	if *mobs != "" {
+		n := len(g.monsters)
 		g.lineUp(*mobs)
+		if *killAt >= 0 && len(g.monsters) > n {
+			g.killMob = g.monsters[n]
+			g.killShot = *shotAt - *killAt
+		}
 	}
 	if *look >= 0 {
 		g.cam.Yaw = *look * math.Pi / 180
@@ -244,12 +251,14 @@ type game struct {
 
 	automated bool // -shot: no input
 	wizard    bool
-	swingShot int   // -swing: the tick to attack on
-	looseShot int   // -loose: the tick to let a launcher go on
-	throwShot int   // -throw: the tick to throw a missile on
-	zapShot   int   // -zap: the tick to zap the held wand on
-	renewAt   int   // -renew: the tick to start a new game on
-	renewSeed int64 // its seed
+	swingShot int      // -swing: the tick to attack on
+	looseShot int      // -loose: the tick to let a launcher go on
+	throwShot int      // -throw: the tick to throw a missile on
+	zapShot   int      // -zap: the tick to zap the held wand on
+	killShot  int      // -kill-at: the tick killMob dies on
+	killMob   *monster // the first -mobs monster
+	renewAt   int      // -renew: the tick to start a new game on
+	renewSeed int64    // its seed
 }
 
 // newGame starts over in this process (R after death or victory): a new
@@ -266,7 +275,7 @@ func (g *game) newGame(seed int64) {
 	g.rg = rogue.NewGame(g.rng)
 	g.depth, g.ready = 0, false
 	g.heroState = heroState{}
-	g.monsters, g.distTick = nil, -1
+	g.monsters, g.corpses, g.distTick = nil, nil, -1
 	g.floor, g.confuseHit, g.zapping = nil, false, nil
 	g.clearArrows()
 	g.drawing, g.drawTicks, g.fireHeld, g.reload, g.spanning, g.chambers = false, 0, false, 0, false, nil
@@ -359,6 +368,10 @@ func (g *game) step() {
 	}
 	if g.tick == g.zapShot {
 		g.zap(g.zapping)
+	}
+	if g.tick == g.killShot && g.killMob.alive() {
+		g.killMob.hurt = 6 // as the killing blow leaves it
+		g.killed(g.killMob)
 	}
 	if g.tick == g.swingShot {
 		if g.launcher() {

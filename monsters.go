@@ -43,9 +43,10 @@ type monster struct {
 	found      bool           // ISFOUND: an umber hulk's gaze is spent
 	dest       *dungeon.Coord // a dragon's gold to guard; nil: the hero
 	pack       *rogue.Object
-	dying      int
-	leanX      float64 // offset from the tile centre toward the hero
-	leanZ      float64 // while fighting, so both sides are in reach
+	dying      int        // ticks since the killing blow
+	dead       [4]float64 // where it fell (x, y, z) and its yaw then
+	leanX      float64    // offset from the tile centre toward the hero
+	leanZ      float64    // while fighting, so both sides are in reach
 }
 
 type monsterState struct {
@@ -53,6 +54,7 @@ type monsterState struct {
 	modelRend *render.ModelRenderer
 	monSprite map[byte]monSprite
 	boxes     map[byte]monsterBox
+	corpses   map[int][]*monster // by depth; they stay
 	dist      [dungeon.Lines][dungeon.Cols]int
 	distFrom  dungeon.Coord
 	distTick  int
@@ -232,14 +234,15 @@ func (g *game) updateDist() {
 func (g *game) tickMonsters() {
 	g.updateDist()
 	l, h := g.level(), g.heroTile()
+	g.tickCorpses()
 	live := g.monsters[:0]
 	for _, m := range g.monsters {
-		if m.dying > 0 {
-			if m.dying++; m.dying > 24 {
-				g.loseMonster(m)
-				continue
+		if m.dying > 0 { // out of the monster logic, a corpse for good
+			g.loseMonster(m)
+			if g.corpses == nil {
+				g.corpses = map[int][]*monster{}
 			}
-			live = append(live, m)
+			g.corpses[g.depth] = append(g.corpses[g.depth], m)
 			continue
 		}
 		live = append(live, m)
@@ -680,6 +683,8 @@ func (g *game) killed(m *monster) {
 	g.msg("You defeated the " + m.name() + ".")
 	g.gainExp(rogue.KillExp(&m.st))
 	m.dying = 1
+	x, y, z := g.monsterPos(m, 0)
+	m.dead = [4]float64{x, y, z, math.Atan2(g.player.X-x, -(g.player.Z - z))}
 	if m.letter == 'F' {
 		g.held, g.fungHit = false, 0
 		rogue.Monsters['F'-'A'].Dmg = "000d0"
@@ -791,6 +796,10 @@ func (g *game) drawMonsters(alpha float64) {
 			continue
 		}
 		lk := g.box(m.letter)
+		if m.dying > 0 {
+			g.insts = append(g.insts, g.corpsePose(m, alpha))
+			continue
+		}
 		x, y, z := g.monsterPos(m, alpha)
 		y += float64(lk.hover)
 		if lk.hover > 0 {
@@ -806,20 +815,54 @@ func (g *game) drawMonsters(alpha float64) {
 		if m.hurt > 0 {
 			x += 0.06 * math.Sin(float64(m.hurt)*2.5)
 		}
-		sp := g.monSprite[m.letter]
-		s := lk.h * 16 / max(sp.rows, 1)
-		tilt := float32(0)
-		if m.dying > 0 { // ponytail: tips over at the feet; the old dither fade needs a renderer fade
-			tilt = float32(math.Min(1, float64(m.dying)/10) * math.Pi / 2)
-		}
-		// the slab pivots at the feet; its centre sits where the creature's centre is h/2 up
-		mat := mgl32.HomogRotate3DY(float32(-yaw)).Mul4(mgl32.HomogRotate3DX(tilt)).
-			Mul4(mgl32.Translate3D(0, lk.h/2-s*(0.5-sp.cy/16), 0)).Mul4(mgl32.Scale3D(s, s, s))
-		in := render.ItemPose{Item: "m:" + rogue.Monsters[m.letter-'A'].Name, X: x, Y: y, Z: z, M: mat}
+		in := g.monsterPose(m.letter, x, y, z, yaw, 0)
 		in.Sky, in.Block = g.light(x, y+float64(lk.h)/2, z)
 		g.insts = append(g.insts, in)
 	}
+	for _, m := range g.corpses[g.depth] {
+		if m.flags&rogue.IsInvis == 0 || seeInvis {
+			g.insts = append(g.insts, g.corpsePose(m, alpha))
+		}
+	}
 	g.itemRend.DrawPosed(&g.cam, g.insts)
+}
+
+// monsterPose is a monster's sprite slab at x, y, z turned to yaw, tipped
+// back tilt radians about its feet.
+func (g *game) monsterPose(letter byte, x, y, z, yaw float64, tilt float32) render.ItemPose {
+	lk, sp := g.box(letter), g.monSprite[letter]
+	s := lk.h * 16 / max(sp.rows, 1)
+	// the slab pivots at the feet; its centre sits where the creature's centre is h/2 up
+	mat := mgl32.HomogRotate3DY(float32(-yaw)).Mul4(mgl32.HomogRotate3DX(tilt)).
+		Mul4(mgl32.Translate3D(0, lk.h/2-s*(0.5-sp.cy/16), 0)).Mul4(mgl32.Scale3D(s, s, s))
+	return render.ItemPose{Item: "m:" + rogue.Monsters[letter-'A'].Name, X: x, Y: y, Z: z, M: mat}
+}
+
+// fallTicks is how long a killed monster takes to tip over (a flyer to
+// drop to the floor).
+const fallTicks = 10
+
+// tickCorpses runs the fall; then a corpse lies still.
+func (g *game) tickCorpses() {
+	for _, m := range g.corpses[g.depth] {
+		m.dying = min(m.dying+1, fallTicks)
+	}
+}
+
+// corpsePose is a killed monster where it fell, turned as it was at the
+// blow, tipping over until it lies flat; nothing about it follows the
+// hero.
+func (g *game) corpsePose(m *monster, alpha float64) render.ItemPose {
+	t := 1.0
+	if m.dying < fallTicks {
+		t = (float64(m.dying) + alpha) / fallTicks
+	}
+	y := m.dead[1] + float64(g.box(m.letter).hover)*(1-t)
+	in := g.monsterPose(m.letter, m.dead[0], y, m.dead[2], m.dead[3], float32(t*math.Pi/2))
+	if g.eng != nil {
+		in.Sky, in.Block = g.light(m.dead[0], m.dead[1]+0.5, m.dead[2])
+	}
+	return in
 }
 
 // lineUp (debug, -mobs) stands one monster per letter on the hero's
