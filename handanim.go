@@ -47,16 +47,17 @@ func displayFor(sprite string) display {
 	if d, ok := modDisplay[sprite]; ok {
 		return d
 	}
-	if strings.HasPrefix(sprite, "w:crossbow") || strings.HasPrefix(sprite, "w:chain_crossbow") {
-		return crossbowDisplay
+	if strings.HasPrefix(sprite, weaponSprite(rogue.Crossbow)) || strings.HasPrefix(sprite, weaponSprite(rogue.ChainCrossbow)) {
+		return crossbowDisplay // and its pulling and loaded pictures
 	}
 	return handheld
 }
 
-// upright are voxellib weapon sprites drawn standing up instead of on the
-// diagonal of Minecraft's handheld textures (grip bottom left, head top
-// right), which the display transforms are made for.
-var upright = map[string]bool{"mace_01": true, "mace_04": true, "mace_05": true, "mace_06": true, "axe_29": true, "axe_35": true}
+// upright are item sprites drawn standing up instead of on the diagonal
+// of Minecraft's handheld textures (grip bottom left, head top right),
+// which the display transforms are made for: the voxellib ones left in
+// items.rec (the VoxelHobbit sprites are all on the diagonal).
+var upright = map[string]bool{"anchor": true}
 
 // spriteTurn turns a sprite's slab like the Minecraft texture its display
 // transform expects.
