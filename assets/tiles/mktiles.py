@@ -4,15 +4,17 @@ rec files that say which cell each game id uses. The sheets hold only
 what the game draws; ids are the game's own names (a potion by its
 colour, a ring by its stone, a wall by where it stands):
 
-  tiles8.png   items.rec     %rec: item    potions, scrolls, rings, food, wands, gold, the Amulet (written whole)
+  tiles8.png   items.rec     %rec: item    scrolls, rings, food, wands, gold, the Amulet (written whole)
   tiles16.png  gear.rec      %rec: gear    the armour: hand-written records, each naming its picture
+               potions.rec   %rec: potion  Rogue's potion colours: hand-written, each an rgb tinting the potion sprite
                weapons.rec   %rec: weapon  the weapons and their pictures in use (%rec: frame): hand-written, each naming its picture
                textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
                monsters.rec  %rec: monster the 26 monsters (DynaHack, shadows stripped)
 
-gear.rec and weapons.rec are the game's data (every field of an armour or a weapon); this
-script only cuts each record's picture: (relative to the rec, an animation strip's first
-16px frame) onto the sheet and fills its icon: in, touching no other line. A rerun keeps
+gear.rec, weapons.rec and potions.rec are the game's data (every field of an armour, a
+weapon or a potion); this script only cuts each record's picture: (relative to the rec, an
+animation strip's first 16px frame) or tints the potion sprite with its rgb: (tint_potion)
+onto the sheet and fills its icon: in, touching no other line. A rerun keeps
 the recs' icons (the remapper's edits); after adding or cutting a look, run it with --fresh,
 since the cells behind the kept icons have moved.
 The game reads only the recs and sheets (tiles.go); the remapper edits
@@ -98,9 +100,13 @@ class Sheet:
             m = re.match(r'icon:\s*(-?\d+)', line)
             if m:  # every picture is cut, so kept icons keep their cells
                 rec = lines[max(j for j in range(i, -1, -1) if lines[j].strip() == '' or lines[j].startswith('%')) + 1:i]
-                pic = next(l.split(':', 1)[1].strip() for l in rec if l.startswith('picture:'))
-                src = os.path.normpath(os.path.join(os.path.dirname(path), pic))
-                cell = self.add(src, rgba(src).crop((0, 0, self.size, self.size)))
+                fields = dict(l.split(':', 1) for l in rec if ':' in l)
+                if 'rgb' in fields:
+                    rgb = tuple(int(v) for v in fields['rgb'].split())
+                    cell = self.add(('rgb',) + rgb, tint_potion(rgb))
+                else:
+                    src = os.path.normpath(os.path.join(os.path.dirname(path), fields['picture'].strip()))
+                    cell = self.add(src, rgba(src).crop((0, 0, self.size, self.size)))
                 if FRESH or int(m.group(1)) < 0:
                     line, n = f'icon: {cell}', n + 1
             out.append(line)
@@ -112,6 +118,34 @@ def rgba(path):
     return Image.open(path).convert('RGBA')
 
 
+POTIONS = os.path.join(ROOT, 'assets', 'potions')
+# The potion sheet's own ramp (Bonsaiheldin's rpg_potions_16x16): the black potion's grey marks each
+# contents pixel's shade, and a coloured potion is the colour darkened by half (32), the colour (64),
+# and the colour 50% (96) and 80% (191) of the way to white.
+RAMP = {32: -0.5, 64: 0.0, 96: 0.5, 191: 0.8}
+
+
+def tint_potion(rgb):
+    """The white potion (assets/potions/white.png) with its contents, the pixels that differ from the
+    black one, coloured rgb in the sheet's ramp."""
+    white, black = rgba(os.path.join(POTIONS, 'white.png')), rgba(os.path.join(POTIONS, 'black.png'))
+    out, w, b = white.copy(), white.load(), black.load()
+    for y in range(white.size[1]):
+        for x in range(white.size[0]):
+            if w[x, y] == b[x, y]:
+                continue
+            t = RAMP[b[x, y][0]]
+            out.putpixel((x, y), tuple(round(c * (1 + t)) if t < 0 else round(c + (255 - c) * t) for c in rgb) + (255,))
+    return out
+
+
+def check_tint():
+    """tint_potion reproduces the sheet's own red potion (its contents' four shades)."""
+    red = {tuple(p[:3]) for p in tint_potion((255, 0, 0)).get_flattened_data() if p[3]}
+    for shade in [(128, 0, 0), (255, 0, 0), (255, 128, 128), (255, 204, 204)]:
+        assert shade in red, (shade, red)
+
+
 rules = open(os.path.join(ROOT, 'rogue', 'objects.go')).read()
 
 # ---- tiles8: the items, named as Rogue names them; first looks are VoxelLib's sprites ----
@@ -119,8 +153,6 @@ t8 = Sheet('tiles8.png', 8, 16)
 def item(rid, sprite, name=None):
     return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
 items = []
-for j, c in enumerate(golist(rules, 'rainbow')):  # a potion looks like its colour
-    items.append(item(c + ' potion', f'potion_{j % 24 * 3 + 1:02d}'))
 for i in range(1, 16):  # a scroll's title is random each game; it has one of 15 looks
     items.append(item(f'scroll {i}', f'scroll_{i:02d}', f'scroll (look {i})'))
 for j, s in enumerate(golist(rules, 'stones')):  # a ring looks like its stone
@@ -134,6 +166,17 @@ t8.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
 t16 = Sheet('tiles16.png', 16, 16)
 t16.patch(os.path.join(HERE, 'gear.rec'))
 t16.patch(os.path.join(HERE, 'weapons.rec'))
+check_tint()
+t16.patch(os.path.join(HERE, 'potions.rec'))
+# every colour of the rainbow has a potion record, and no two potions' colours are close
+potions = open(os.path.join(HERE, 'potions.rec')).read()
+colours = {m.group(1): tuple(int(v) for v in m.group(2).split()) for m in re.finditer(r'^id: (\w+) potion\n(?:.*\n)*?(?:rgb: (.*)|picture: .*)$', potions, re.M) if m.group(2)}
+missing = [c for c in golist(rules, 'rainbow') if f'id: {c} potion\n' not in potions]
+assert not missing, f'potions.rec lacks {missing}'
+for a in colours:
+    for b in colours:
+        d = sum((x - y) ** 2 for x, y in zip(colours[a], colours[b])) ** 0.5
+        assert a == b or d >= 55, f'{a} and {b} potions look alike ({d:.0f} apart)'
 def block(rid, tex):
     return (rid, rid, t16.add('b:' + tex, rgba(os.path.join(BLOCKS, tex + '.png'))))
 blocks = [block('room floor', 'oak_planks'), block('room wall', 'stone_bricks'), block('room ceiling', 'stone'),

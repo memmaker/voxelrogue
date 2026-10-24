@@ -17,48 +17,48 @@ gap_y: 0
 
 id: room floor
 name: room floor
-icon: 34
+icon: 58
 
 id: room wall
 name: room wall
-icon: 35
+icon: 59
 
 id: room ceiling
 name: room ceiling
-icon: 36
+icon: 60
 
 id: dark room floor
 name: dark room floor
-icon: 37
+icon: 61
 
 id: room light
 name: room light
-icon: 38
+icon: 62
 
 id: corridor floor
 name: corridor floor
-icon: 39
+icon: 63
 
 id: corridor wall
 name: corridor wall
-icon: 36
+icon: 60
 
 id: corridor ceiling
 name: corridor ceiling
-icon: 36
+icon: 60
 
 id: stairs
 name: stairs
-icon: 39
+icon: 63
 
 id: trap
 name: trap
-icon: 40
+icon: 64
 
 id: door frame
 name: door frame
-icon: 41
+icon: 65
 
 id: door frame top
 name: door frame top
-icon: 42
+icon: 66

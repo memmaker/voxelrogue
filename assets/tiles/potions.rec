@@ -1,0 +1,141 @@
+# potions.rec: Rogue's potion colours (rogue/objects.go's rainbow), one record each; mktiles.py tints
+# assets/potions/white.png (Bonsaiheldin's CC BY-SA potion, assets/potions/CREDITS.txt) with the record's
+# rgb and cuts it onto tiles16.png, filling icon: in (-1: unassigned); the remapper (remap_potions.sh)
+# re-maps icons and keeps every other field. picture: a drawn potion instead (the white and the black).
+# Every colour is its own rgb, none closer than 55 to another (mktiles.py checks).
+#
+#   rgb       the contents' colour: the sheet's ramp makes its shades (half, itself, 50% and 80% toward white)
+
+%rec: Tileset
+id: tiles16
+name: VoxelRogue 16px tiles
+file: tiles16.png
+tile_w: 16
+tile_h: 16
+off_x: 0
+off_y: 0
+gap_x: 0
+gap_y: 0
+
+%rec: potion
+%doc: Potions
+
+id: red potion
+name: red potion
+rgb: 255 0 0
+icon: 34
+
+id: blue potion
+name: blue potion
+rgb: 30 80 255
+icon: 35
+
+id: green potion
+name: green potion
+rgb: 0 200 0
+icon: 36
+
+id: yellow potion
+name: yellow potion
+rgb: 255 255 0
+icon: 37
+
+id: black potion
+name: black potion
+picture: ../potions/black.png
+icon: 38
+
+id: brown potion
+name: brown potion
+rgb: 130 70 20
+icon: 39
+
+id: orange potion
+name: orange potion
+rgb: 255 130 0
+icon: 40
+
+id: pink potion
+name: pink potion
+rgb: 255 130 190
+icon: 41
+
+id: purple potion
+name: purple potion
+rgb: 150 0 160
+icon: 42
+
+id: grey potion
+name: grey potion
+rgb: 128 128 128
+icon: 43
+
+id: white potion
+name: white potion
+picture: ../potions/white.png
+icon: 44
+
+id: silver potion
+name: silver potion
+rgb: 170 180 200
+icon: 45
+
+id: gold potion
+name: gold potion
+rgb: 220 200 50
+icon: 46
+
+id: violet potion
+name: violet potion
+rgb: 140 60 255
+icon: 47
+
+id: clear potion
+name: clear potion
+rgb: 235 245 255
+icon: 48
+
+id: vermilion potion
+name: vermilion potion
+rgb: 210 40 30
+icon: 49
+
+id: ecru potion
+name: ecru potion
+rgb: 215 200 160
+icon: 50
+
+id: turquoise potion
+name: turquoise potion
+rgb: 50 220 200
+icon: 51
+
+id: magenta potion
+name: magenta potion
+rgb: 255 0 200
+icon: 52
+
+id: amber potion
+name: amber potion
+rgb: 255 190 0
+icon: 53
+
+id: topaz potion
+name: topaz potion
+rgb: 255 200 110
+icon: 54
+
+id: plaid potion
+name: plaid potion
+rgb: 120 30 60
+icon: 55
+
+id: tan potion
+name: tan potion
+rgb: 190 150 100
+icon: 56
+
+id: tangerine potion
+name: tangerine potion
+rgb: 240 90 50
+icon: 57

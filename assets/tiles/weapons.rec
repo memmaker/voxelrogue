@@ -43,7 +43,7 @@ gap_y: 0
 id: mace
 name: mace
 picture: ../hobbit/maceBlackNumenorean.png
-icon: 23
+icon: 8
 kind: melee
 hands: 1
 edge: blunt
@@ -297,7 +297,7 @@ attack_2: two_handed_slam_heavy
 id: battle axe
 name: battle axe
 picture: ../hobbit/battleaxeDwarven.png
-icon: 8
+icon: 23
 kind: melee
 hands: 2
 edge: sharp
