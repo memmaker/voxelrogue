@@ -44,6 +44,7 @@ var helpLines = [][2]string{
 	{"F", "the weapon's third attack pattern"},
 	{"T", "throw the wielded weapon"},
 	{"R", "span a crossbow (slow going)"},
+	{"Shift (tap)", "sprint until you stop walking forward"},
 	{"Walk over", "pick up"},
 	{"Walk down", "the stairs to descend"},
 	{"< (Shift+,)", "on the stairs: climb, once you have the Amulet"},

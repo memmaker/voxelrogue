@@ -11,7 +11,7 @@ import (
 
 // Controls (keep helpLines in hud.go in sync):
 //
-//	WASD walk, mouse look, Space jump, LMB a melee weapon's first attack
+//	WASD walk, Shift (tap) sprint until you stop, mouse look, Space jump, LMB a melee weapon's first attack
 //	pattern or fire a launcher (hold to draw a bow; a spanned crossbow
 //	shoots), RMB the second pattern, zap a held wand or use the held
 //	food, potion, scroll, ring or armour, F the third pattern, T throw
@@ -24,6 +24,7 @@ type inputState struct {
 	showMap   int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
 	showHelp  bool
 	showDebug bool // F9: every weapon, to try them out
+	sprinting bool // Shift tapped: sprint until the hero stops walking forward
 	prompt    byte // 'i' identify, 'g' genocide: the next key answers it
 	detect    byte // map highlight after a detection potion/scroll
 }
@@ -67,6 +68,8 @@ func (g *game) setupInput() {
 			default:
 				w.SetShouldClose(true)
 			}
+		case glfw.KeyLeftShift, glfw.KeyRightShift:
+			g.sprinting = true
 		case glfw.KeyM:
 			g.showMap = (g.showMap + 1) % 3
 			g.detect = 0
@@ -75,6 +78,9 @@ func (g *game) setupInput() {
 		case glfw.KeyF9:
 			g.showDebug = !g.showDebug
 		case glfw.KeyComma:
+			if m&glfw.ModShift != 0 {
+				g.sprinting = false // the Shift was for <, not a sprint tap
+			}
 			if m&glfw.ModShift != 0 && g.noCommand == 0 {
 				g.ascend()
 			}

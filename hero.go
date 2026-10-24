@@ -229,7 +229,10 @@ func (g *game) tickHero() {
 	if g.confused > 0 && (in.Forward != 0 || in.Strafe != 0) {
 		in.Yaw += math.Sin(float64(g.tick)*0.37) * 1.4
 	}
-	in.Sprint = g.hasted > 0
+	if in.Forward <= 0 && p.Sprinting { // stopped (or held, or backing off): the tap's sprint ends; a tap standing still waits for W
+		g.sprinting = false
+	}
+	in.Sprint = g.hasted > 0 || g.sprinting
 	if g.drawing || g.spanning { // Minecraft slows the hero while a bow is drawn; spanning a crossbow is a crawl too
 		in.Forward *= 0.2
 		in.Strafe *= 0.2
