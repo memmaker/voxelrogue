@@ -38,8 +38,8 @@ var modDisplay = map[string]display{
 	"w:scimitar":   {mgl32.Vec3{0, -90, 35}, mgl32.Vec3{1.13, 4.25, 1.13}, mgl32.Vec3{1.02, 1.02, 0.68}},
 }
 
-// crossbowDisplay is minecraft:item/crossbow's (weapons_expanded's chain
-// crossbow and its pulling and loaded pictures inherit it).
+// crossbowDisplay is minecraft:item/crossbow's (its pulling and loaded
+// pictures and weapons_expanded's chain crossbow inherit it).
 var crossbowDisplay = display{mgl32.Vec3{-90, 0, -55}, mgl32.Vec3{1.13, 3.2, 1.13}, mgl32.Vec3{0.68, 0.68, 0.68}}
 
 // displayFor is a sprite's first-person display transform.
@@ -47,15 +47,11 @@ func displayFor(sprite string) display {
 	if d, ok := modDisplay[sprite]; ok {
 		return d
 	}
-	if strings.HasPrefix(sprite, "w:chain_crossbow") {
+	if strings.HasPrefix(sprite, "w:crossbow") || strings.HasPrefix(sprite, "w:chain_crossbow") {
 		return crossbowDisplay
 	}
 	return handheld
 }
-
-// flipped are voxellib bow sprites drawn the other way round from
-// Minecraft's bow texture (limbs bottom right instead of top left).
-var flipped = map[string]bool{"bow_01": true, "bow_10": true, "bow_19": true}
 
 // upright are voxellib weapon sprites drawn standing up instead of on the
 // diagonal of Minecraft's handheld textures (grip bottom left, head top
@@ -65,10 +61,7 @@ var upright = map[string]bool{"mace_01": true, "mace_04": true, "mace_05": true,
 // spriteTurn turns a sprite's slab like the Minecraft texture its display
 // transform expects.
 func spriteTurn(sprite string) mgl32.Mat4 {
-	switch {
-	case flipped[sprite]:
-		return rotZ(180)
-	case upright[sprite]:
+	if upright[sprite] {
 		return rotZ(-45) // about the middle, which puts the grip near a sword's
 	}
 	return mgl32.Ident4()
@@ -89,6 +82,7 @@ type handPose struct {
 	armHeight    float32 // inverseArmHeight: how far the hand is lowered, 0..1 (swapping items)
 	swayX, swayY float32 // how far the view has turned ahead of the hand, in degrees
 	use          int
+	charge       float32 // a crossbow's CrossbowItem.getChargeDuration, in ticks
 	useT         float32 // timeHeld: ticks the use has gone on, with the partial tick
 }
 
@@ -136,7 +130,7 @@ func handArm(h handPose) mgl32.Mat4 {
 			f = drawPower(h.useT, 20) // always the vanilla bow's
 		} else {
 			m = m.Mul4(mgl32.Translate3D(-0.4785682, -0.094387, 0.05731531)).Mul4(rotX(-11.935)).Mul4(rotY(65.3)).Mul4(rotZ(-9.785))
-			f = min(h.useT/chargeTicks, 1)
+			f = min(h.useT/h.charge, 1)
 		}
 		if f > 0.1 { // the strain shakes it
 			m = m.Mul4(mgl32.Translate3D(0, mthSin((h.useT-0.1)*1.3)*(f-0.1)*0.004, 0))

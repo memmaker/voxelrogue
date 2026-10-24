@@ -90,8 +90,7 @@ const (
 	Claw
 	Anchor
 	Gauntlet
-	HeavyBow
-	HeavyCrossbow
+	ChainCrossbow
 	MaxWeapons
 )
 
@@ -100,8 +99,8 @@ var WeaponNames = [MaxWeapons]string{"mace", "long sword", "long bow", "arrow", 
 	"broadsword", "glaive", "greatsword", "halberd", "katana", "scythe", "war spear", "great bow",
 	"war glaive", "scimitar", "wooden pole",
 	"hatchet", "double axe", "great axe", "maul", "heavy mace", "battlestaff", "sceptre", "lance", "trident",
-	"rapier", "sickle", "soul knife", "coral blade", "twin blade", "claw", "anchor", "gauntlet", "heavy bow",
-	"heavy crossbow"}
+	"rapier", "sickle", "soul knife", "coral blade", "twin blade", "claw", "anchor", "gauntlet",
+	"chain crossbow"}
 
 var weaponInit = [MaxWeapons]struct {
 	dam, hrl string
@@ -148,12 +147,11 @@ var weaponInit = [MaxWeapons]struct {
 	{"1d6", "1d2", -1, 0},
 	{"2d6", "1d2", -1, 0},
 	{"1d4", "1d2", -1, 0},
-	{"1d1", "1d1", -1, 0}, // heavy bow
-	{"1d1", "1d1", -1, 0}, // heavy crossbow
+	{"1d1", "1d1", -1, 0}, // chain crossbow
 }
 
 // launchesAs maps the mods' launchers to the vanilla one whose ammo they fire.
-var launchesAs = map[int]int{GreatBow: Bow, HeavyBow: Bow, HeavyCrossbow: Crossbow}
+var launchesAs = map[int]int{GreatBow: Bow, ChainCrossbow: Crossbow}
 
 // Launches reports whether launcher fires ammo.
 func Launches(launcher int, ammo *Object) bool {

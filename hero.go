@@ -263,7 +263,7 @@ func (g *game) tickHero() {
 		g.searchCD = searchTicks
 		g.search()
 	}
-	if g.wantAttack() && g.attackCD == 0 && g.noCommand == 0 {
+	if g.wantAttack() && g.attackCD == 0 && g.noCommand == 0 && !g.chainLoaded() {
 		g.heroAttack()
 	}
 	g.tickCombat()

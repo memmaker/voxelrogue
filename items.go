@@ -8,7 +8,7 @@ package main
 import (
 	"fmt"
 	"math"
-	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/memmaker/voxellib/voxel/render"
@@ -50,7 +50,10 @@ func (g *game) setupArt(spriteDir, weaponDir string) error {
 	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
 		return err
 	}
-	return g.setupArrows(filepath.Dir(spriteDir)) // voxellib's assets
+	if err := g.setupSling(imgs[slices.Index(names, "w:sling_model")]); err != nil {
+		return err
+	}
+	return g.setupArrows()
 }
 
 func lowerFirst(s string) string {
@@ -874,14 +877,21 @@ func (g *game) drawHand(alpha float64) {
 	}
 	if held == g.weapon {
 		h.use, h.useT = g.handUse(pt)
+		h.charge = chargeTicks(held.Which)
 	}
 	name := spriteFor(g.rg, held)
+	if name == "w:sling" { // Nightfall's model and action
+		g.drawSling(h, pt, sky, blk)
+		return
+	}
 	switch {
+	case name == "w:bow" && h.use == useBow: // items/bow: use_duration scaled 0.05
+		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)*0.05, 0.65, 0.9))
 	case name == "w:great_bow" && h.use == useBow: // the longbow's pulling models, use_duration scaled 1/32
 		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)/fullDraw(rogue.GreatBow), 0.65, 0.9))
-	case name == "w:chain_crossbow" && h.use == useCrossbowCharge: // crossbow/pull
-		name += fmt.Sprintf("_pulling_%d", pullStage(float32(reloadTicks-g.reload)/chargeTicks, 0.58, 1))
-	case name == "w:chain_crossbow" && h.use == useCrossbowHold: // charge_type arrow
+	case crossbowSprite(name) && h.use == useCrossbowCharge: // crossbow/pull
+		name += fmt.Sprintf("_pulling_%d", pullStage((h.useT+1-pt)/h.charge, 0.58, 1)) // the ticks held so far over the charge
+	case crossbowSprite(name) && h.use == useCrossbowHold: // charge_type arrow
 		name += "_arrow"
 	}
 	if handSprites[name] {
@@ -890,15 +900,15 @@ func (g *game) drawHand(alpha float64) {
 	if g.zapping == nil && g.drawAttack(name, pt, sky, blk) {
 		return // Better Combat's arms and weapon
 	}
-	if held.Type == rogue.Weapon && held.Which == rogue.Crossbow && g.bowModel >= 0 {
-		g.modelRend.DrawHand(g.bowModel, float32(g.cam.Aspect), handArm(h).Mul4(crossbowModelDisplay), sky, blk)
-		return
-	}
 	g.itemRend.DrawHandModel(name, float32(g.cam.Aspect), handModel(name, h), sky, blk)
 }
 
 // pullStage is a bow's or crossbow's pulling model for its pull: 0, or 1
 // and 2 from the model's range_dispatch thresholds.
+// crossbowSprite reports whether a sprite is a crossbow with pulling and
+// loaded pictures (items/crossbow, weapons_expanded's chain crossbow).
+func crossbowSprite(name string) bool { return name == "w:crossbow" || name == "w:chain_crossbow" }
+
 func pullStage(pull, one, two float32) int {
 	switch {
 	case pull >= two:

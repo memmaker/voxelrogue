@@ -62,6 +62,8 @@ func main() {
 		dumpMap = flag.Bool("dump", false, "debug: print the levels and quit")
 		wield   = flag.Int("wield", -1, "debug: start wielding this weapon kind")
 		swingAt = flag.Int("swing", -1, "debug: with -shot, swing (draw a wielded launcher) this many ticks before the shot")
+		looseAt = flag.Int("loose", -1, "debug: with -swing, let the launcher go this many ticks before the shot")
+		clickAt = flag.Int("click", -1, "debug: with -shot, click the left button (a loaded chain crossbow shoots) this many ticks before the shot")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
 		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
 		renew   = flag.Int("renew", -1, "debug: start a new game (as R does) at this tick")
@@ -157,6 +159,9 @@ func main() {
 		if isCrossbow(*wield) {
 			g.debugWeapon(rogue.Bolt)
 		}
+		if *wield == rogue.Sling {
+			g.debugWeapon(rogue.RockW)
+		}
 	}
 	if *amulet {
 		g.addPack(&rogue.Object{Type: rogue.Amulet, Count: 1})
@@ -165,6 +170,13 @@ func main() {
 	g.combo, g.comboOf = *combo, g.weapon
 	if *swingAt >= 0 {
 		g.swingShot = *shotAt - *swingAt
+	}
+	g.looseShot, g.clickShot = -1, -1
+	if *looseAt >= 0 {
+		g.looseShot = *shotAt - *looseAt
+	}
+	if *clickAt >= 0 {
+		g.clickShot = *shotAt - *clickAt
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
 	if *look >= 0 {
@@ -204,6 +216,8 @@ type game struct {
 	automated bool // -shot: no input
 	wizard    bool
 	swingShot int   // -swing: the tick to attack on
+	looseShot int   // -loose: the tick to let a launcher go on
+	clickShot int   // -click: the tick to click the left button on
 	renewAt   int   // -renew: the tick to start a new game on
 	renewSeed int64 // its seed
 }
@@ -301,6 +315,12 @@ func (g *game) step() {
 	g.ready = true
 	if g.dead || g.won {
 		return
+	}
+	if g.tick == g.looseShot {
+		g.releaseDraw()
+	}
+	if g.tick == g.clickShot {
+		g.fireChain()
 	}
 	if g.tick == g.swingShot {
 		if g.launcher() {

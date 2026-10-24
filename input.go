@@ -101,7 +101,10 @@ func (g *game) setupInput() {
 			return
 		}
 		switch {
-		case b != glfw.MouseButtonRight || g.dead || g.won || g.noCommand > 0:
+		case g.dead || g.won || g.noCommand > 0:
+		case b == glfw.MouseButtonLeft:
+			g.fireChain()
+		case b != glfw.MouseButtonRight:
 		case g.zapping == nil && g.launcher():
 			g.startDraw()
 		case g.attackCD == 0:

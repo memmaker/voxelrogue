@@ -121,9 +121,9 @@ func boxModel(name string, w, h float32, tex image.Image) *model.Model {
 // spriteNames lists every sprite the game uses, loaded from itemDir.
 func spriteNames() []string {
 	names := []string{"misc_01", "misc_21", "misc_10", "valuable_02", "valuable_09", "amulet_01", "staff_01", "staff_10",
-		"sword_01", "sword_25", "sword_49", "mace_01", "spear_02", "bow_01", "bow_10", "bow_29", "bow_31", "bow_35",
+		"sword_01", "sword_25", "sword_49", "mace_01", "spear_02", "bow_29", "bow_31", "bow_35",
 		"axe_29", "axe_35", "mace_05", "mace_04", "staff_26", "spear_09", "spear_05", "sword_44", "sword_18", "sword_30",
-		"sword_57", "mace_06", "gloves_04", "bow_19"}
+		"sword_57", "mace_06", "gloves_04"}
 	for i := 1; i <= rogue.MaxArmors; i++ {
 		names = append(names, fmt.Sprintf("armor_%02d", i*3))
 	}
@@ -141,12 +141,12 @@ func spriteNames() []string {
 
 // weaponSprites by kind; the crossbow has no sprite of its own (in the
 // hand it is VoxelStealth's model), the missiles use the arrow sprites.
-var weaponSprites = [rogue.MaxWeapons]string{"mace_01", "sword_01", "bow_01", "bow_29", "sword_49", "valuable_02",
-	"sword_25", "misc_10", "bow_35", "bow_10", "bow_31", "spear_02",
+var weaponSprites = [rogue.MaxWeapons]string{"mace_01", "sword_01", "w:bow", "bow_29", "sword_49", "valuable_02",
+	"sword_25", "w:sling", "bow_35", "w:crossbow", "bow_31", "spear_02",
 	"w:broadsword", "w:glaive", "w:greatsword", "w:halberd", "w:katana", "w:scythe", "w:war_spear",
 	"w:great_bow", "w:war_glaive", "w:scimitar", "w:wooden_pole",
 	"w:hatchet", "axe_29", "axe_35", "mace_05", "mace_04", "w:wooden_pole", "staff_26", "spear_09", "spear_05", "w:rapier",
-	"w:sickle", "sword_44", "sword_18", "sword_30", "sword_57", "mace_06", "gloves_04", "bow_19", "w:chain_crossbow"}
+	"w:sickle", "sword_44", "sword_18", "sword_30", "sword_57", "mace_06", "gloves_04", "w:chain_crossbow"}
 
 // handSprites are the sprites with a separate in-hand picture
 // (name+"_hand"), filled by loadSprites.

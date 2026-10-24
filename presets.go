@@ -49,7 +49,7 @@ var weaponItem = [rogue.MaxWeapons]string{
 	rogue.Lance: "rogue:lance", rogue.Trident: "minecraft:trident", rogue.Rapier: "weaponsexpanded:iron_rapier",
 	rogue.Sickle: "weaponsexpanded:iron_sickle", rogue.SoulKnife: "rogue:soul_knife", rogue.CoralBlade: "rogue:coral_blade",
 	rogue.TwinBlade: "rogue:twin_blade", rogue.Claw: "rogue:claw", rogue.Anchor: "rogue:anchor", rogue.Gauntlet: "rogue:gauntlet",
-	rogue.HeavyBow: "rogue:two_handed_bow", rogue.HeavyCrossbow: "rogue:two_handed_crossbow",
+	rogue.ChainCrossbow: "weaponsexpanded:chain_crossbow",
 }
 
 // FallbackConfig.createDefault: item id regex → preset, first match
