@@ -2,8 +2,9 @@ package main
 
 // The minimap in the top left: the seen walls, corridors and doors of the
 // level drawn as lines (not Rogue's letters, which the big map keeps), a
-// dim fill for seen floor, a mark for the stairs and an arrow where the
-// hero stands, pointing where the camera looks.
+// dim fill for seen floor, a mark for the stairs, a bright cell where a
+// seen corridor or floor leads on into the unseen (more to explore) and
+// an arrow where the hero stands, pointing where the camera looks.
 
 import (
 	"fmt"
@@ -103,6 +104,22 @@ func (g *game) minimap() *image.NRGBA {
 					seg(img, cx, cy, nx, ny, wall)
 				case k != 'w' && nk != 0 && nk != 'w': // corridor to corridor or door
 					seg(img, cx, cy, nx, ny, pass)
+				}
+			}
+		}
+	}
+	// more to explore: seen ground next to unseen ground
+	more := color.NRGBA{255, 60, 255, 255}
+	for y := 0; y < dungeon.Lines; y++ {
+		for x := 0; x < dungeon.Cols; x++ {
+			if !known(x, y) || !l.At(dungeon.Coord{X: x, Y: y}).Walkable() {
+				continue
+			}
+			for _, n := range [4][2]int{{x + 1, y}, {x - 1, y}, {x, y + 1}, {x, y - 1}} {
+				if n[0] >= 0 && n[1] >= 0 && n[0] < dungeon.Cols && n[1] < dungeon.Lines && !known(n[0], n[1]) &&
+					l.At(dungeon.Coord{X: n[0], Y: n[1]}).Walkable() {
+					draw.Draw(img, image.Rect(x*mmCell, y*mmCell, (x+1)*mmCell, (y+1)*mmCell), image.NewUniform(more), image.Point{}, draw.Over)
+					break
 				}
 			}
 		}
