@@ -38,7 +38,7 @@ var monsterLooks = map[byte]monsterLook{
 	'P': {2.4, 0},
 	'Q': {1.0, 0.5},
 	'R': {1.0, 0},
-	'S': {0.4, 0},
+	'S': {1.1, 0}, // coiled, head raised: big enough to fear
 	'T': {2.6, 0},
 	'U': {2.4, 0},
 	'V': {1.9, 0},
