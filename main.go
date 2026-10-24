@@ -70,6 +70,7 @@ func main() {
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
 		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
 		mobs    = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
+		boxes   = flag.Bool("boxes", false, "debug: show the monsters' hit boxes (F3)")
 		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
 		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
 		mapMode = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
@@ -149,6 +150,7 @@ func main() {
 	g := &game{eng: eng, win: win, gen: gen, rng: rng, rg: rogue.NewGame(rng),
 		automated: *shot != "", wizard: *wizard}
 	g.terrain = &terrain{eng: eng}
+	g.showBoxes = *boxes
 	g.cam = render.Camera{FOV: fov, Near: 0.05}
 	g.initHero()
 	if err := g.setupArt(*tileDir); err != nil {

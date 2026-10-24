@@ -75,6 +75,8 @@ func (g *game) setupInput() {
 			g.detect = 0
 		case glfw.KeyF1:
 			g.showHelp = !g.showHelp
+		case glfw.KeyF3:
+			g.showBoxes = !g.showBoxes
 		case glfw.KeyF9:
 			g.showDebug = !g.showDebug
 		case glfw.KeyComma:

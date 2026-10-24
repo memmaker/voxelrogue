@@ -53,6 +53,7 @@ var helpLines = [][2]string{
 	{"", "Amulet, armor and rings; drop outside the window"},
 	{"M", "map: on a panel, laid over the view, off"},
 	{"F1", "this help"},
+	{"F3", "debug: show the monsters' hit boxes"},
 	{"F9", "debug: take any weapon"},
 	{"F9", "debug: take any weapon"},
 	{"Esc", "close panel / release mouse / quit"},

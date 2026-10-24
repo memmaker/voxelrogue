@@ -55,6 +55,7 @@ type monsterState struct {
 	monSprite map[byte]monSprite
 	boxes     map[byte]monsterBox
 	corpses   map[int][]*monster // by depth; they stay
+	showBoxes bool               // F3: every monster's hit box
 	dist      [dungeon.Lines][dungeon.Cols]int
 	distFrom  dungeon.Coord
 	distTick  int
@@ -757,15 +758,17 @@ const monsterScale = (roomHeight - 0.2) / 2.8
 
 // monsterBox is a monster's hit box from its sprite's opaque outline: h
 // high above hover, and r the half width the outline sweeps as the slab
-// turns to the hero, so the box covers it from every side.
-type monsterBox struct{ r, h, hover float32 }
+// turns to the hero, so the box covers it from every side. The slab
+// itself, turned to the hero, spans x0..x1 across and -d..d through.
+type monsterBox struct{ r, h, hover, x0, x1, d float32 }
 
 // outlineBox is the box of a 16px sprite whose opaque bounds are bb,
 // drawn with its opaque rows h high, turning about the cell's centre
 // column.
 func outlineBox(bb image.Rectangle, h, hover float32) monsterBox {
 	px := h / float32(max(bb.Dy(), 1))
-	return monsterBox{r: float32(max(8-bb.Min.X, bb.Max.X-8)) * px, h: h, hover: hover}
+	return monsterBox{r: float32(max(8-bb.Min.X, bb.Max.X-8)) * px, h: h, hover: hover,
+		x0: float32(bb.Min.X-8) * px, x1: float32(bb.Max.X-8) * px, d: px / 2}
 }
 
 // box is a monster's hit box; a letter without a sprite gets the whole cell.
@@ -825,6 +828,14 @@ func (g *game) drawMonsters(alpha float64) {
 		}
 	}
 	g.itemRend.DrawPosed(&g.cam, g.insts)
+	if g.showBoxes {
+		for _, m := range g.monsters {
+			t, b := arrowTarget{g, m}, g.box(m.letter)
+			x, y, z, yaw := t.Frame()
+			mat := mgl32.HomogRotate3DY(float32(-yaw)).Mul4(mgl32.Translate3D(b.x0, 0, -b.d)).Mul4(mgl32.Scale3D(b.x1-b.x0, b.h, 2*b.d))
+			g.eng.Renderer.DrawOrientedOutline(&g.cam, x, y, z, mat, mgl32.Vec4{1, 0.2, 0.2, 1})
+		}
+	}
 }
 
 // monsterPose is a monster's sprite slab at x, y, z turned to yaw, tipped

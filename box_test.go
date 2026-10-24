@@ -5,6 +5,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/memmaker/voxellib/character"
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
@@ -38,5 +39,38 @@ func TestMonsterBoxes(t *testing.T) {
 	}
 	if b := g.box('D'); b.h > roomHeight {
 		t.Fatalf("the dragon is %v high, rooms %d", b.h, roomHeight)
+	}
+}
+
+// TestSlabHit: an arrow flying at a kobold from the hero's side meets the
+// turned slab, not the air a sweep radius in front of it, and one
+// passing beside the opaque columns misses.
+func TestSlabHit(t *testing.T) {
+	names, imgs, err := loadSprites("assets/tiles")
+	if err != nil {
+		t.Skip(err)
+	}
+	g := &game{}
+	g.sprite = map[string]image.Image{}
+	for i, n := range names {
+		g.sprite[n] = imgs[i]
+	}
+	g.player = character.New(0, 0, 0)
+	m := &monster{letter: 'K'}
+	tgt := arrowTarget{g, m}
+	fx, fy, fz, _ := tgt.Frame()
+	g.player.X, g.player.Z = fx+3, fz+4 // off the axes, so the slab is turned
+	b := g.box('K')
+	ux, uz := 3.0/5, 4.0/5
+	y := fy + float64(b.h)/2
+	x, _, z, _, ok := tgt.Intersect(fx+ux*5, y, fz+uz*5, fx-ux*5, y, fz-uz*5)
+	if d := math.Hypot(x-fx, z-fz); !ok || d > float64(b.d)+1e-6 {
+		t.Fatalf("hit %v at %.3f from the slab's axis, want within %.3f (r %.3f)", ok, d, b.d, b.r)
+	}
+	// past the slab's widest side, sideways
+	off := float64(max(-b.x0, b.x1)) + 0.05
+	sx, sz := -uz*off, ux*off
+	if _, _, _, _, ok := tgt.Intersect(fx+sx+ux*5, y, fz+sz+uz*5, fx+sx-ux*5, y, fz+sz-uz*5); ok {
+		t.Fatal("an arrow beside the slab hit it")
 	}
 }
