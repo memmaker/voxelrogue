@@ -34,18 +34,24 @@ def golist(src, name):
     return re.findall(r'"([^"]*)"', s[:s.index('}')])
 
 
+MESH_FIELDS = ('helmet', 'chest', 'leggings', 'boots')
+
+
 def existing(rec):
-    """id -> icon of a rec file already there (the remapper's edits)."""
-    icons, rid = {}, None
+    """id -> icon of a rec file already there (the remapper's edits), and
+    id -> its mesh field lines (gear.rec's armour meshes, meshes.rec)."""
+    icons, meshes, rid = {}, {}, None
     if not os.path.exists(rec):
-        return icons
+        return icons, meshes
     for line in open(rec):
         m = re.match(r'(\w+):\s*(.*)', line)
         if m and m.group(1) == 'id':
             rid = m.group(2).strip()
         elif m and m.group(1) == 'icon' and rid:
             icons[rid] = int(m.group(2))
-    return icons
+        elif m and m.group(1) in MESH_FIELDS and rid:
+            meshes.setdefault(rid, []).append(line.rstrip())
+    return icons, meshes
 
 
 class Sheet:
@@ -69,15 +75,19 @@ class Sheet:
 
     def rec(self, path, doc, cat, records):
         """records: (id, name, icon[, w, h]); a remapped id keeps its icon."""
-        keep = existing(path)
+        keep, meshes = existing(path)
         out = [f'# {os.path.basename(path)}: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper',
                f'# (remap_{os.path.basename(path)[:-4]}.sh). icon: cell of {self.name}; -1: unassigned.',
                '', '%rec: Tileset', f'id: {self.name[:-4]}', f'name: VoxelRogue {self.size}px tiles',
                f'file: {self.name}', f'tile_w: {self.size}', f'tile_h: {self.size}',
-               'off_x: 0', 'off_y: 0', 'gap_x: 0', 'gap_y: 0', '', f'%rec: {cat}', f'%doc: {doc}']
+               'off_x: 0', 'off_y: 0', 'gap_x: 0', 'gap_y: 0']
+        if cat == 'gear':
+            out[1] += ' helmet/chest/leggings/boots: the\n# meshes.rec pieces the inventory hero wears (the Epic Knights models).'
+            out.append('meshes: meshes.rec')  # tools/convertarmor.py writes it
+        out += ['', f'%rec: {cat}', f'%doc: {doc}']
         for r in records:
             rid, name, icon = r[0], r[1], keep.get(r[0], r[2])
-            out += ['', f'id: {rid}', f'name: {name}', f'icon: {icon}']
+            out += ['', f'id: {rid}', f'name: {name}', f'icon: {icon}'] + meshes.get(rid, [])
             if len(r) > 3:
                 out += [f'w: {r[3]}', f'h: {r[4]}']
         open(path, 'w').write('\n'.join(out) + '\n')

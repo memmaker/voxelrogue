@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"testing"
 
+	geo "github.com/memmaker/voxellib/importer/cuboid"
+	"github.com/memmaker/voxellib/ui/guientity"
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
@@ -50,5 +52,24 @@ func TestTilesCoverEveryName(t *testing.T) {
 		if blocks[n] == nil {
 			t.Errorf("no tile for block texture %q", n)
 		}
+	}
+}
+
+// TestMeshes expects meshes.rec's armet to build and the plate mail to
+// wear it.
+func TestMeshes(t *testing.T) {
+	meshes, wear, err := loadMeshes("assets/tiles")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, ok := meshes["armet"]
+	if !ok || a.Piece != guientity.Helmet || a.Tex == nil {
+		t.Fatalf("armet %v %v", ok, a.Piece)
+	}
+	if m, err := geo.Build(a.Geo, nil); err != nil || len(m.Meshes) == 0 {
+		t.Fatalf("armet build %v %v", err, m)
+	}
+	if wear["plate mail"][0] != "armet" {
+		t.Fatalf("plate mail wears %v", wear["plate mail"])
 	}
 }

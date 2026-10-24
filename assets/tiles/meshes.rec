@@ -1,0 +1,413 @@
+# meshes.rec: the armour pieces the inventory hero can wear as cube meshes, built by tools/convertarmor.py
+# from the Epic Knights models (MIT). gear.rec maps an armour to them (helmet/chest/leggings/boots: an id here).
+
+%rec: mesh
+%doc: Armour meshes
+
+id: armet
+name: armet
+piece: helmet
+geo: ../knight/meshes/armet.json
+tex: ../knight/armor/armet_layer_1.png
+
+id: knight_chestplate
+name: knight chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/knight_layer_1.png
+
+id: knight_leggings
+name: knight leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/knight_layer_2.png
+
+id: knight_boots
+name: knight boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/knight_layer_1.png
+
+id: stechhelm
+name: stechhelm
+piece: helmet
+geo: ../knight/meshes/stechhelm.json
+tex: ../knight/armor/stechhelm_layer_1.png
+
+id: jousting_chestplate
+name: jousting chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/jousting_layer_1.png
+
+id: jousting_leggings
+name: jousting leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/jousting_layer_2.png
+
+id: jousting_boots
+name: jousting boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/jousting_layer_1.png
+
+id: sallet
+name: sallet
+piece: helmet
+geo: ../knight/meshes/sallet.json
+tex: ../knight/armor/sallet_layer_1.png
+
+id: gothic_chestplate
+name: gothic chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/gothic_layer_1.png
+
+id: gothic_leggings
+name: gothic leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/gothic_layer_2.png
+
+id: gothic_boots
+name: gothic boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/gothic_layer_1.png
+
+id: maximilian_helmet
+name: maximilian helmet
+piece: helmet
+geo: ../knight/meshes/maximilian_helmet.json
+tex: ../knight/armor/maximilian_helmet_layer_1.png
+
+id: maximilian_chestplate
+name: maximilian chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/maximilian_layer_1.png
+
+id: maximilian_leggings
+name: maximilian leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/maximilian_layer_2.png
+
+id: maximilian_boots
+name: maximilian boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/maximilian_layer_1.png
+
+id: chainmail_helmet
+name: chainmail helmet
+piece: helmet
+geo: ../knight/meshes/conic_helmet.json
+tex: ../knight/armor/chainmail_layer_1.png
+
+id: chainmail_chestplate
+name: chainmail chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/chainmail_layer_1.png
+
+id: chainmail_leggings
+name: chainmail leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/chainmail_layer_2.png
+
+id: chainmail_boots
+name: chainmail boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/chainmail_layer_1.png
+
+id: kettlehat
+name: kettlehat
+piece: helmet
+geo: ../knight/meshes/kettlehat.json
+tex: ../knight/armor/kettlehat_layer_1.png
+
+id: platemail_chestplate
+name: platemail chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/platemail_layer_1.png
+
+id: platemail_leggings
+name: platemail leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/platemail_layer_2.png
+
+id: platemail_boots
+name: platemail boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/platemail_layer_1.png
+
+id: barbute
+name: barbute
+piece: helmet
+geo: ../knight/meshes/barbute.json
+tex: ../knight/armor/barbute_layer_1.png
+
+id: halfarmor_chestplate
+name: halfarmor chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/halfarmor_layer_1.png
+
+id: greathelm
+name: greathelm
+piece: helmet
+geo: ../knight/meshes/crusader.json
+tex: ../knight/armor/greathelm_layer_1.png
+
+id: crusader_chestplate
+name: crusader chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/crusader_layer_1.png
+
+id: crusader_leggings
+name: crusader leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/crusader_layer_2.png
+
+id: crusader_boots
+name: crusader boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/crusader_layer_1.png
+
+id: ceremonialarmet
+name: ceremonialarmet
+piece: helmet
+geo: ../knight/meshes/armet.json
+tex: ../knight/armor/ceremonialarmet_layer_1.png
+
+id: ceremonial_chestplate
+name: ceremonial chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/ceremonial_layer_1.png
+
+id: ceremonial_boots
+name: ceremonial boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/ceremonial_layer_1.png
+
+id: coif
+name: coif
+piece: helmet
+geo: ../knight/meshes/default_helmet.json
+tex: ../knight/armor/gambeson_layer_1.png
+
+id: gambeson_chestplate
+name: gambeson chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/gambeson_layer_1.png
+
+id: pantyhose
+name: pantyhose
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/gambeson_layer_2.png
+
+id: gambeson_boots
+name: gambeson boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/gambeson_layer_1.png
+
+id: brigandine_chestplate
+name: brigandine chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/brigandine_layer_1.png
+
+id: norman_helmet
+name: norman helmet
+piece: helmet
+geo: ../knight/meshes/conic_helmet.json
+tex: ../knight/armor/norman_layer_1.png
+
+id: shishak
+name: shishak
+piece: helmet
+geo: ../knight/meshes/conic_helmet.json
+tex: ../knight/armor/shishak_layer_1.png
+
+id: rustedbarbute
+name: rustedbarbute
+piece: helmet
+geo: ../knight/meshes/barbute.json
+tex: ../knight/armor/rustedbarbute_layer_1.png
+
+id: rustedhalfarmor_chestplate
+name: rustedhalfarmor chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/rustedhalfarmor_layer_1.png
+
+id: rustedgreathelm
+name: rustedgreathelm
+piece: helmet
+geo: ../knight/meshes/crusader.json
+tex: ../knight/armor/rustedgreathelm_layer_1.png
+
+id: rustedcrusader_chestplate
+name: rustedcrusader chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/rustedcrusader_layer_1.png
+
+id: rustedcrusader_boots
+name: rustedcrusader boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/rustedcrusader_layer_1.png
+
+id: rustednorman_helmet
+name: rustednorman helmet
+piece: helmet
+geo: ../knight/meshes/conic_helmet.json
+tex: ../knight/armor/rustednorman_layer_1.png
+
+id: rustedchainmail_helmet
+name: rustedchainmail helmet
+piece: helmet
+geo: ../knight/meshes/conic_helmet.json
+tex: ../knight/armor/rustedchainmail_layer_1.png
+
+id: rustedchainmail_chestplate
+name: rustedchainmail chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/rustedchainmail_layer_1.png
+
+id: rustedchainmail_leggings
+name: rustedchainmail leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/rustedchainmail_layer_2.png
+
+id: rustedchainmail_boots
+name: rustedchainmail boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/rustedchainmail_layer_1.png
+
+id: rustedkettlehat
+name: rustedkettlehat
+piece: helmet
+geo: ../knight/meshes/kettlehat.json
+tex: ../knight/armor/rustedkettlehat_layer_1.png
+
+id: bascinet
+name: bascinet
+piece: helmet
+geo: ../knight/meshes/bascinet.json
+tex: ../knight/armor/bascinet_layer_1.png
+
+id: xivcenturyknight_chestplate
+name: xivcenturyknight chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/xivcenturyknight_layer_1.png
+
+id: xivcenturyknight_leggings
+name: xivcenturyknight leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/xivcenturyknight_layer_2.png
+
+id: xivcenturyknight_boots
+name: xivcenturyknight boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/xivcenturyknight_layer_1.png
+
+id: wingedhussar_chestplate
+name: wingedhussar chestplate
+piece: chest
+geo: ../knight/meshes/wingedhussarchestplate.json
+tex: ../knight/armor/wingedhussarchestplate_layer_1.png
+
+id: cuirassier_helmet
+name: cuirassier helmet
+piece: helmet
+geo: ../knight/meshes/default_helmet.json
+tex: ../knight/armor/cuirassier_layer_1.png
+
+id: cuirassier_chestplate
+name: cuirassier chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/cuirassier_layer_1.png
+
+id: cuirassier_leggings
+name: cuirassier leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/cuirassier_layer_2.png
+
+id: cuirassier_boots
+name: cuirassier boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/cuirassier_layer_1.png
+
+id: grand_bascinet
+name: grand bascinet
+piece: helmet
+geo: ../knight/meshes/grand_bascinet.json
+tex: ../knight/armor/grand_bascinet_layer_1.png
+
+id: kastenbrust_chestplate
+name: kastenbrust chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/kastenbrust_layer_1.png
+
+id: kastenbrust_leggings
+name: kastenbrust leggings
+piece: leggings
+geo: ../knight/meshes/default_leggings.json
+tex: ../knight/armor/kastenbrust_layer_2.png
+
+id: kastenbrust_boots
+name: kastenbrust boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/kastenbrust_layer_1.png
+
+id: face_helmet
+name: face helmet
+piece: helmet
+geo: ../knight/meshes/default_helmet.json
+tex: ../knight/armor/lamellar_layer_1.png
+
+id: lamellar_chestplate
+name: lamellar chestplate
+piece: chest
+geo: ../knight/meshes/default_chest.json
+tex: ../knight/armor/lamellar_layer_1.png
+
+id: lamellar_boots
+name: lamellar boots
+piece: boots
+geo: ../knight/meshes/default_boots.json
+tex: ../knight/armor/lamellar_layer_1.png
+
+id: crown_decoration
+name: crown decoration
+piece: helmet
+geo: ../knight/meshes/crown.json
+tex: ../knight/armor/crown_layer_1.png

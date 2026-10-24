@@ -8,6 +8,8 @@ package main
 import (
 	"fmt"
 	"image"
+
+	"github.com/memmaker/voxellib/ui/guientity"
 	"image/color"
 
 	"github.com/memmaker/voxellib/inventory"
@@ -41,8 +43,10 @@ type invState struct {
 	cont   *inventory.Container
 	pg     *ui.PlayerGUI
 	icons  map[string]*ui.Sprite
-	sprite map[string]image.Image  // item sprites by name, for the icons
-	layers map[string]*image.NRGBA // armour textures by set and layer, for the hero preview
+	sprite map[string]image.Image     // item sprites by name, for the icons
+	layers map[string]*image.NRGBA    // armour textures by set and layer, for the hero preview
+	meshes map[string]guientity.Armor // the armour meshes by id (meshes.rec)
+	worn   map[string][4]string       // armour name -> mesh id per slot (gear.rec)
 }
 
 // resetInv makes the hero's empty inventory: Rogue has no half stacks,

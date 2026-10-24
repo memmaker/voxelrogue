@@ -76,6 +76,7 @@ func main() {
 		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
 		manual  = flag.Bool("manual", false, "debug: with -shot, show the F2 manual")
 		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
+		armorK  = flag.Int("armor", -1, "debug: with -inv, the hero's armour is this kind (0 leather .. 7 plate), to see its meshes")
 		mapMode = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
 		pattern = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
@@ -205,6 +206,9 @@ func main() {
 	}
 	g.showManual = *manual
 	if *inv {
+		if *armorK >= 0 && g.armor != nil {
+			g.armor.Which = *armorK
+		}
 		g.openInv()
 		g.pg.In.X, g.pg.In.Y = 141, 203 // over the first hotbar slot (1280x800), for the tooltip
 	}

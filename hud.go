@@ -163,15 +163,26 @@ func loadNRGBA(path string) (*image.NRGBA, error) {
 	return n, nil
 }
 
-// armorLayers is what the inventory's hero wears over the skin: the worn
-// armour's set as chest, leggings and boots (no helmet: the face stays
-// the hero's).
+// armorLayers is what the inventory's hero wears over the skin: per slot
+// the worn armour's mesh (gear.rec's helmet/chest/leggings/boots), else
+// its hobbit set's chest, leggings or boots layer (no helmet there: the
+// face stays the hero's).
 func (g *game) armorLayers() []guientity.Armor {
 	if g.armor == nil {
 		return nil
 	}
+	name := rogue.ArmorNames[g.armor.Which]
 	l1, l2 := g.layers[armorSets[g.armor.Which]+"_1"], g.layers[armorSets[g.armor.Which]+"_2"]
-	return []guientity.Armor{{Tex: l1, Piece: guientity.Chest}, {Tex: l2, Piece: guientity.Leggings}, {Tex: l1, Piece: guientity.Boots}}
+	layers := [4]*image.NRGBA{nil, l1, l2, l1}
+	var out []guientity.Armor
+	for piece, id := range g.worn[name] {
+		if a, ok := g.meshes[id]; ok {
+			out = append(out, a)
+		} else if layers[piece] != nil {
+			out = append(out, guientity.Armor{Tex: layers[piece], Piece: piece})
+		}
+	}
+	return out
 }
 
 // setupGUI loads the GUI textures, font and language from the client jar
@@ -207,6 +218,9 @@ func (g *game) setupGUI(jar, hobbit string) error {
 				return err
 			}
 		}
+	}
+	if g.meshes, g.worn, err = loadMeshes(filepath.Dir(hobbit) + "/tiles"); err != nil {
+		return err
 	}
 	g.pg.Model = func(ctx *ui.Context, x, y, mx, my int) {
 		hero.Armor = g.armorLayers()

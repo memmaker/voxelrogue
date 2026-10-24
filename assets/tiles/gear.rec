@@ -1,5 +1,6 @@
 # gear.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
-# (remap_gear.sh). icon: cell of tiles16.png; -1: unassigned.
+# (remap_gear.sh). icon: cell of tiles16.png; -1: unassigned. helmet/chest/leggings/boots: the
+# meshes.rec pieces the inventory hero wears (the Epic Knights models).
 
 %rec: Tileset
 id: tiles16
@@ -11,6 +12,7 @@ off_x: 0
 off_y: 0
 gap_x: 0
 gap_y: 0
+meshes: meshes.rec
 
 %rec: gear
 %doc: Armour and weapons (16px)
@@ -18,34 +20,65 @@ gap_y: 0
 id: leather armor
 name: leather armor
 icon: 0
+chest: gambeson_chestplate
+leggings: pantyhose
+boots: gambeson_boots
 
 id: ring mail
 name: ring mail
 icon: 1
+helmet: norman_helmet
+chest: chainmail_chestplate
+leggings: chainmail_leggings
+boots: chainmail_boots
 
 id: studded leather armor
 name: studded leather armor
 icon: 2
+helmet: kettlehat
+chest: brigandine_chestplate
+leggings: pantyhose
+boots: gambeson_boots
 
 id: scale mail
 name: scale mail
 icon: 3
+helmet: face_helmet
+chest: lamellar_chestplate
+leggings: chainmail_leggings
+boots: lamellar_boots
 
 id: chain mail
 name: chain mail
 icon: 4
+helmet: chainmail_helmet
+chest: chainmail_chestplate
+leggings: chainmail_leggings
+boots: chainmail_boots
 
 id: splint mail
 name: splint mail
 icon: 5
+helmet: greathelm
+chest: crusader_chestplate
+leggings: crusader_leggings
+boots: crusader_boots
 
 id: banded mail
 name: banded mail
 icon: 6
+helmet: bascinet
+chest: kastenbrust_chestplate
+leggings: kastenbrust_leggings
+boots: kastenbrust_boots
 
 id: plate mail
 name: plate mail
 icon: 7
+helmet: armet
+chest: knight_chestplate
+leggings: knight_leggings
+boots: knight_boots
 
 id: mace
 name: mace

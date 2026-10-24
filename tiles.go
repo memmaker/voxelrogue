@@ -6,7 +6,12 @@ package main
 // textures, item and weapon sprites, monster sprites.
 
 import (
+	"encoding/json"
+	"slices"
+
 	"fmt"
+	geo "github.com/memmaker/voxellib/importer/cuboid"
+	"github.com/memmaker/voxellib/ui/guientity"
 	"image"
 	"image/draw"
 	"image/png"
@@ -22,32 +27,10 @@ import (
 // records) and cuts every assigned id's tile out of the sheet; a record's
 // w and h crop a sprite smaller than the cell.
 func loadTiles(recPath string) (map[string]image.Image, error) {
-	data, err := os.ReadFile(recPath)
+	recs, err := readRecs(recPath)
 	if err != nil {
 		return nil, err
 	}
-	var recs []map[string]string
-	rec := map[string]string{}
-	flush := func() {
-		if len(rec) > 0 {
-			recs, rec = append(recs, rec), map[string]string{}
-		}
-	}
-	for _, line := range strings.Split(string(data), "\n") {
-		switch {
-		case strings.HasPrefix(line, "%rec:"):
-			flush()
-			rec["%rec"] = strings.TrimSpace(line[5:])
-		case strings.TrimSpace(line) == "":
-			flush()
-		case line[0] == '%' || line[0] == '#':
-		default:
-			if k, v, ok := strings.Cut(line, ":"); ok {
-				rec[k] = strings.TrimSpace(v)
-			}
-		}
-	}
-	flush()
 	if len(recs) == 0 || recs[0]["%rec"] != "Tileset" {
 		return nil, fmt.Errorf("%s: no %%rec: Tileset record first", recPath)
 	}
@@ -88,6 +71,85 @@ func loadTiles(recPath string) (map[string]image.Image, error) {
 		tiles[r["id"]] = img
 	}
 	return tiles, nil
+}
+
+// readRecs reads a rec file's records (field: value lines, blank lines
+// between records, "%rec" the record's type).
+func readRecs(recPath string) ([]map[string]string, error) {
+	data, err := os.ReadFile(recPath)
+	if err != nil {
+		return nil, err
+	}
+	var recs []map[string]string
+	rec := map[string]string{}
+	flush := func() {
+		if len(rec) > 0 {
+			recs, rec = append(recs, rec), map[string]string{}
+		}
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		switch {
+		case strings.HasPrefix(line, "%rec:"):
+			flush()
+			rec["%rec"] = strings.TrimSpace(line[5:])
+		case strings.TrimSpace(line) == "":
+			flush()
+		case line[0] == '%' || line[0] == '#':
+		default:
+			if k, v, ok := strings.Cut(line, ":"); ok {
+				rec[k] = strings.TrimSpace(v)
+			}
+		}
+	}
+	flush()
+	return recs, nil
+}
+
+// meshSlots are gear.rec's armour mesh fields, in guientity piece order.
+var meshSlots = [4]string{"helmet", "chest", "leggings", "boots"}
+
+// loadMeshes reads the tile directory's gear.rec armour records' mesh
+// fields and the meshes.rec pieces they name (tools/convertarmor.py's
+// Epic Knights models): the armour meshes by id, and each armour's
+// mesh ids by slot.
+func loadMeshes(dir string) (map[string]guientity.Armor, map[string][4]string, error) {
+	gear, err := readRecs(filepath.Join(dir, "gear.rec"))
+	if err != nil || len(gear) == 0 || gear[0]["meshes"] == "" {
+		return nil, nil, err
+	}
+	recs, err := readRecs(filepath.Join(dir, gear[0]["meshes"]))
+	if err != nil {
+		return nil, nil, err
+	}
+	meshes, wear := map[string]guientity.Armor{}, map[string][4]string{}
+	for _, r := range recs {
+		if r["id"] == "" || r["piece"] == "" {
+			continue
+		}
+		a := guientity.Armor{Piece: slices.Index(meshSlots[:], r["piece"])}
+		data, err := os.ReadFile(filepath.Join(dir, r["geo"]))
+		if err != nil {
+			return nil, nil, err
+		}
+		a.Geo = &geo.Geometry{}
+		if err := json.Unmarshal(data, a.Geo); err != nil {
+			return nil, nil, fmt.Errorf("%s: %w", r["geo"], err)
+		}
+		if a.Tex, err = loadNRGBA(filepath.Join(dir, r["tex"])); err != nil {
+			return nil, nil, err
+		}
+		meshes[r["id"]] = a
+	}
+	for _, r := range gear[1:] {
+		var ids [4]string
+		for i, s := range meshSlots {
+			ids[i] = r[s]
+		}
+		if ids != [4]string{} {
+			wear[r["id"]] = ids
+		}
+	}
+	return meshes, wear, nil
 }
 
 // sheetTextures serves the block textures of textures.rec (the game's
