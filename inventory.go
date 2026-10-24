@@ -7,7 +7,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/memmaker/voxellib/actors"
+	"github.com/memmaker/voxellib/particles"
+	"github.com/memmaker/voxellib/survival"
 	"image"
+	"math/rand"
 
 	"github.com/memmaker/voxellib/ui/guientity"
 	"image/color"
@@ -42,6 +46,7 @@ type invState struct {
 	inv    *inventory.Player
 	cont   *inventory.Container
 	pg     *ui.PlayerGUI
+	eating survival.Eating // VoxelLib's eating of the held food (setupEating)
 	icons  map[string]*ui.Sprite
 	sprite map[string]image.Image     // item sprites by name, for the icons
 	layers map[string]*image.NRGBA    // armour textures by set and layer, for the hero preview
@@ -63,6 +68,7 @@ func (g *game) resetInv() {
 		}
 	}
 	g.inv, g.cont = p, c
+	g.setupEating(p)
 	if g.pg != nil {
 		g.pg.Player, g.pg.Container = p, c
 	}
@@ -113,11 +119,36 @@ func (g *game) stackOf(o *rogue.Object) *inventory.Stack {
 		}
 		itemOf[k] = it
 	}
+	if o.Type == rogue.Food {
+		it.Food = &inventory.Food{AlwaysEdible: true} // Rogue has no hunger bar to fill
+	}
 	if g.stackIn(it) == nil {
 		objOf[it] = o
 	}
 	return &inventory.Stack{Item: it, Count: o.Count}
 }
+
+// setupEating wires VoxelLib's eating (survival.Eating) to the pack: the
+// held food is eaten over its use ticks with the hand swung to the mouth
+// (drawFlat), crumbs of the sprite's colour and the eat sounds, and
+// Rogue's meal (eat) is the finish.
+func (g *game) setupEating(p *inventory.Player) {
+	g.eating = survival.Eating{
+		Use: &actors.ItemUse{}, Actor: &actors.Actor{}, Body: &survival.Body{Food: survival.NewFood()}, Inv: p, Rand: rngV2{g.rng},
+		Sound: func(event string, _, _ float64) { g.play(event) },
+		Crumb: func(st *inventory.Stack, x, y, z, vx, vy, vz float64) {
+			c := avgColor(g.sprite[spriteFor(g.rg, obj(st))])
+			g.parts.Emit(x, y, z, particles.Props{Count: 1, Vel: [3]float64{vx * 20, vy * 20, vz * 20}, Gravity: 8, Life: 0.5, LifeVar: 0.2, Size0: 0.07, Size1: 0.07, Col0: c, Col1: c})
+		},
+		Mouth:   func() (x, y, z float64, yaw, pitch float32) { return g.cam.X, g.cam.Y, g.cam.Z, g.yRotMC(), g.xRotMC() },
+		OnEaten: func(e *survival.Eating, st *inventory.Stack) { e.Feedback(st, 16); e.Burp(); g.eat(obj(st)) },
+	}
+}
+
+// rngV2 is the game's rand as survival.Rand (math/rand/v2's names).
+type rngV2 struct{ *rand.Rand }
+
+func (r rngV2) IntN(n int) int { return r.Intn(n) }
 
 // stackIn is the pack's stack of an item (a slot's, else the cursor's); nil for none.
 func (g *game) stackIn(it *inventory.Item) *inventory.Stack {

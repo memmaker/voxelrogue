@@ -250,7 +250,9 @@ func (g *game) tickHero() {
 		in.Strafe *= 0.2
 		in.Sprint = false
 	}
+	in.Using = g.eating.Use.Using != nil // eating: VoxelLib's slow walk, no sprint
 	p.Tick(g.terrain, in)
+	g.eating.Tick()
 	g.pushOutOfMonsters(g.terrain)
 	g.prevWalk = g.walkDist
 	if p.OnGround {

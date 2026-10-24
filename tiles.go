@@ -177,6 +177,25 @@ func loadSprites(dir string) ([]string, []image.Image, error) {
 	return names, imgs, nil
 }
 
+// avgColor is the mean colour of an image's opaque pixels, grey for none.
+func avgColor(img image.Image) [4]float32 {
+	var r, g, b, n float32
+	if img != nil {
+		bd := img.Bounds()
+		for y := bd.Min.Y; y < bd.Max.Y; y++ {
+			for x := bd.Min.X; x < bd.Max.X; x++ {
+				if cr, cg, cb, ca := img.At(x, y).RGBA(); ca > 0 {
+					r, g, b, n = r+float32(cr)/65535, g+float32(cg)/65535, b+float32(cb)/65535, n+1
+				}
+			}
+		}
+	}
+	if n == 0 {
+		return [4]float32{0.5, 0.5, 0.5, 1}
+	}
+	return [4]float32{r / n, g / n, b / n, 1}
+}
+
 // spriteTop is the middle of a sprite's topmost opaque row, as fractions
 // of its width and height from the top left.
 func spriteTop(img image.Image) (col, row float32) {

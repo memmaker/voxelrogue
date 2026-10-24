@@ -24,12 +24,12 @@ type inputState struct {
 	captured   bool
 	showMap    int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
 	showHelp   bool
-	showManual bool // F2: the rules
+	showManual bool          // F2: the rules
 	showDebug  rogue.ObjType // F7 Scroll, F8 Stick, F9 Weapon, F10 Armor: a menu of every kind, to try them out; 0 off
-	sprinting  bool // Shift tapped: sprint until the hero stops walking forward
-	sneaking   bool // Ctrl held: slow and silent
-	prompt     byte // 'i' identify, 'g' genocide: the next key answers it
-	detect     byte // map highlight after a detection potion/scroll
+	sprinting  bool          // Shift tapped: sprint until the hero stops walking forward
+	sneaking   bool          // Ctrl held: slow and silent
+	prompt     byte          // 'i' identify, 'g' genocide: the next key answers it
+	detect     byte          // map highlight after a detection potion/scroll
 }
 
 func (g *game) setupInput() {
@@ -125,7 +125,11 @@ func (g *game) setupInput() {
 		case b == glfw.MouseButtonRight && (g.drawing || g.sling.state <= slingCharge && g.sling.frame != 0):
 			g.cancelDraw()
 		case b == glfw.MouseButtonRight && g.heldUse() != nil && g.attackCD == 0:
-			g.useItem(g.heldUse())
+			if o := g.heldUse(); o.Type == rogue.Food { // eaten over its use ticks (setupEating)
+				g.eating.Start(g.inv.Current())
+			} else {
+				g.useItem(o)
+			}
 		}
 	})
 	g.win.SetScrollCallback(func(w *glfw.Window, dx, dy float64) {

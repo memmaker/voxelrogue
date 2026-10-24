@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/memmaker/voxellib/survival"
 	"image"
 	"log"
 	"math"
@@ -149,6 +150,15 @@ func (g *game) hold() {
 		g.zapping = o
 	}
 	g.weapon = nil
+}
+
+// inHand is what the hand shows: the wielded weapon, else the held
+// slot's object (a staff, a scroll, food...).
+func (g *game) inHand() *rogue.Object {
+	if g.weapon != nil || g.inv == nil {
+		return g.weapon
+	}
+	return obj(g.inv.Current())
 }
 
 // heldUse is the held item right click uses: food, potions, scrolls,
@@ -968,7 +978,8 @@ func (g *game) dropPoses(o *rogue.Object, x, y, z float64, age int, alpha float6
 	}
 }
 
-// drawHand draws the wielded weapon (or held wand) in first person.
+// drawHand draws the held item in first person: the wielded weapon or
+// staff by the reference's chain, anything else as a flat item.
 func (g *game) drawHand(alpha float64) {
 	held := g.handItem
 	if g.zapping != nil {
@@ -993,6 +1004,10 @@ func (g *game) drawHand(alpha float64) {
 		h.use, h.useT = g.handUse(pt)
 		h.charge = chargeTicks(held.Which)
 	}
+	if held.Type != rogue.Weapon && held.Type != rogue.Stick {
+		g.drawFlat(held, h, pt, sky, blk)
+		return
+	}
 	name := spriteFor(g.rg, held)
 	if held == g.weapon && rogue.Weapons[held.Which].Action == "sling" { // Nightfall's model and action
 		g.drawSling(h, pt, sky, blk)
@@ -1013,6 +1028,20 @@ func (g *game) drawHand(alpha float64) {
 		return // Better Combat's arms and weapon
 	}
 	g.itemRend.DrawHandModel(name, float32(g.cam.Aspect), handModel(name, h), sky, blk)
+}
+
+// drawFlat draws a held scroll, potion, food, ring or armour as the
+// reference's first-person flat item (render.DrawHand's chain), with the
+// eat motion in place of the swing while it is being eaten.
+func (g *game) drawFlat(o *rogue.Object, h handPose, pt float32, sky, blk uint8) {
+	name := spriteFor(g.rg, o)
+	view := rotX(h.swayX).Mul4(rotY(h.swayY)).Mul4(mgl32.Translate3D(h.bobX, h.bobY-h.armHeight*0.6, 0))
+	motion := render.FirstPersonSwing(h.swing)
+	if u := g.eating.Use; u != nil && u.Using != nil && u.Using == g.inv.Current() {
+		motion = render.FirstPersonEat(u.UseCount, survival.EatTicks(u.Using), pt)
+	}
+	m := view.Mul4(motion).Mul4(render.FirstPersonHold(h.swing)).Mul4(render.Equipped2D).Mul4(g.itemRend.In2D(name))
+	g.itemRend.DrawHandModel(name, float32(g.cam.Aspect), m, sky, blk)
 }
 
 // pullStage is a bow's or crossbow's pulling model for its pull: 0, or 1

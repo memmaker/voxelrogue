@@ -52,40 +52,42 @@ const (
 
 func main() {
 	var (
-		seed    = flag.Int64("seed", 0, "dungeon seed (0 = random)")
-		libDir  = flag.String("voxellib", "../VoxelLib", "voxellib checkout (the block models)")
-		tileDir = flag.String("tiles", "assets/tiles", "tile sheets and their rec mappings (remap_*.sh)")
-		jar     = flag.String("jar", filepath.Join(os.Getenv("HOME"), "Library/Application Support/PrismLauncher/libraries/com/mojang/minecraft/1.7.10/minecraft-1.7.10-client.jar"), "client jar (GUI textures and font)")
-		shot    = flag.String("shot", "", "save a screenshot PNG at tick -shot-at and quit (never grabs input)")
-		shotAt  = flag.Int("shot-at", 120, "tick for -shot")
-		depth   = flag.Int("depth", 1, "debug: start on this level")
-		look    = flag.Float64("look", -1, "debug: start yaw in degrees")
-		pitch   = flag.Float64("pitch", 0, "debug: start pitch in degrees (up is positive)")
-		wizard  = flag.Bool("wizard", false, "debug: show the whole map")
-		dumpMap = flag.Bool("dump", false, "debug: print the levels and quit")
-		wield   = flag.Int("wield", -1, "debug: start wielding this weapon kind")
-		swingAt = flag.Int("swing", -1, "debug: with -shot, swing (draw a wielded launcher) this many ticks before the shot")
-		looseAt = flag.Int("loose", -1, "debug: with -swing, let the launcher go this many ticks before the shot")
-		zapKind = flag.Int("zap", -1, "debug: with -shot, hold a staff of this kind and zap it -zap-at ticks before the shot")
-		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap staff")
-		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
-		mobs    = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
-		frail   = flag.Bool("frail", false, "debug: with -mobs, the first monster has 1 hit point")
-		landing = flag.Bool("landing", false, "debug: start on the landing of the staircase down from the level above -depth")
-		boxes   = flag.Bool("boxes", false, "debug: show the monsters' hit boxes (F3)")
-		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
-		manual  = flag.Bool("manual", false, "debug: with -shot, show the F2 manual")
-		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
-		armorK  = flag.Int("armor", -1, "debug: with -inv, the hero's armour is this kind (0 leather .. 7 plate), to see its meshes")
-		mapMode = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
-		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
-		pattern = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
-		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
-		renew   = flag.Int("renew", -1, "debug: start a new game (as R does) at this tick")
-		renewTo = flag.Int64("renew-seed", 0, "debug: with -renew, the new game's seed (0 = random)")
-		tp      = flag.Bool("tp", false, "debug: show attacks in third person, the whole model seen from the front")
-		anim    = flag.String("anim", "", "debug: always show this Better Combat animation, at -anim-at")
-		animAt  = flag.Float64("anim-at", 0, "debug: with -anim, the animation tick to show")
+		seed     = flag.Int64("seed", 0, "dungeon seed (0 = random)")
+		libDir   = flag.String("voxellib", "../VoxelLib", "voxellib checkout (the block models)")
+		tileDir  = flag.String("tiles", "assets/tiles", "tile sheets and their rec mappings (remap_*.sh)")
+		jar      = flag.String("jar", filepath.Join(os.Getenv("HOME"), "Library/Application Support/PrismLauncher/libraries/com/mojang/minecraft/1.7.10/minecraft-1.7.10-client.jar"), "client jar (GUI textures and font)")
+		shot     = flag.String("shot", "", "save a screenshot PNG at tick -shot-at and quit (never grabs input)")
+		shotAt   = flag.Int("shot-at", 120, "tick for -shot")
+		depth    = flag.Int("depth", 1, "debug: start on this level")
+		look     = flag.Float64("look", -1, "debug: start yaw in degrees")
+		pitch    = flag.Float64("pitch", 0, "debug: start pitch in degrees (up is positive)")
+		wizard   = flag.Bool("wizard", false, "debug: show the whole map")
+		dumpMap  = flag.Bool("dump", false, "debug: print the levels and quit")
+		wield    = flag.Int("wield", -1, "debug: start wielding this weapon kind")
+		swingAt  = flag.Int("swing", -1, "debug: with -shot, swing (draw a wielded launcher) this many ticks before the shot")
+		looseAt  = flag.Int("loose", -1, "debug: with -swing, let the launcher go this many ticks before the shot")
+		zapKind  = flag.Int("zap", -1, "debug: with -shot, hold a staff of this kind and zap it -zap-at ticks before the shot")
+		zapAt    = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap staff")
+		holdKind = flag.String("hold", "", "debug: with -shot, hold a scroll or the kit's food (scroll, food)")
+		eatAt    = flag.Int("eat-at", -1, "debug: ticks before -shot to start eating the held food")
+		throwAt  = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
+		mobs     = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
+		frail    = flag.Bool("frail", false, "debug: with -mobs, the first monster has 1 hit point")
+		landing  = flag.Bool("landing", false, "debug: start on the landing of the staircase down from the level above -depth")
+		boxes    = flag.Bool("boxes", false, "debug: show the monsters' hit boxes (F3)")
+		killAt   = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
+		manual   = flag.Bool("manual", false, "debug: with -shot, show the F2 manual")
+		inv      = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
+		armorK   = flag.Int("armor", -1, "debug: with -inv, the hero's armour is this kind (0 leather .. 7 plate), to see its meshes")
+		mapMode  = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
+		combo    = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
+		pattern  = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
+		amulet   = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
+		renew    = flag.Int("renew", -1, "debug: start a new game (as R does) at this tick")
+		renewTo  = flag.Int64("renew-seed", 0, "debug: with -renew, the new game's seed (0 = random)")
+		tp       = flag.Bool("tp", false, "debug: show attacks in third person, the whole model seen from the front")
+		anim     = flag.String("anim", "", "debug: always show this Better Combat animation, at -anim-at")
+		animAt   = flag.Float64("anim-at", 0, "debug: with -anim, the animation tick to show")
 	)
 	flag.Parse()
 	if err := rogue.LoadKinds(*tileDir); err != nil {
@@ -201,6 +203,23 @@ func main() {
 		g.place(w, g.inv.Held)
 		g.zapShot = *shotAt - *zapAt
 	}
+	g.eatShot = -1
+	switch *holdKind {
+	case "scroll":
+		o := &rogue.Object{Type: rogue.Scroll, Which: rogue.SMap, Count: 1}
+		g.addPack(o)
+		g.place(o, g.inv.Held)
+	case "food":
+		for _, o := range g.pack() {
+			if o.Type == rogue.Food {
+				g.place(o, g.inv.Held)
+				break
+			}
+		}
+	}
+	if *eatAt >= 0 {
+		g.eatShot = *shotAt - *eatAt
+	}
 	if *looseAt >= 0 {
 		g.looseShot = *shotAt - *looseAt
 	}
@@ -274,6 +293,7 @@ type game struct {
 	looseShot int      // -loose: the tick to let a launcher go on
 	throwShot int      // -throw: the tick to throw a missile on
 	zapShot   int      // -zap: the tick to zap the held staff on (zapStab: the zap lands with the stab)
+	eatShot   int      // -eat-at: the tick to start eating the held food on
 	killShot  int      // -kill-at: the tick killMob dies on
 	killMob   *monster // the first -mobs monster
 	renewAt   int      // -renew: the tick to start a new game on
@@ -384,6 +404,9 @@ func (g *game) step() {
 	}
 	if g.tick == g.throwShot {
 		g.throwItem()
+	}
+	if g.tick == g.eatShot {
+		g.eating.Start(g.inv.Current())
 	}
 	if g.tick == g.zapShot {
 		g.zapStab()

@@ -286,16 +286,17 @@ func (g *game) fireCrossbow() {
 // LocalPlayer's sway, xBob and yBob following the view.
 func (g *game) tickHand() {
 	g.prevHandHeight = g.handHeight
-	if g.handItem != nil && g.weapon != nil && g.handItem.Type == g.weapon.Type && g.handItem.Which == g.weapon.Which {
-		g.handItem = g.weapon // shouldInstantlyReplaceVisibleItem: the same item
+	want := g.inHand()
+	if g.handItem != nil && want != nil && g.handItem.Type == want.Type && g.handItem.Which == want.Which {
+		g.handItem = want // shouldInstantlyReplaceVisibleItem: the same item
 	}
 	target := float32(1) // getItemSwapScale is 1 without a swap animation
-	if g.handItem != g.weapon {
+	if g.handItem != want {
 		target = 0
 	}
 	g.handHeight += max(-0.4, min(target-g.handHeight, 0.4))
 	if g.handHeight < 0.1 {
-		g.handItem = g.weapon
+		g.handItem = want
 	}
 	if g.stack.c.isActive() {
 		g.handHeight *= 0.4

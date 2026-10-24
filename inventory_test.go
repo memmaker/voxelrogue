@@ -68,3 +68,27 @@ func TestStackPickup(t *testing.T) {
 		t.Fatalf("emptied: %d objects left", g.packCount())
 	}
 }
+
+// TestEatHeld: right-clicked held food is eaten VoxelLib's way, over its
+// 32 use ticks, and Rogue's meal happens at the end.
+func TestEatHeld(t *testing.T) {
+	g := &game{rng: rand.New(rand.NewSource(1))}
+	g.rg = rogue.NewGame(g.rng)
+	g.player = &character.Character{}
+	g.resetInv()
+	food := &rogue.Object{Type: rogue.Food, Count: 2}
+	g.give(food) // the held slot
+	if !g.eating.Start(g.inv.Current()) {
+		t.Fatal("the food is not eaten")
+	}
+	for range 31 {
+		g.eating.Tick()
+	}
+	if g.eating.Use.Using == nil || food.Count != 2 {
+		t.Fatalf("eaten early: %d left", food.Count)
+	}
+	g.eating.Tick()
+	if g.eating.Use.Using != nil || food.Count != 1 || g.foodLeft == 0 {
+		t.Fatalf("after 32 ticks: using %v, %d left, food %d", g.eating.Use.Using, food.Count, g.foodLeft)
+	}
+}
