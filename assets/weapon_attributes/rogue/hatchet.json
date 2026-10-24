@@ -1,0 +1,15 @@
+{
+  "parent": "weaponsexpanded:iron_hatchet",
+  "attributes": {
+    "attacks": [
+      {},
+      {},
+      {
+        "hitbox": "VERTICAL_PLANE",
+        "angle": 60,
+        "upswing": 0.5,
+        "animation": "bettercombat:one_handed_slam"
+      }
+    ]
+  }
+}

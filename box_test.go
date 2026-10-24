@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/memmaker/voxellib/character"
+	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
@@ -106,5 +107,50 @@ func TestSlabReach(t *testing.T) {
 	g.cam.Z = g.player.Z
 	if _, _, iz := g.impact(m); math.Abs(iz-(z+float64(b.d))) > 1e-6 {
 		t.Fatalf("the blow lands at z %.3f, the face is at %.3f", iz, z+float64(b.d))
+	}
+}
+
+// TestSweep: an axe's sideways swing takes every monster in front within
+// reach, the nearest first; its overhead strike and other weapons the
+// nearest only.
+func TestSweep(t *testing.T) {
+	names, imgs, err := loadSprites("assets/tiles")
+	if err != nil {
+		t.Skip(err)
+	}
+	g := &game{}
+	g.sprite = map[string]image.Image{}
+	for i, n := range names {
+		g.sprite[n] = imgs[i]
+	}
+	near, far := &monster{letter: 'K'}, &monster{letter: 'K', tile: dungeon.Coord{Y: -1}}
+	g.monsters = []*monster{far, near}
+	g.player = character.New(0, 0, 0)
+	x, _, z := g.monsterPos(near, 0)
+	g.player.X, g.player.Z = x, z+1 // south of them, looking north
+	g.cam.X, g.cam.Y, g.cam.Z, g.cam.Yaw = g.player.X, 0.5, g.player.Z, 0
+	if ms := g.monstersInFront(tileD + 1); len(ms) != 2 || ms[0] != near {
+		t.Fatalf("in front: %d monsters, the nearest first %v", len(ms), len(ms) > 0 && ms[0] == near)
+	}
+	axe, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.Hatchet}, &rogue.Object{Type: rogue.Weapon, Which: rogue.Mace}
+	if !sweeps(axe, 0) || sweeps(axe, 1) || sweeps(mace, 0) || sweeps(nil, 0) {
+		t.Fatal("only an axe's sideways swing sweeps")
+	}
+}
+
+// TestSleepers: a blow on a sleeper counts double, a dagger's five times;
+// a noise wakes the sleepers within its reach and no others.
+func TestSleepers(t *testing.T) {
+	dagger, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.Dagger}, &rogue.Object{Type: rogue.Weapon, Which: rogue.Mace}
+	if sleepScale(dagger) != 5 || sleepScale(mace) != 2 || sleepScale(nil) != 2 {
+		t.Fatal("sleeping blows: dagger 5x, the rest 2x")
+	}
+	g := &game{}
+	near, far := &monster{letter: 'K', st: rogue.Stats{HP: 1}}, &monster{letter: 'K', st: rogue.Stats{HP: 1}, tile: dungeon.Coord{X: 10}}
+	g.monsters = []*monster{near, far}
+	x, _, z := g.monsterPos(near, 0)
+	g.noise(x+1, z, 3)
+	if !near.running || far.running {
+		t.Fatalf("after a noise 3 blocks around: near awake %v, far awake %v", near.running, far.running)
 	}
 }

@@ -47,6 +47,7 @@ var helpLines = [][2]string{
 	{"T", "throw the wielded weapon"},
 	{"R", "span a crossbow (slow going)"},
 	{"Shift (tap)", "sprint until you stop walking forward"},
+	{"Ctrl (hold)", "sneak: slow, but silent to sleeping monsters"},
 	{"Walk over", "pick up"},
 	{"Walk down", "the stairs to descend"},
 	{"< (Shift+,)", "on the stairs: climb, once you have the Amulet"},
@@ -94,6 +95,12 @@ var manualLines = []string{
 	"Monsters",
 	"  Capital letters in the map: A ant to Z zombie. Many are asleep until",
 	"  you come near; some carry gold. Killing them earns experience.",
+	"",
+	"Sleep and noise",
+	"  A sleeping monster floats Zs. A blow on it counts double, a dagger's",
+	"  five times. Noise wakes the sleepers near it: a fight, a shot, a",
+	"  throw, a wand, spanning a crossbow, and your steps (a sprint carries",
+	"  far). Sneak (hold Ctrl) to pass them silently, slowly.",
 	"",
 	"Searching and traps",
 	"  Hold C to find secret doors and traps in the walls and floor around",
@@ -268,6 +275,8 @@ var (
 	yellow = color.NRGBA{255, 210, 90, 255}
 	cyan   = color.NRGBA{140, 200, 255, 255}
 	red    = color.NRGBA{255, 90, 80, 255}
+	green  = color.NRGBA{120, 255, 120, 255}
+	orange = color.NRGBA{255, 170, 40, 255}
 	grey   = color.NRGBA{140, 140, 140, 255}
 )
 

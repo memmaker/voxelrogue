@@ -220,8 +220,13 @@ func (g *game) tickCombat() {
 	}
 	if g.hitIn > 0 {
 		if g.hitIn--; g.hitIn == 0 && !g.dead {
-			if m := g.monsterInFront(g.hitReach); m != nil {
-				if w := g.meleeItem(); g.fight(m, w, false) && !magic(w) {
+			w := g.meleeItem()
+			ms := g.monstersInFront(g.hitReach) // the nearest, or every one in an axe's swing
+			if len(ms) > 1 && !sweeps(w, g.comboPat) {
+				ms = ms[:1]
+			}
+			for _, m := range ms {
+				if g.fight(m, w, false) && !magic(w) {
 					g.bleed(g.impact(m))
 				}
 			}

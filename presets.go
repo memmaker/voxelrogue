@@ -34,7 +34,9 @@ type attrContainer struct {
 
 // weaponItem is the item id each weapon kind stands for: a Minecraft or
 // mod item where there is one, else an id of our own for the fallback
-// regexes. Empty: no Better Combat attributes (the vanilla swing).
+// regexes, or one with a file of our own (assets/weapon_attributes/rogue:
+// the axes add an overhead strike to their mod presets). Empty: no
+// Better Combat attributes (the vanilla swing).
 var weaponItem = [rogue.MaxWeapons]string{
 	rogue.Mace: "rogue:mace", rogue.LongSword: "rogue:long_sword", rogue.Bow: "minecraft:bow", rogue.Dagger: "rogue:dagger",
 	rogue.TwoSword: "rogue:two_handed_sword", rogue.Crossbow: "minecraft:crossbow", rogue.Spear: "rogue:spear",
@@ -43,8 +45,8 @@ var weaponItem = [rogue.MaxWeapons]string{
 	rogue.Katana: "additionalweapon:iron_katana", rogue.Scythe: "weaponsexpanded:iron_scythe",
 	rogue.WarSpear: "additionalweapon:iron_spear", rogue.GreatBow: "weaponsexpanded:longbow",
 	rogue.WarGlaive: "additionalweapon:iron_glaive", rogue.Scimitar: "additionalweapon:iron_scimitar",
-	rogue.WoodenPole: "additionalweapon:wooden_pole", rogue.Hatchet: "weaponsexpanded:iron_hatchet",
-	rogue.DoubleAxe: "rogue:double_axe", rogue.GreatAxe: "additionalweapon:iron_greataxe", rogue.Maul: "rogue:maul",
+	rogue.WoodenPole: "additionalweapon:wooden_pole", rogue.Hatchet: "rogue:hatchet",
+	rogue.DoubleAxe: "rogue:double_axe", rogue.GreatAxe: "rogue:great_axe", rogue.Maul: "rogue:maul",
 	rogue.HeavyMace: "minecraft:mace", rogue.Battlestaff: "additionalweapon:iron_battlestaff", rogue.Sceptre: "rogue:sceptre",
 	rogue.Lance: "rogue:lance", rogue.Trident: "minecraft:trident", rogue.Rapier: "weaponsexpanded:iron_rapier",
 	rogue.Sickle: "weaponsexpanded:iron_sickle", rogue.SoulKnife: "rogue:soul_knife", rogue.CoralBlade: "rogue:coral_blade",

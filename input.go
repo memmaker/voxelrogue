@@ -11,7 +11,7 @@ import (
 
 // Controls (keep helpLines in hud.go in sync):
 //
-//	WASD walk, Shift (tap) sprint until you stop, mouse look, Space jump, LMB a melee weapon's first attack
+//	WASD walk, Shift (tap) sprint until you stop, Ctrl (hold) sneak, mouse look, Space jump, LMB a melee weapon's first attack
 //	pattern or fire a launcher (hold to draw a bow; a spanned crossbow
 //	shoots), RMB the second pattern, cancel a bow's draw or a sling's
 //	whirl, zap a held wand or use the held food, potion, scroll, ring or
@@ -27,6 +27,7 @@ type inputState struct {
 	showManual bool // F2: the rules
 	showDebug  bool // F9: every weapon, to try them out
 	sprinting  bool // Shift tapped: sprint until the hero stops walking forward
+	sneaking   bool // Ctrl held: slow and silent
 	prompt     byte // 'i' identify, 'g' genocide: the next key answers it
 	detect     byte // map highlight after a detection potion/scroll
 }
@@ -233,6 +234,8 @@ func (g *game) moveInput() character.Input {
 		in.Strafe--
 	}
 	in.Jump = g.key(glfw.KeySpace)
+	in.Sneak = g.key(glfw.KeyLeftControl) || g.key(glfw.KeyRightControl)
+	g.sneaking = in.Sneak
 	return in
 }
 

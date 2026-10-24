@@ -42,11 +42,12 @@ type heroState struct {
 	won      bool // made it out of the dungeon with it
 	fungHit  int  // fung_hit: how hard the violet fungi's hold has grown
 
-	foodLeft    int
-	hungry      int // 0 fine, 1 hungry, 2 weak, 3 fainting
-	quiet       int // turns without a fight (healing)
-	between     int // wandering-monster daemon
-	wanderPause int // turns until wandering monsters roll again
+	foodLeft     int
+	hungry       int     // 0 fine, 1 hungry, 2 weak, 3 fainting
+	quiet        int     // turns without a fight (healing)
+	stepX, stepZ float64 // where the hero stood at the last turn (footsteps)
+	between      int     // wandering-monster daemon
+	wanderPause  int     // turns until wandering monsters roll again
 
 	// timed effects, in ticks
 	noCommand, confused, blind, hasted, seeInvis int
@@ -236,6 +237,9 @@ func (g *game) tickHero() {
 	if in.Forward <= 0 && p.Sprinting { // stopped (or held, or backing off): the tap's sprint ends; a tap standing still waits for W
 		g.sprinting = false
 	}
+	if in.Sneak { // sneaking (VoxelLib's slow walk) ends a sprint
+		g.sprinting = false
+	}
 	in.Sprint = g.hasted > 0 || g.sprinting
 	p.MoveSpeed = 0 // walking: the player's 0.1 per tick
 	if in.Sprint {  // VoxelLib's sprint adds Minecraft's 30%; a Rogue sprint doubles the walk
@@ -292,8 +296,25 @@ func (g *game) tickHero() {
 	}
 }
 
+// footsteps: a turn's walking is heard walkNoise around, a sprint's
+// sprintNoise; a sneaking hero, or one in a ring of stealth, is silent.
+func (g *game) footsteps() {
+	p := g.player
+	moved := math.Hypot(p.X-g.stepX, p.Z-g.stepZ) > 0.1
+	g.stepX, g.stepZ = p.X, p.Z
+	if !moved || g.sneaking || g.wearing(rogue.RStealth) {
+		return
+	}
+	r := walkNoise
+	if p.Sprinting {
+		r = sprintNoise
+	}
+	g.noise(p.X, p.Z, r)
+}
+
 // turn runs the daemons once per Rogue turn.
 func (g *game) turn() {
+	g.footsteps()
 	g.doctor()
 	g.stomach()
 	g.rollWander()

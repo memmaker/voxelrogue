@@ -99,6 +99,7 @@ func (g *game) cast(tr particles.Props, ticks int, stops ...fxStop) {
 
 // tickEffects moves the shots and the particles one tick.
 func (g *game) tickEffects() {
+	g.sleepZs()
 	live := g.shots[:0]
 	for _, s := range g.shots {
 		a, b := s.path[s.i], s.path[s.i+1]

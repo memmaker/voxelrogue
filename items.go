@@ -766,6 +766,7 @@ func (g *game) zap(o *rogue.Object) {
 		return
 	}
 	o.Charges--
+	g.noise(g.player.X, g.player.Z, zapNoise)
 	switch o.Which {
 	case 0: // light
 		g.rg.WKnow[0] = true

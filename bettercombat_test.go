@@ -156,7 +156,8 @@ func TestPresets(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[int][]bcAttack{
-		rogue.Hatchet:       {{"one_handed_slash_horizontal_right", 0.3}, {"one_handed_slash_horizontal_left", 0.3}},
+		rogue.Hatchet:       {{"one_handed_slash_horizontal_right", 0.3}, {"one_handed_slash_horizontal_left", 0.3}, {"one_handed_slam", 0.5}},
+		rogue.GreatAxe:      {{"two_handed_slash_horizontal_right", 0.5}, {"two_handed_spin", 0.5}, {"two_handed_slash_vertical_right", 0.5}, {"two_handed_slash_vertical_left", 0.5}},
 		rogue.TwoSword:      {{"two_handed_slash_horizontal_right", 0.5}, {"two_handed_stab_left", 0.5}, {"two_handed_slam", 0.5}},
 		rogue.Spear:         {{"two_handed_stab_right", 0.5}},
 		rogue.Rapier:        {{"one_handed_slash_horizontal_left", 0.5}, {"one_handed_stab", 0.5}},
@@ -326,7 +327,7 @@ func TestWandMelee(t *testing.T) {
 		t.Errorf("wand presets %v, want the spear's", presetFor(g.zapping))
 	}
 	g.heroAttack(0)
-	if g.hitReach != 3 || g.attackCD != 13 || g.comboOf != g.zapping {
+	if g.hitReach != weaponFeel[rogue.Spear].reach || g.attackCD != 13 || g.comboOf != g.zapping {
 		t.Errorf("reach %v cd %d combo of %v: the dagger, not the wand, fought", g.hitReach, g.attackCD, g.comboOf)
 	}
 }

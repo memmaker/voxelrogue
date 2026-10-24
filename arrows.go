@@ -173,6 +173,7 @@ func (g *game) loseMonster(m *monster) { g.arrows.Release(arrowTarget{g, m}) }
 // or the weapon itself, leaving the hands bare (a spanned crossbow takes
 // its bolts with it).
 func (g *game) throwItem() {
+	g.noise(g.player.X, g.player.Z, throwNoise)
 	w := g.weapon
 	if w == nil {
 		g.msg("You have nothing to throw.")
@@ -203,6 +204,7 @@ func (g *game) startReload() {
 		return
 	}
 	g.spanning, g.reload, g.handHeight = true, reloadTicks(g.weapon.Which), 0
+	g.noise(g.player.X, g.player.Z, spanNoise)
 }
 
 // launcher reports whether a bow or crossbow is wielded.
@@ -366,6 +368,7 @@ func (g *game) fovZoom(alpha float64) float64 {
 
 // shoot looses an arrow, bolt or rock along the view at speed.
 func (g *game) shoot(ammo *rogue.Object, speed float64) *projectile.Arrow {
+	g.noise(g.player.X, g.player.Z, shotNoise)
 	ex, ey, ez := g.player.Eye()
 	a := g.arrows.Shoot(ex, ey-0.1, ez, g.cam.Yaw, g.cam.Pitch, speed)
 	if blunt[ammo.Which] {

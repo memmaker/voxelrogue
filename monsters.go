@@ -7,6 +7,7 @@ package main
 // from an adjacent square every attackTicks, with fight.c's dice.
 
 import (
+	"cmp"
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/particles"
@@ -126,6 +127,63 @@ func (g *game) wanderer() {
 		m := g.newMonster(rogue.RandMonster(g.rng, g.depth, true), c)
 		m.running = true
 		return
+	}
+}
+
+// sleepScale is a blow's damage multiplier on a sleeping monster: double,
+// a dagger's five times. (Rogue itself gives no bonus: its +4 to hit on a
+// sleeper has no meaning without the to-hit roll.)
+func sleepScale(weap *rogue.Object) float64 {
+	if weap != nil && weap.Type == rogue.Weapon && weap.Which == rogue.Dagger {
+		return 5
+	}
+	return 2
+}
+
+// How far a noise carries, in blocks.
+const (
+	fightNoise  = 8   // a blow landing
+	shotNoise   = 5   // a bow's twang, a crossbow's clack
+	throwNoise  = 3   // a throw
+	zapNoise    = 8   // a wand
+	spanNoise   = 3   // spanning a crossbow
+	walkNoise   = 2.5 // a step
+	sprintNoise = 6   // a running step; a sneaking step is silent
+)
+
+// noise wakes every sleeping monster within r blocks of x, z.
+func (g *game) noise(x, z, r float64) {
+	for _, m := range g.monsters {
+		mx, _, mz := g.monsterPos(m, 0)
+		if !m.running && m.held == 0 && m.alive() && math.Hypot(mx-x, mz-z) <= r {
+			m.running, m.dest = true, nil
+		}
+	}
+}
+
+// zz floats a Z (a 3x3 of little squares, facing the hero) up from above
+// a sleeping monster's head: sleepZs sends one every second.
+func (g *game) zz(m *monster) {
+	x, y, z := g.monsterPos(m, 0)
+	b := g.box(m.letter)
+	y += float64(b.hover+b.h) + 0.2
+	rx, rz := math.Cos(g.cam.Yaw), math.Sin(g.cam.Yaw) // the view's right
+	const s = 0.08
+	for _, c := range [10][2]float64{{-1.5, 1.5}, {-0.5, 1.5}, {0.5, 1.5}, {1.5, 1.5}, {0.5, 0.5}, {-0.5, -0.5}, {-1.5, -1.5}, {-0.5, -1.5}, {0.5, -1.5}, {1.5, -1.5}} { // a 4x4 Z (a 3x3 one reads as an I)
+		g.parts.Add(particles.Particle{X: x + rx*c[0]*s, Y: y + c[1]*s, Z: z + rz*c[0]*s, VX: rx * 0.1, VY: 0.3, VZ: rz * 0.1,
+			Life: 1.5, Size0: s, Size1: s, Col0: fxWhite, Col1: fade(fxWhite), Emit: 15})
+	}
+}
+
+// sleepZs marks the sleeping monsters in sight with Zs.
+func (g *game) sleepZs() {
+	if g.tick%20 != 0 {
+		return
+	}
+	for _, m := range g.monsters {
+		if !m.running && m.alive() && m.disguise == nil && g.canSee(m.tile) {
+			g.zz(m)
+		}
 	}
 }
 
@@ -528,24 +586,39 @@ func (g *game) removeMonster(m *monster) {
 }
 
 // weaponFeel is how a weapon handles in real time: ticks between swings
-// and reach in blocks (plus the target's size). Missing = 12, 2.4.
+// and reach in blocks (plus the target's size). Missing = 12, 2.4; the
+// pole arms reach at least twice that.
 var weaponFeel = map[int]struct {
 	cd    int
 	reach float64
 }{
 	rogue.Dagger:     {8, 2.0},
 	rogue.TwoSword:   {18, 2.6},
-	rogue.Spear:      {13, 3.0},
+	rogue.Spear:      {13, 4.8},
 	rogue.Broadsword: {14, 2.5},
-	rogue.Glaive:     {16, 3.4},
+	rogue.Glaive:     {16, 5.0},
 	rogue.Greatsword: {18, 2.7},
-	rogue.Halberd:    {18, 3.4},
+	rogue.Halberd:    {18, 5.0},
 	rogue.Katana:     {9, 2.5},
-	rogue.Scythe:     {16, 3.0},
-	rogue.WarSpear:   {13, 3.2},
-	rogue.WarGlaive:  {16, 3.4},
+	rogue.Scythe:     {16, 4.8},
+	rogue.WarSpear:   {13, 4.8},
+	rogue.WarGlaive:  {16, 5.0},
 	rogue.Scimitar:   {9, 2.4},
-	rogue.WoodenPole: {11, 3.4},
+	rogue.WoodenPole: {11, 5.0},
+	rogue.Lance:      {16, 5.2},
+}
+
+// sweeps reports whether a blow strikes every monster in its path: an
+// axe's sideways swing (pattern 0).
+func sweeps(w *rogue.Object, pattern int) bool {
+	if w == nil || pattern != 0 {
+		return false
+	}
+	switch meleeKind(w) {
+	case rogue.Hatchet, rogue.DoubleAxe, rogue.GreatAxe:
+		return true
+	}
+	return false
 }
 
 // heroAttack swings the wielded weapon in one of its attack patterns
@@ -606,10 +679,19 @@ func (g *game) bleed(x, y, z float64) { g.parts.Emit(x, y, z, particles.Blood) }
 // reach of the hero and in a cone around the view direction (any way
 // within a block).
 func (g *game) monsterInFront(reach float64) *monster {
+	if ms := g.monstersInFront(reach); len(ms) > 0 {
+		return ms[0]
+	}
+	return nil
+}
+
+// monstersInFront is every living monster within reach in front of the
+// hero, the nearest first.
+func (g *game) monstersInFront(reach float64) []*monster {
 	p := g.player
 	fx, fz := math.Sin(g.cam.Yaw), -math.Cos(g.cam.Yaw)
-	var best *monster
-	bd := math.MaxFloat64
+	var ms []*monster
+	dist := map[*monster]float64{}
 	for _, m := range g.monsters {
 		if !m.alive() {
 			continue
@@ -621,18 +703,19 @@ func (g *game) monsterInFront(reach float64) *monster {
 		if d > 1 && ((nx-p.X)*fx+(nz-p.Z)*fz)/d < 0.6 {
 			continue
 		}
-		if d < bd {
-			best, bd = m, d
-		}
+		ms, dist[m] = append(ms, m), d
 	}
-	return best
+	slices.SortFunc(ms, func(a, b *monster) int { return cmp.Compare(dist[a], dist[b]) })
+	return ms
 }
 
 // fight is fight.c fight(): the hero hits a monster with weap (nil =
 // bare hands), thrown or not. Reaching it was the hit; nothing misses.
 func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
+	asleep := !m.running
 	g.quiet = 0
 	m.runto()
+	g.noise(g.player.X, g.player.Z, fightNoise)
 	if m.disguise != nil && g.blind == 0 {
 		g.unmask(m)
 		if !thrown {
@@ -664,6 +747,12 @@ func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
 				}
 			}
 		}
+	}
+	if asleep {
+		if a.Scale == 0 {
+			a.Scale = 1
+		}
+		a.Scale *= sleepScale(weap)
 	}
 	rogue.RollEm(g.rng, &g.stats, &m.st, m.st.Arm, a)
 	m.hurt = 6

@@ -4,7 +4,8 @@ package main
 // level drawn as lines (not Rogue's letters, which the big map keeps), a
 // dim fill for seen floor, a mark for the stairs, a bright cell where a
 // seen corridor or floor leads on into the unseen (more to explore) and
-// an arrow where the hero stands, pointing where the camera looks.
+// an arrow where the hero stands, pointing where the camera looks; the
+// items lying on known tiles (orange) and the monsters in sight (red).
 
 import (
 	"fmt"
@@ -52,7 +53,14 @@ func (g *game) minimapKey() string {
 			}
 		}
 	}
-	return fmt.Sprintf("%d %d %.2f %.2f %.2f", g.depth, n, g.player.X, g.player.Z, g.cam.Yaw)
+	h := 0.0 // the monsters in sight, where they are
+	for _, m := range g.monsters {
+		if m.alive() && g.canSee(m.tile) {
+			x, _, z := g.monsterPos(m, 0)
+			h += x*31 + z
+		}
+	}
+	return fmt.Sprintf("%d %d %.2f %.2f %.2f %d %.1f", g.depth, n, g.player.X, g.player.Z, g.cam.Yaw, len(g.floor), h)
 }
 
 // minimap draws the level as the hero knows it.
@@ -128,6 +136,23 @@ func (g *game) minimap() *image.NRGBA {
 		seg(img, s.X*mmCell, s.Y*mmCell, s.X*mmCell+mmCell-1, s.Y*mmCell+mmCell-1, cyan)
 		seg(img, s.X*mmCell+mmCell-1, s.Y*mmCell, s.X*mmCell, s.Y*mmCell+mmCell-1, cyan)
 	}
+	// items lying on known tiles, and the monsters in sight where they stand
+	dot := func(x, z float64, c color.NRGBA) {
+		mx, my := int(math.Round(x/tileW*mmCell)), int(math.Round(z/tileD*mmCell))
+		draw.Draw(img, image.Rect(mx-1, my-1, mx+1, my+1), image.NewUniform(c), image.Point{}, draw.Over)
+	}
+	for _, f := range g.floor {
+		if known(f.tile.X, f.tile.Y) {
+			x, _, z := tileCenter(g.slot(), f.tile)
+			dot(x, z, orange)
+		}
+	}
+	for _, m := range g.monsters {
+		if m.alive() && g.canSee(m.tile) {
+			x, _, z := g.monsterPos(m, 0)
+			dot(x, z, red)
+		}
+	}
 	// the hero: an arrow at the exact position, pointing along the camera's yaw
 	px, py := g.player.X/tileW*mmCell, g.player.Z/tileD*mmCell
 	dx, dy := math.Sin(g.cam.Yaw), -math.Cos(g.cam.Yaw)
@@ -138,8 +163,8 @@ func (g *game) minimap() *image.NRGBA {
 	tx, ty := pt(1, 0)
 	lx, ly := pt(-0.8, 0.7)
 	rx, ry := pt(-0.8, -0.7)
-	seg(img, tx, ty, lx, ly, red)
-	seg(img, tx, ty, rx, ry, red)
-	seg(img, lx, ly, rx, ry, red)
+	seg(img, tx, ty, lx, ly, green)
+	seg(img, tx, ty, rx, ry, green)
+	seg(img, lx, ly, rx, ry, green)
 	return img
 }
