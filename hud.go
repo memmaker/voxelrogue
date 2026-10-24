@@ -222,7 +222,7 @@ func (g *game) setupGUI(jar, hobbit string) error {
 		hero.Draw(ctx, x, y, mx, my)
 	}
 	g.pg.EquipAt = rogueEquipAt
-	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["agate ring"]))
+	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["ring 1"]))
 	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
 	g.pg.OnClose = func() {
 		if g.prompt == 'i' {
