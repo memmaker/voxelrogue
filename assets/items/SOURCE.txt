@@ -1,0 +1,2 @@
+The gold (item1163.png) and the Amulet of Yendor (item833.png) are from an "items" sprite pack (16x16).
+The download carried no licence file; check the pack's page before distributing.

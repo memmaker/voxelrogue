@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Builds VoxelRogue's tile sheets, one per tile size, and the remapper
-rec files that say which cell each game id uses. The sheets hold only
+"""Builds VoxelRogue's tile sheet and the remapper rec files that say
+which cell each game id uses. The sheet holds only
 what the game draws; ids are the game's own names (a potion by its
 colour, a scroll or ring by its look, a wall by where it stands):
 
-  tiles8.png   items.rec     %rec: item    gold (written whole)
   tiles16.png  gear.rec      %rec: gear    the armour: hand-written records, each naming its picture
                potions.rec   %rec: potion  Rogue's potion colours: hand-written, each an rgb tinting the potion sprite
                food.rec      %rec: food    the food ration (bread) and the slime-mold (assets/food)
-               amulet.rec    %rec: amulet  the Amulet of Yendor (assets/amulet)
+               items.rec     %rec: item    the gold and the Amulet of Yendor (assets/items)
                scrolls.rec   %rec: scroll  the scroll looks (assets/scrolls, BigWander's Art of Scrolls), a game's scroll kinds draw theirs from them
                rings.rec     %rec: ring    the ring looks (assets/rings), likewise
                staffs.rec    %rec: staff   the staff looks (assets/staffs, RPG Items 16x16 Pack 1), likewise
@@ -22,13 +21,13 @@ animation strip's first 16px frame) or tints the potion sprite with its rgb: (ti
 onto the sheet and fills its icon: in, touching no other line. A rerun keeps
 the recs' icons (the remapper's edits); after adding or cutting a look, run it with --fresh,
 since the cells behind the kept icons have moved.
-The game reads only the recs and sheets (tiles.go); the remapper edits
+The game reads only the recs and the sheet (tiles.go); the remapper edits
 the recs (remap_*.sh). The first look of everything comes from the art
 the game used before: VoxelLib's CC0 item sprites and RPG16 pack, the
 mods' weapon textures (assets/hobbit, assets/weapons), assets/monsters/dynahack.txt.
 
 Run: python3 assets/tiles/mktiles.py [VoxelLib checkout]   (default ../VoxelLib)
-Re-running rebuilds the sheets and keeps the icon of every id already
+Re-running rebuilds the sheet and keeps the icon of every id already
 in a rec file, so remapped ids stay remapped."""
 import os, re, sys
 from PIL import Image
@@ -38,7 +37,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 FRESH = '--fresh' in sys.argv  # ignore the recs' kept icons: the cells moved (a look added or cut)
 ARGS = [a for a in sys.argv[1:] if a != '--fresh']
 LIB = ARGS[0] if ARGS else os.path.join(ROOT, '..', 'VoxelLib')
-ITEMS, BLOCKS = os.path.join(LIB, 'assets', 'items'), os.path.join(LIB, 'assets', 'rpg16pack', 'assets', 'minecraft', 'textures', 'block')
+BLOCKS = os.path.join(LIB, 'assets', 'rpg16pack', 'assets', 'minecraft', 'textures', 'block')
 
 
 def golist(src, name):
@@ -153,15 +152,6 @@ def check_tint():
 
 rules = open(os.path.join(ROOT, 'rogue', 'objects.go')).read()
 
-# ---- tiles8: the items, named as Rogue names them; first looks are VoxelLib's sprites ----
-t8 = Sheet('tiles8.png', 8, 16)
-def item(rid, sprite, name=None):
-    return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
-items = []
-items += [item('gold', 'valuable_09')]
-t8.save()
-t8.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
-
 # ---- tiles16: the armour and weapons (their recs' pictures), the block textures (world.go's blocks), the monsters ----
 t16 = Sheet('tiles16.png', 16, 16)
 t16.patch(os.path.join(HERE, 'gear.rec'))
@@ -204,10 +194,11 @@ def looks(kind):
 scrolls, rings, staffs = looks('scroll'), looks('ring'), looks('staff')
 FOOD = os.path.join(ROOT, 'assets', 'food')
 food = [(rid, rid, t16.add('f:' + f, rgba(os.path.join(FOOD, f + '.png')))) for rid, f in [('food ration', 'bread'), ('slime-mold', 'slime-mold')]]
-amulet = [('amulet of yendor', 'the Amulet of Yendor', t16.add('amulet', rgba(os.path.join(ROOT, 'assets', 'amulet', 'amulet.png'))))]
+ITEMS16 = os.path.join(ROOT, 'assets', 'items')
+items = [(rid, name, t16.add('i:' + f, rgba(os.path.join(ITEMS16, f + '.png')))) for rid, name, f in [('gold', 'gold', 'gold'), ('amulet of yendor', 'the Amulet of Yendor', 'amulet')]]
 t16.save()
 t16.rec(os.path.join(HERE, 'food.rec'), 'Food', 'food', food)
-t16.rec(os.path.join(HERE, 'amulet.rec'), 'The Amulet', 'amulet', amulet)
+t16.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
 t16.rec(os.path.join(HERE, 'scrolls.rec'), 'Scroll looks', 'scroll', scrolls)
 t16.rec(os.path.join(HERE, 'rings.rec'), 'Ring looks', 'ring', rings)
 t16.rec(os.path.join(HERE, 'staffs.rec'), 'Staff looks', 'staff', staffs)

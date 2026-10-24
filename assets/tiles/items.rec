@@ -1,12 +1,12 @@
 # items.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
-# (remap_items.sh). icon: cell of tiles8.png; -1: unassigned.
+# (remap_items.sh). icon: cell of tiles16.png; -1: unassigned.
 
 %rec: Tileset
-id: tiles8
-name: VoxelRogue 8px tiles
-file: tiles8.png
-tile_w: 8
-tile_h: 8
+id: tiles16
+name: VoxelRogue 16px tiles
+file: tiles16.png
+tile_w: 16
+tile_h: 16
 off_x: 0
 off_y: 0
 gap_x: 0
@@ -17,4 +17,8 @@ gap_y: 0
 
 id: gold
 name: gold
-icon: 0
+icon: 246
+
+id: amulet of yendor
+name: the Amulet of Yendor
+icon: 247

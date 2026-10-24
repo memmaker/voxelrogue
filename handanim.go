@@ -36,8 +36,8 @@ func displayFor(sprite string) display {
 
 // upright are item sprites drawn standing up instead of on the diagonal
 // of Minecraft's handheld textures (grip bottom left, head top right),
-// which the display transforms are made for: the voxellib ones left in
-// items.rec (the VoxelHobbit sprites are all on the diagonal).
+// which the display transforms are made for (the VoxelHobbit sprites are
+// all on the diagonal).
 var upright = map[string]bool{"anchor": true}
 
 // spriteTurn turns a sprite's slab like the Minecraft texture its display
