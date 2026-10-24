@@ -70,13 +70,14 @@ type ArmorKind struct {
 var (
 	Weapons []WeaponKind
 	Armors  []ArmorKind
-	// ScrollLooks is how many scroll pictures there are to draw a game's
-	// scroll kinds from (scrolls.rec's records); SLook indexes them.
-	ScrollLooks = 1000
+	// ScrollLooks and RingLooks are how many scroll and ring pictures
+	// there are to draw a game's kinds from (scrolls.rec's and rings.rec's
+	// records); SLook and RLook index them.
+	ScrollLooks, RingLooks = 1000, 1000
 )
 
 // LoadKinds reads dir's weapons.rec (with animations.rec, its attacks'
-// upswings), gear.rec and scrolls.rec (its looks are counted).
+// upswings), gear.rec, scrolls.rec and rings.rec (their looks are counted).
 func LoadKinds(dir string) error {
 	recs, err := ReadRecs(filepath.Join(dir, "weapons.rec"))
 	if err != nil {
@@ -141,18 +142,24 @@ func LoadKinds(dir string) error {
 		}
 		Armors = append(Armors, ArmorKind{r["id"], r["name"], atoi(r["ac"]), atoi(r["prob"]), atoi(r["worth"]), r["skin"]})
 	}
-	recs, err = ReadRecs(filepath.Join(dir, "scrolls.rec"))
-	if err != nil {
-		return err
-	}
-	ScrollLooks = 0
-	for _, r := range recs {
-		if r["%rec"] == "scroll" && r["id"] != "" {
-			ScrollLooks++
+	for _, l := range []struct {
+		file string
+		n    *int
+		need int
+	}{{"scrolls.rec", &ScrollLooks, MaxScrolls}, {"rings.rec", &RingLooks, MaxRings}} {
+		recs, err = ReadRecs(filepath.Join(dir, l.file))
+		if err != nil {
+			return err
 		}
-	}
-	if ScrollLooks < MaxScrolls {
-		return fmt.Errorf("scrolls.rec: %d looks for %d scroll kinds", ScrollLooks, MaxScrolls)
+		*l.n = 0
+		for _, r := range recs {
+			if r["id"] != "" && r["%rec"] != "Tileset" {
+				*l.n++
+			}
+		}
+		if *l.n < l.need {
+			return fmt.Errorf("%s: %d looks for %d kinds", l.file, *l.n, l.need)
+		}
 	}
 	return nil
 }

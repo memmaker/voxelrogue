@@ -17,8 +17,8 @@ gap_y: 0
 
 id: food ration
 name: food ration
-icon: 155
+icon: 204
 
 id: slime-mold
 name: slime-mold
-icon: 156
+icon: 205

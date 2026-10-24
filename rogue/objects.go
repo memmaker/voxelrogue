@@ -236,13 +236,14 @@ func NewGame(rng *rand.Rand) *Game {
 		g.SNames[i], g.SLook[i] = strings.Join(words, " "), looks[i]
 	}
 	clear(used)
+	looks = rng.Perm(RingLooks) // every ring kind its own look this game
 	for i := range g.RStones {
 		j := Rnd(rng, len(stones))
 		for used[j] {
 			j = Rnd(rng, len(stones))
 		}
 		used[j] = true
-		g.RStones[i], g.RLook[i] = stones[j], j
+		g.RStones[i], g.RLook[i] = stones[j], looks[i]
 	}
 	usedW, usedM := map[int]bool{}, map[int]bool{}
 	for i := range g.SMade {

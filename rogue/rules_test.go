@@ -28,22 +28,28 @@ func TestAttackScale(t *testing.T) {
 	}
 }
 
-// TestScrollLooks: every scroll kind gets a look of its own each game,
-// drawn from the whole pool.
+// TestScrollLooks: every scroll and ring kind gets a look of its own
+// each game, drawn from the whole pool.
 func TestScrollLooks(t *testing.T) {
-	ScrollLooks = 62
-	seen := map[int]bool{}
-	for seed := int64(1); seed <= 20; seed++ {
-		g := NewGame(rand.New(rand.NewSource(seed)))
-		used := map[int]bool{}
-		for _, l := range g.SLook {
-			if l < 0 || l >= ScrollLooks || used[l] {
-				t.Fatalf("seed %d: looks %v", seed, g.SLook)
+	ScrollLooks, RingLooks = 62, 49
+	for _, pool := range []struct {
+		name  string
+		n     int
+		looks func(*Game) []int
+	}{{"scroll", ScrollLooks, func(g *Game) []int { return g.SLook[:] }}, {"ring", RingLooks, func(g *Game) []int { return g.RLook[:] }}} {
+		seen := map[int]bool{}
+		for seed := int64(1); seed <= 20; seed++ {
+			g := NewGame(rand.New(rand.NewSource(seed)))
+			used := map[int]bool{}
+			for _, l := range pool.looks(g) {
+				if l < 0 || l >= pool.n || used[l] {
+					t.Fatalf("%s seed %d: looks %v", pool.name, seed, pool.looks(g))
+				}
+				used[l], seen[l] = true, true
 			}
-			used[l], seen[l] = true, true
 		}
-	}
-	if len(seen) < 40 {
-		t.Errorf("only %d of %d looks drawn over 20 games", len(seen), ScrollLooks)
+		if len(seen) < 2*pool.n/3 {
+			t.Errorf("only %d of %d %s looks drawn over 20 games", len(seen), pool.n, pool.name)
+		}
 	}
 }

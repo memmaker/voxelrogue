@@ -1,0 +1,212 @@
+# rings.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
+# (remap_rings.sh). icon: cell of tiles16.png; -1: unassigned.
+
+%rec: Tileset
+id: tiles16
+name: VoxelRogue 16px tiles
+file: tiles16.png
+tile_w: 16
+tile_h: 16
+off_x: 0
+off_y: 0
+gap_x: 0
+gap_y: 0
+
+%rec: ring
+%doc: Ring looks
+
+id: ring 1
+name: ring (look 1)
+icon: 155
+
+id: ring 2
+name: ring (look 2)
+icon: 156
+
+id: ring 3
+name: ring (look 3)
+icon: 157
+
+id: ring 4
+name: ring (look 4)
+icon: 158
+
+id: ring 5
+name: ring (look 5)
+icon: 159
+
+id: ring 6
+name: ring (look 6)
+icon: 160
+
+id: ring 7
+name: ring (look 7)
+icon: 161
+
+id: ring 8
+name: ring (look 8)
+icon: 162
+
+id: ring 9
+name: ring (look 9)
+icon: 163
+
+id: ring 10
+name: ring (look 10)
+icon: 164
+
+id: ring 11
+name: ring (look 11)
+icon: 165
+
+id: ring 12
+name: ring (look 12)
+icon: 166
+
+id: ring 13
+name: ring (look 13)
+icon: 167
+
+id: ring 14
+name: ring (look 14)
+icon: 168
+
+id: ring 15
+name: ring (look 15)
+icon: 169
+
+id: ring 16
+name: ring (look 16)
+icon: 170
+
+id: ring 17
+name: ring (look 17)
+icon: 171
+
+id: ring 18
+name: ring (look 18)
+icon: 172
+
+id: ring 19
+name: ring (look 19)
+icon: 173
+
+id: ring 20
+name: ring (look 20)
+icon: 174
+
+id: ring 21
+name: ring (look 21)
+icon: 175
+
+id: ring 22
+name: ring (look 22)
+icon: 176
+
+id: ring 23
+name: ring (look 23)
+icon: 177
+
+id: ring 24
+name: ring (look 24)
+icon: 178
+
+id: ring 25
+name: ring (look 25)
+icon: 179
+
+id: ring 26
+name: ring (look 26)
+icon: 180
+
+id: ring 27
+name: ring (look 27)
+icon: 181
+
+id: ring 28
+name: ring (look 28)
+icon: 182
+
+id: ring 29
+name: ring (look 29)
+icon: 183
+
+id: ring 30
+name: ring (look 30)
+icon: 184
+
+id: ring 31
+name: ring (look 31)
+icon: 185
+
+id: ring 32
+name: ring (look 32)
+icon: 186
+
+id: ring 33
+name: ring (look 33)
+icon: 187
+
+id: ring 34
+name: ring (look 34)
+icon: 188
+
+id: ring 35
+name: ring (look 35)
+icon: 189
+
+id: ring 36
+name: ring (look 36)
+icon: 190
+
+id: ring 37
+name: ring (look 37)
+icon: 191
+
+id: ring 38
+name: ring (look 38)
+icon: 192
+
+id: ring 39
+name: ring (look 39)
+icon: 193
+
+id: ring 40
+name: ring (look 40)
+icon: 194
+
+id: ring 41
+name: ring (look 41)
+icon: 195
+
+id: ring 42
+name: ring (look 42)
+icon: 196
+
+id: ring 43
+name: ring (look 43)
+icon: 197
+
+id: ring 44
+name: ring (look 44)
+icon: 198
+
+id: ring 45
+name: ring (look 45)
+icon: 199
+
+id: ring 46
+name: ring (look 46)
+icon: 200
+
+id: ring 47
+name: ring (look 47)
+icon: 201
+
+id: ring 48
+name: ring (look 48)
+icon: 202
+
+id: ring 49
+name: ring (look 49)
+icon: 203
