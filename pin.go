@@ -18,10 +18,11 @@ const (
 )
 
 type pin struct {
-	a             *projectile.Arrow
-	ux, uz        float64    // the flight, level
-	tip           [3]float64 // where it struck
-	tipGo, bodyGo float64    // how far the tip and the body travel
+	a      *projectile.Arrow
+	ux, uz float64    // the flight, level
+	tip    [3]float64 // where it struck
+	tipGo  float64    // how far the tip travels
+	end    [3]float64 // where the body hangs: x, z with its back flat on the wall, and its yaw, facing out of it
 }
 
 // wallBehind is how far along ux, uz from x, y, z the first solid block
@@ -37,7 +38,9 @@ func wallBehind(solid func(x, y, z int) bool, x, y, z, ux, uz, limit float64) (f
 
 // pinTo pins m, just killed by the sharp missile a, if a wall is close
 // enough behind it: its other missiles fall out, a leaves it to fly on
-// with the body (tickPins). solid is the terrain's.
+// with the body (tickPins), which flies on along the shot until its back
+// lies flat on the wall's face, turned to face out of it like a decal.
+// solid is the terrain's.
 func (g *game) pinTo(m *monster, a *projectile.Arrow, solid func(x, y, z int) bool) {
 	ux, uz := math.Sin(a.Yaw), -math.Cos(a.Yaw)
 	d := float64(g.box(m.letter).d)
@@ -47,8 +50,29 @@ func (g *game) pinTo(m *monster, a *projectile.Arrow, solid func(x, y, z int) bo
 	}
 	g.arrows.Release(arrowTarget{g, m})
 	a.Stuck = true
-	foot := (m.dead[0]-a.X)*ux + (m.dead[2]-a.Z)*uz // the body's foot past the tip
-	m.pin = &pin{a: a, ux: ux, uz: uz, tip: [3]float64{a.X, a.Y, a.Z}, tipGo: w + pinDepth, bodyGo: math.Max(0, w-d-0.02-foot)}
+	p := &pin{a: a, ux: ux, uz: uz, tip: [3]float64{a.X, a.Y, a.Z}, tipGo: w + pinDepth}
+	// the face the flight enters the wall block by: across x, else across z
+	hx, px := math.Floor(a.X+ux*w), math.Floor(a.X+ux*(w-0.05))
+	if hx != px {
+		n := -math.Copysign(1, ux) // out of the wall
+		face := hx
+		if ux < 0 {
+			face++
+		}
+		p.end[0] = face + n*d
+		p.end[1] = m.dead[2] + uz*math.Max(0, (p.end[0]-m.dead[0])/ux)
+		p.end[2] = math.Atan2(n, 0)
+	} else {
+		n := -math.Copysign(1, uz)
+		face := math.Floor(a.Z + uz*w)
+		if uz < 0 {
+			face++
+		}
+		p.end[1] = face + n*d
+		p.end[0] = m.dead[0] + ux*math.Max(0, (p.end[1]-m.dead[2])/uz)
+		p.end[2] = math.Atan2(0, -n)
+	}
+	m.pin = p
 }
 
 // pinAt is how far along its flight a pin is k ticks after the blow (0..1).
@@ -70,14 +94,16 @@ func (g *game) tickPins() {
 	}
 }
 
-// pinnedPose is a pinned body: carried upright along the flight to the
-// wall, then hanging there at the height it was struck.
+// pinnedPose is a pinned body: carried upright to the wall, turning to
+// face out of it, then hanging there flat on it at the height it was
+// struck.
 func (g *game) pinnedPose(m *monster, alpha float64) render.ItemPose {
 	p := m.pin
-	f := pinAt(float64(m.dying)-1+alpha) * p.bodyGo
-	x, z := m.dead[0]+p.ux*f, m.dead[2]+p.uz*f
+	f := pinAt(float64(m.dying) - 1 + alpha)
+	x, z := m.dead[0]+(p.end[0]-m.dead[0])*f, m.dead[2]+(p.end[1]-m.dead[2])*f
+	yaw := m.dead[3] + math.Remainder(p.end[2]-m.dead[3], 2*math.Pi)*f
 	y := m.dead[1] + float64(g.box(m.letter).hover)
-	in := g.monsterPose(m.letter, x, y, z, m.dead[3], 0)
+	in := g.monsterPose(m.letter, x, y, z, yaw, 0)
 	if g.eng != nil {
 		in.Sky, in.Block = g.light(x, y+0.5, z)
 	}

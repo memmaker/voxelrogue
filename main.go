@@ -74,6 +74,7 @@ func main() {
 		landing = flag.Bool("landing", false, "debug: start on the landing of the staircase down from the level above -depth")
 		boxes   = flag.Bool("boxes", false, "debug: show the monsters' hit boxes (F3)")
 		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
+		manual  = flag.Bool("manual", false, "debug: with -shot, show the F2 manual")
 		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
 		mapMode = flag.Int("map", 0, "debug: with -shot, show the map in this M mode (1 on a panel, 2 laid over the view)")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
@@ -202,6 +203,7 @@ func main() {
 	if *throwAt >= 0 {
 		g.throwShot = *shotAt - *throwAt
 	}
+	g.showManual = *manual
 	if *inv {
 		g.openInv()
 		g.pg.In.X, g.pg.In.Y = 141, 203 // over the first hotbar slot (1280x800), for the tooltip
@@ -296,7 +298,7 @@ func (g *game) newGame(seed int64) {
 	}
 	g.msgs, g.winLoot = nil, nil
 	g.closeInv()
-	g.showMap, g.showHelp, g.showDebug, g.prompt, g.detect = 0, false, false, 0, 0
+	g.showMap, g.showHelp, g.showManual, g.showDebug, g.prompt, g.detect = 0, false, false, false, 0, 0
 	g.initHero()
 	g.enterLevel(1)
 }

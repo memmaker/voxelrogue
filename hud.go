@@ -40,7 +40,8 @@ var helpLines = [][2]string{
 	{"", "fire a launcher: hold to draw a bow (let go to shoot),"},
 	{"", "whirl the sling, shoot a spanned crossbow"},
 	{"Right mouse", "the weapon's second pattern (overhead); zap held wand;"},
-	{"", "use the held food, potion, scroll, ring or armor"},
+	{"", "use the held food, potion, scroll, ring or armor;"},
+	{"", "cancel a bow's draw or a sling's whirl"},
 	{"1-9, wheel", "hold a hotbar slot: a weapon is wielded, a wand held"},
 	{"F", "the weapon's third attack pattern"},
 	{"T", "throw the wielded weapon"},
@@ -54,10 +55,54 @@ var helpLines = [][2]string{
 	{"", "Amulet, armor and rings; drop outside the window"},
 	{"M", "map: on a panel, laid over the view, off"},
 	{"F1", "this help"},
+	{"F2", "the manual: the rules of the dungeon"},
 	{"F3", "debug: show the monsters' hit boxes"},
 	{"F9", "debug: take any weapon"},
-	{"F9", "debug: take any weapon"},
 	{"Esc", "close panel / release mouse / quit"},
+}
+
+// manualLines is the F2 manual: Rogue's rules in short.
+var manualLines = []string{
+	"Cursed equipment",
+	"  Some armor, rings and weapons are cursed. Once worn or wielded a cursed",
+	"  thing won't come off (\"You can't. It appears to be cursed.\"), and it is",
+	"  usually a bad one: armor and weapons at -1 or worse, rings of aggravate",
+	"  monster or teleportation. A scroll of remove curse lifts the curse from",
+	"  everything you wear and wield (\"You feel as if somebody is watching over",
+	"  you.\"); then it can be taken off. Reading an unknown scroll may turn out",
+	"  to be it. A scroll of enchant armor or enchant weapon also uncurses the",
+	"  piece it enchants. Until you know an item, its enchantment is hidden;",
+	"  a scroll of identify tells.",
+	"",
+	"Armor",
+	"  Armor class: the lower, the harder to hit, from plate mail (3) down to",
+	"  leather (8); +1 is one class better. Only one piece is worn at a time,",
+	"  plus two rings.",
+	"",
+	"Food",
+	"  Every ration lasts a while; a ring eats more. Hungry, then weak, then",
+	"  you faint on the spot. Eat before Weak.",
+	"",
+	"Potions and scrolls",
+	"  Unknown until tried (or identified); the same colour or title is always",
+	"  the same kind. Scrolls are read, potions quaffed, by holding them and",
+	"  using the right mouse button.",
+	"",
+	"Wands and staves",
+	"  Zap with the right mouse button; each has a few charges.",
+	"",
+	"Monsters",
+	"  Capital letters in the map: A ant to Z zombie. Many are asleep until",
+	"  you come near; some carry gold. Killing them earns experience.",
+	"",
+	"Searching and traps",
+	"  Hold C to find secret doors and traps in the walls and floor around",
+	"  you. Known traps show on the map; a dart or arrow trap, a trap door",
+	"  (to the next level), a bear trap, sleeping gas and teleport.",
+	"",
+	"The Amulet",
+	"  The Amulet of Yendor lies on level 26 or deeper. With it, climb the",
+	"  stairs (< on them) back up to the light of day to win.",
 }
 
 type panel struct {
@@ -66,10 +111,10 @@ type panel struct {
 }
 
 type hudState struct {
-	msgs                                                       []string
-	msgAge                                                     int
-	status, message, mapP, mini, help, debug, tint, tomb, winP panel
-	winLoot                                                    []string // total_winner's worth table
+	msgs                                                               []string
+	msgAge                                                             int
+	status, message, mapP, mini, help, manual, debug, tint, tomb, winP panel
+	winLoot                                                            []string // total_winner's worth table
 }
 
 func (g *game) msg(s string) {
@@ -315,6 +360,20 @@ func (g *game) drawHUD(fbW, fbH int) {
 			}
 			return textImage(ls, panelBG)
 		}, center(fbW), middle(fbH), s, fbW, fbH)
+	}
+
+	if g.showManual {
+		g.manual.show("manual", func() *image.NRGBA {
+			ls := []line{{"VoxelRogue - manual", white}, {"", white}}
+			for _, l := range manualLines {
+				c := cyan
+				if l != "" && l[0] != ' ' {
+					c = white
+				}
+				ls = append(ls, line{l, c})
+			}
+			return textImage(ls, panelBG)
+		}, center(fbW), at(36*s), max(1, min(s, (fbH-g.hotbarH(fbW)-56*s)/((len(manualLines)+3)*14))), fbW, fbH) // between the message and status lines
 	}
 
 	if g.showDebug {

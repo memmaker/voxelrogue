@@ -24,10 +24,11 @@ func TestPin(t *testing.T) {
 	d := float64(g.box('K').d)
 	for _, c := range []struct {
 		wall float64 // x of the wall's east face
+		yaw  float64 // the shot's
 		pin  bool
-	}{{18, true}, {14, false}} {
+	}{{18, -math.Pi / 2, true}, {18, -math.Pi/2 + 0.4, true}, {14, -math.Pi / 2, false}} {
 		m := &monster{letter: 'K', dying: 1, dead: [4]float64{20, 425, 70, math.Pi / 2}}
-		a := &projectile.Arrow{X: 20 + d - 0.1, Y: 425.9, Z: 70, Yaw: -math.Pi / 2, Stuck: true} // tip just inside its face
+		a := &projectile.Arrow{X: 20 + d - 0.1, Y: 425.9, Z: 70, Yaw: c.yaw, Stuck: true} // tip just inside its face
 		g.arrows = projectile.World{Arrows: []*projectile.Arrow{a}}
 		g.pinTo(m, a, func(x, _, _ int) bool { return float64(x) < c.wall })
 		if (m.pin != nil) != c.pin {
@@ -42,8 +43,11 @@ func TestPin(t *testing.T) {
 		if math.Abs(a.X-(c.wall-pinDepth)) > 0.06 {
 			t.Errorf("tip at x %.2f, want %.2f in the wall", a.X, c.wall-pinDepth)
 		}
-		if back := g.pinnedPose(m, 0).X - d; math.Abs(back-c.wall) > 0.1 {
-			t.Errorf("the body's back at x %.2f, the wall at %.2f", back, c.wall)
+		if back := g.pinnedPose(m, 0).X - d; math.Abs(back-c.wall) > 0.01 {
+			t.Errorf("shot at %.1f: the body's back at x %.3f, the wall at %.1f", c.yaw, back, c.wall)
+		}
+		if m.pin.end[2] != math.Pi/2 { // flat on the face: facing east, out of the wall
+			t.Errorf("shot at %.1f: the body faces %.2f, want %.2f", c.yaw, m.pin.end[2], math.Pi/2)
 		}
 	}
 }

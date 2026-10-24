@@ -240,6 +240,12 @@ func (g *game) releaseDraw() {
 	}
 }
 
+// cancelDraw is the right button while a bow is drawn or a sling whirls:
+// the bow is let down and the sling lowered, nothing shot.
+func (g *game) cancelDraw() {
+	g.drawing, g.fireHeld, g.sling = false, false, slingAction{}
+}
+
 // tickDraw draws the bow on, and spans the crossbow.
 func (g *game) tickDraw() {
 	defer g.tickFov()

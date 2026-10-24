@@ -13,20 +13,22 @@ import (
 //
 //	WASD walk, Shift (tap) sprint until you stop, mouse look, Space jump, LMB a melee weapon's first attack
 //	pattern or fire a launcher (hold to draw a bow; a spanned crossbow
-//	shoots), RMB the second pattern, zap a held wand or use the held
-//	food, potion, scroll, ring or armour, F the third pattern, T throw
-//	the wielded weapon, R span a crossbow, 1-9 and the wheel hold a
-//	hotbar slot, C search, < climb (with the Amulet), E/Tab/I inventory,
-//	M map (on a panel, over the view, off), F1 help, F9 debug weapon menu, Esc release mouse (again:
-//	quit), R new game after death or victory.
+//	shoots), RMB the second pattern, cancel a bow's draw or a sling's
+//	whirl, zap a held wand or use the held food, potion, scroll, ring or
+//	armour, F the third pattern, T throw the wielded weapon, R span a
+//	crossbow, 1-9 and the wheel hold a hotbar slot, C search, < climb
+//	(with the Amulet), E/Tab/I inventory, M map (on a panel, over the
+//	view, off), F1 help, F2 manual, F9 debug weapon menu, Esc release
+//	mouse (again: quit), R new game after death or victory.
 type inputState struct {
-	captured  bool
-	showMap   int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
-	showHelp  bool
-	showDebug bool // F9: every weapon, to try them out
-	sprinting bool // Shift tapped: sprint until the hero stops walking forward
-	prompt    byte // 'i' identify, 'g' genocide: the next key answers it
-	detect    byte // map highlight after a detection potion/scroll
+	captured   bool
+	showMap    int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
+	showHelp   bool
+	showManual bool // F2: the rules
+	showDebug  bool // F9: every weapon, to try them out
+	sprinting  bool // Shift tapped: sprint until the hero stops walking forward
+	prompt     byte // 'i' identify, 'g' genocide: the next key answers it
+	detect     byte // map highlight after a detection potion/scroll
 }
 
 func (g *game) setupInput() {
@@ -61,8 +63,8 @@ func (g *game) setupInput() {
 		switch k {
 		case glfw.KeyEscape:
 			switch {
-			case g.showMap != 0 || g.showHelp || g.showDebug:
-				g.showMap, g.showHelp, g.showDebug, g.detect = 0, false, false, 0
+			case g.showMap != 0 || g.showHelp || g.showManual || g.showDebug:
+				g.showMap, g.showHelp, g.showManual, g.showDebug, g.detect = 0, false, false, false, 0
 			case g.captured:
 				g.capture(false)
 			default:
@@ -75,6 +77,8 @@ func (g *game) setupInput() {
 			g.detect = 0
 		case glfw.KeyF1:
 			g.showHelp = !g.showHelp
+		case glfw.KeyF2:
+			g.showManual = !g.showManual
 		case glfw.KeyF3:
 			g.showBoxes = !g.showBoxes
 		case glfw.KeyF9:
@@ -115,6 +119,8 @@ func (g *game) setupInput() {
 		case g.dead || g.won || g.noCommand > 0:
 		case b == glfw.MouseButtonLeft && g.launcher():
 			g.startDraw()
+		case b == glfw.MouseButtonRight && (g.drawing || g.sling.state <= slingCharge && g.sling.frame != 0):
+			g.cancelDraw()
 		case b == glfw.MouseButtonRight && g.zapping != nil && g.attackCD == 0:
 			g.zap(g.zapping)
 		case b == glfw.MouseButtonRight && g.heldUse() != nil && g.attackCD == 0:
