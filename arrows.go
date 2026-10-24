@@ -1,15 +1,18 @@
 package main
 
-// Bows and crossbows as in Minecraft: hold the right button to draw a bow
+// Bows and crossbows as in Minecraft: hold the left button to draw a bow
 // and let go to shoot, the arrow the faster the longer it was drawn
 // (BowItem). A crossbow is spanned with R (over Minecraft's charge, at a
 // crawl) and shoots a spanned bolt on the click; the chain crossbow holds
-// three. T throws a missile by hand. The hand draws them as
+// three. T throws the wielded weapon itself. The hand draws them as
 // ItemInHandRenderer does, with its item swap and view sway
 // (handanim.go). Everything flies as a real projectile (voxellib's
 // projectile: Minecraft's arc and drag) and sticks in what it hits, a
 // wall or a monster, which it rolls fight.c's dice for a thrown missile
-// against; stuck ones are picked up by touch (Arrow.playerTouch).
+// against; sling stones bounce off and come to rest on the floor instead.
+// Nothing fired ever despawns or turns back into a floor item: stuck or
+// resting ones are picked up by touch (Arrow.playerTouch), and a dead
+// monster's fall out of it.
 
 import (
 	"fmt"
@@ -66,9 +69,13 @@ func magazine(which int) int {
 	return 1
 }
 
-// throwSpeed is a thrown missile's, blocks per tick: Minecraft's thrown
-// trident's.
-const throwSpeed = 2.5
+// throwSpeed and throwGravity are a thrown weapon's, blocks per tick and
+// per tick²: Minecraft's ThrowableProjectile (a snowball's), slow enough
+// to watch cross a room.
+const throwSpeed, throwGravity = 1.5, 0.03
+
+// tumble is how fast a thrown weapon turns end over end, degrees per tick.
+const tumble = 40
 
 // crossbowGroup is the bone holding the crossbow in cleannrooster's artmob.
 const crossbowGroup = "repeater_crossbow_arrow"
@@ -122,6 +129,7 @@ func (g *game) setupArrows() error {
 	if err != nil {
 		return err
 	}
+	g.arrows.Keep = true
 	g.arrows.Hit = func(a *projectile.Arrow, t projectile.Target) {
 		at, ok := t.(arrowTarget)
 		o := g.arrowObjs[a]
@@ -129,31 +137,31 @@ func (g *game) setupArrows() error {
 			return // stuck in another arrow, Robin Hood style
 		}
 		g.fight(at.m, o, true)
-		if o.Flags&rogue.IsMany != 0 {
-			o.Count = 0 // broke in the monster (fight.c): only its picture stays stuck
-		}
 	}
 	return err
 }
 
-// loseMonster drops the missiles stuck in a monster whose body is gone.
-func (g *game) loseMonster(m *monster) {
-	for _, a := range g.arrows.Detach(arrowTarget{g, m}) {
-		if o := g.arrowObjs[a]; o != nil && o.Count > 0 {
-			g.dropMissile(o, m.tile)
-		}
-		delete(g.arrowObjs, a)
-	}
-}
+// loseMonster lets the missiles stuck in a monster whose body is gone
+// fall out: they land on whatever is below.
+func (g *game) loseMonster(m *monster) { g.arrows.Release(arrowTarget{g, m}) }
 
-// throwItem (T) hurls a missile from the pack along the view.
+// throwItem (T) hurls the wielded weapon along the view: one of a bundle,
+// or the weapon itself, leaving the hands bare (a spanned crossbow takes
+// its bolts with it).
 func (g *game) throwItem() {
-	if g.findAmmo() == nil {
+	w := g.weapon
+	if w == nil {
 		g.msg("You have nothing to throw.")
 		return
 	}
 	g.attackCD, g.swing = 12, swingTicks
-	g.shoot(g.takeAmmo(), throwSpeed)
+	one := *w
+	one.Count = 1
+	g.removeFromPack(w, false)
+	if g.weapon == nil {
+		g.chambers, g.spanning, g.drawing = nil, false, false
+	}
+	g.shoot(&one, throwSpeed).Gravity = throwGravity
 }
 
 // startReload (R) spans a crossbow over its charge; the bolt goes in at
@@ -176,7 +184,7 @@ func (g *game) startReload() {
 // launcher reports whether a bow or crossbow is wielded.
 func (g *game) launcher() bool { return g.weapon != nil && launchSpeed[g.weapon.Which] > 0 }
 
-// startDraw is the right button going down with a launcher in hand.
+// startDraw is the left button going down with a launcher in hand.
 func (g *game) startDraw() {
 	switch g.weapon.Which {
 	case rogue.Crossbow, rogue.ChainCrossbow:
@@ -195,7 +203,7 @@ func (g *game) startDraw() {
 	g.handHeight = 0 // the use starts (startUseItem: itemUsed)
 }
 
-// releaseDraw is the right button coming up: a drawn bow shoots (if
+// releaseDraw is the left button coming up: a drawn bow shoots (if
 // drawn a tenth or more), a sling lets fly.
 func (g *game) releaseDraw() {
 	g.fireHeld = false
@@ -234,7 +242,7 @@ func (g *game) tickDraw() {
 	}
 }
 
-// fireCrossbow is the right button with a crossbow: a spanned bolt
+// fireCrossbow is the left button with a crossbow: a spanned bolt
 // flies (nothing on the chain crossbow's cooldown, or while spanning), the
 // next chamber slides in at once, and the hand dips as on any item use
 // (ItemInHandRenderer.itemUsed).
@@ -330,6 +338,9 @@ func (g *game) fovZoom(alpha float64) float64 {
 func (g *game) shoot(ammo *rogue.Object, speed float64) *projectile.Arrow {
 	ex, ey, ez := g.player.Eye()
 	a := g.arrows.Shoot(ex, ey-0.1, ez, g.cam.Yaw, g.cam.Pitch, speed)
+	if ammo.Which == rogue.RockW {
+		a.Bounce = rockBounce
+	}
 	g.arrowObjs[a] = ammo
 	return a
 }
@@ -403,9 +414,16 @@ func (g *game) drawArrows(alpha float64) {
 			g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
 			continue
 		case rogue.Arrow, rogue.Bolt, rogue.Dart:
-		default: // a thrown weapon: its picture flying blade first (the sprites' blades point to the top right), the tip at the arrow's, rolled about the flight to face the camera
+		default: // a thrown weapon: in flight its picture turned to the camera and tumbling (ThrownItemRenderer); stuck, blade first (the sprites' blades point to the top right) with the tip at the arrow's, rolled about the flight to face the camera
 			const s = 0.6
 			sky, blk := g.light(x, y, z)
+			if !a.Stuck {
+				spin := mgl32.DegToRad((float32(a.Flown) + float32(alpha)) * tumble)
+				m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z)).
+					Mul4(rotY(-g.yRotMC())).Mul4(rotX(g.xRotMC())).Mul4(rotY(180)).Mul4(mgl32.HomogRotate3DZ(spin)).Mul4(mgl32.Scale3D(s, s, s))
+				g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
+				continue
+			}
 			along := mgl32.HomogRotate3DY(float32(math.Pi/2 - yaw)).Mul4(mgl32.HomogRotate3DZ(float32(pitch)))
 			toCam := mgl32.Vec4{float32(g.cam.X - x), float32(g.cam.Y - y), float32(g.cam.Z - z), 0}
 			roll := math.Atan2(float64(toCam.Dot(along.Mul4x1(mgl32.Vec4{0, 1, 0, 0}))), float64(toCam.Dot(along.Mul4x1(mgl32.Vec4{0, 0, 1, 0}))))

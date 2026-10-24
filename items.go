@@ -584,22 +584,14 @@ func (g *game) genocide(letter byte) {
 	g.msg("You have wiped out the " + rogue.Monsters[letter-'A'].Name + "s.")
 }
 
-// findAmmo is what a throw or a launcher would use: ammunition for the
-// wielded launcher first, else something to throw by hand.
+// findAmmo is the pack's ammunition for the wielded launcher, nil for none.
 func (g *game) findAmmo() *rogue.Object {
-	var ammo *rogue.Object
 	for _, o := range g.pack {
-		if o.Type != rogue.Weapon || o == g.weapon || o.Flags&rogue.IsMissile == 0 {
-			continue
-		}
-		if g.weapon != nil && rogue.Launches(g.weapon.Which, o) {
+		if o.Type == rogue.Weapon && o != g.weapon && g.weapon != nil && rogue.Launches(g.weapon.Which, o) {
 			return o
 		}
-		if ammo == nil && o.Launch < 0 {
-			ammo = o
-		}
 	}
-	return ammo
+	return nil
 }
 
 // missileLanding is the last open square along the view direction.

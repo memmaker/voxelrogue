@@ -65,7 +65,7 @@ func main() {
 		looseAt = flag.Int("loose", -1, "debug: with -swing, let the launcher go this many ticks before the shot")
 		zapKind = flag.Int("zap", -1, "debug: with -shot, hold a wand of this kind and zap it -zap-at ticks before the shot")
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
-		throwAt = flag.Int("throw", -1, "debug: with -shot, throw a missile (T) this many ticks before the shot")
+		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
 		pattern = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
 		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
@@ -181,9 +181,6 @@ func main() {
 	}
 	if *throwAt >= 0 {
 		g.throwShot = *shotAt - *throwAt
-		if g.findAmmo() == nil {
-			g.debugWeapon(rogue.Dagger)
-		}
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
 	if *look >= 0 {

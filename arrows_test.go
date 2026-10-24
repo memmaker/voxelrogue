@@ -37,3 +37,26 @@ func TestLaunchers(t *testing.T) {
 		}
 	}
 }
+
+// TestThrowWeapon throws the wielded weapon: one dart of a bundle leaves
+// the rest in hand, a lone dagger leaves the hands bare, and bare hands
+// throw nothing.
+func TestThrowWeapon(t *testing.T) {
+	g := &game{rng: rand.New(rand.NewSource(1))}
+	g.arrowObjs, g.player, g.rg = map[*projectile.Arrow]*rogue.Object{}, &character.Character{}, rogue.NewGame(g.rng)
+	darts := rogue.NewWeapon(g.rng, rogue.Dart)
+	darts.Count = 3
+	dagger := rogue.NewWeapon(g.rng, rogue.Dagger)
+	g.pack = []*rogue.Object{darts, dagger}
+	g.weapon = darts
+	g.throwItem()
+	if darts.Count != 2 || g.weapon != darts || len(g.arrowObjs) != 1 {
+		t.Fatalf("darts: %d left, wielding %v, %d flying", darts.Count, g.weapon, len(g.arrowObjs))
+	}
+	g.weapon = dagger
+	g.throwItem()
+	g.throwItem() // bare hands
+	if g.weapon != nil || len(g.pack) != 1 || len(g.arrowObjs) != 2 {
+		t.Fatalf("dagger: wielding %v, pack %d, %d flying", g.weapon, len(g.pack), len(g.arrowObjs))
+	}
+}
