@@ -584,35 +584,7 @@ func (g *game) genocide(letter byte) {
 	g.msg("You have wiped out the " + rogue.Monsters[letter-'A'].Name + "s.")
 }
 
-// fire throws (RMB) a missile, which hits at once: rocks from a sling,
-// darts, daggers and spears; or zaps the held wand. Bows are drawn and
-// crossbows shot instead (arrows.go).
-func (g *game) fire() {
-	if g.zapping != nil {
-		g.zap(g.zapping)
-		return
-	}
-	ammo := g.findAmmo()
-	if ammo == nil {
-		g.msg("You have nothing to throw.")
-		return
-	}
-	g.attackCD = 12
-	g.swing = swingTicks
-	thrown := *ammo
-	thrown.Count = 1
-	g.removeFromPack(ammo, false)
-	land := g.missileLanding()
-	if m := g.monsterInFront(18); m != nil && g.lineOfFire(m) {
-		land = m.tile
-		if g.fight(m, &thrown, true) && thrown.Flags&rogue.IsMany != 0 {
-			return // it broke in the monster
-		}
-	}
-	g.dropMissile(&thrown, land)
-}
-
-// findAmmo is what fire or a launcher would use: ammunition for the
+// findAmmo is what a throw or a launcher would use: ammunition for the
 // wielded launcher first, else something to throw by hand.
 func (g *game) findAmmo() *rogue.Object {
 	var ammo *rogue.Object

@@ -47,6 +47,7 @@ type combatState struct {
 	attackLen   float32    // its length, the weapon's cooldown in ticks
 	combo       int
 	comboOf     *rogue.Object
+	comboPat    int // the pattern the combo is in
 	sinceAttack int // ticks since the last attack started (Better Combat's lastAttacked)
 	hitIn       int // ticks until the pending hit lands (0 = none)
 	hitReach    float64
@@ -170,24 +171,37 @@ func (s *attackStack) transform(b *animBone) { s.c.transform(b) }
 
 // --- The attack itself ---
 
-// startAttack plays the next attack of the weapon's combo over length
-// ticks, landing its hit at the upswing on a monster within reach.
-func (g *game) startAttack(length int, reach float64) {
+// longReach is the reach from which a weapon leads with its stab.
+const longReach = 3.0
+
+// startAttack plays the next attack of the combo of the weapon's attack
+// pattern (patterns) over length ticks, landing its hit at the upswing
+// on a monster within reach; false if the weapon has no such pattern.
+func (g *game) startAttack(length int, reach float64, pattern int) bool {
 	p := presetFor(g.weapon)
 	if p == nil { // no Better Combat attacks: Minecraft's swing, hitting at once
+		if pattern > 0 {
+			return false
+		}
 		g.swing, g.hitIn, g.hitReach = swingTicks, 1, reach
-		return
+		return true
 	}
+	pats := patterns(p, reach >= longReach)
+	if pattern >= len(pats) {
+		return false
+	}
+	pat := pats[pattern]
 	comboReset := int(math.Round(float64(length) * 3)) // combo_reset_rate
-	if g.comboOf != g.weapon || g.sinceAttack > comboReset {
+	if g.comboOf != g.weapon || g.comboPat != pattern || g.sinceAttack > comboReset {
 		g.combo = 0
 	}
-	g.comboOf = g.weapon
-	at := p[g.combo%len(p)]
+	g.comboOf, g.comboPat = g.weapon, pattern
+	at := pat[g.combo%len(pat)]
 	g.combo++
 	g.attack, g.attackLen, g.sinceAttack = g.anims[at.anim], float32(length), 0
 	g.hitIn, g.hitReach = max(1, int(math.Round(float64(g.attackLen*at.upswing)))), reach
 	g.stack.play(g.attack, false, g.attackLen, at.upswing)
+	return true
 }
 
 // tickCombat is the end of the hero's tick: the walk animation and body

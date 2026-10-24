@@ -231,6 +231,7 @@ func (g *game) tickMonsters() {
 	for _, m := range g.monsters {
 		if m.dying > 0 {
 			if m.dying++; m.dying > 24 {
+				g.loseMonster(m)
 				continue
 			}
 			live = append(live, m)
@@ -503,6 +504,7 @@ func (g *game) monsterAttack(m *monster) {
 
 // removeMonster takes a monster off the level without a corpse.
 func (g *game) removeMonster(m *monster) {
+	g.loseMonster(m)
 	for i, o := range g.monsters {
 		if o == m {
 			g.monsters = append(g.monsters[:i], g.monsters[i+1:]...)
@@ -532,17 +534,19 @@ var weaponFeel = map[int]struct {
 	rogue.WoodenPole: {11, 3.4},
 }
 
-// heroAttack swings the wielded weapon: a Better Combat attack whose hit
+// heroAttack swings the wielded weapon in one of its attack patterns
+// (0 left button, 1 right button, 2 F): a Better Combat attack whose hit
 // lands at its upswing (bettercombat.go).
-func (g *game) heroAttack() {
-	g.attackCD = 12
-	reach := 2.4
+func (g *game) heroAttack(pattern int) {
+	cd, reach := 12, 2.4
 	if g.weapon != nil {
 		if f, ok := weaponFeel[g.weapon.Which]; ok {
-			g.attackCD, reach = f.cd, f.reach
+			cd, reach = f.cd, f.reach
 		}
 	}
-	g.startAttack(g.attackCD, reach)
+	if g.startAttack(cd, reach, pattern) {
+		g.attackCD = cd
+	}
 }
 
 // monsterInFront finds the nearest living monster within reach (plus its

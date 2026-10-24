@@ -232,11 +232,11 @@ func TestSling(t *testing.T) {
 	}
 }
 
-// TestChainCrossbow checks weapons_expanded's chain crossbow: a chamber
-// loads over the 38-tick charge (an early release loads nothing), three
-// fill the magazine, the left button shoots one per 8-tick cooldown and
-// chambers the next at once, and melee waits while one is loaded.
-func TestChainCrossbow(t *testing.T) {
+// TestCrossbowReload spans the chain crossbow with R: each press loads a
+// chamber over the 38-tick charge (the hand showing the charge), three
+// fill the magazine, the right button shoots one per 8-tick cooldown and
+// chambers the next at once, and an empty crossbow shoots nothing.
+func TestCrossbowReload(t *testing.T) {
 	g := &game{}
 	g.weapon = &rogue.Object{Type: rogue.Weapon, Which: rogue.ChainCrossbow}
 	g.arrowObjs = map[*projectile.Arrow]*rogue.Object{}
@@ -246,42 +246,66 @@ func TestChainCrossbow(t *testing.T) {
 		b.Count = 1
 		g.pack = append(g.pack, b)
 	}
-	load := func(ticks int) {
-		g.startDraw()
-		for range ticks {
+	g.startDraw() // empty
+	if use, _ := g.handUse(0); len(g.arrowObjs) != 0 || use != useNone {
+		t.Fatalf("empty: %d bolts, use %v", len(g.arrowObjs), use)
+	}
+	for i := 1; i <= 3; i++ {
+		g.startReload()
+		if use, ut := g.handUse(0.5); use != useCrossbowCharge || ut != -0.5 || !g.spanning {
+			t.Fatalf("spanning: use %v at %v", use, ut)
+		}
+		for range reloadTicks(rogue.ChainCrossbow) {
 			g.tickDraw()
 		}
-		g.releaseDraw()
-	}
-	load(37)
-	if use, _ := g.handUse(0); len(g.chambers) != 0 || use != useNone {
-		t.Fatalf("early release: %d chambers, use %v", len(g.chambers), use)
-	}
-	for i := 1; i <= 4; i++ {
-		load(38)
-		if len(g.chambers) != min(i, chainMagazine) || !g.chainLoaded() {
+		if len(g.chambers) != i || g.spanning {
 			t.Fatalf("load %d: %d chambers", i, len(g.chambers))
 		}
 	}
-	if use, _ := g.handUse(0); use != useCrossbowHold {
+	g.startReload() // full
+	if use, _ := g.handUse(0); use != useCrossbowHold || g.spanning {
 		t.Fatalf("loaded: use %v, want hold", use)
 	}
-	g.fireChain()
-	g.fireChain() // on the cooldown
+	g.startDraw()
+	g.startDraw() // on the cooldown
 	if len(g.chambers) != 2 || g.cooldown != chainCooldown || len(g.arrowObjs) != 1 {
 		t.Fatalf("shot: %d chambers, cooldown %d, %d bolts", len(g.chambers), g.cooldown, len(g.arrowObjs))
 	}
-	g.startDraw() // topping up puts the loaded chambers aside
-	if use, ut := g.handUse(0.5); use != useCrossbowCharge || ut != -0.5 || g.chainLoaded() {
-		t.Fatalf("loading: use %v at %v, loaded %v", use, ut, g.chainLoaded())
-	}
-	g.releaseDraw() // at once: nothing loaded
 	for range chainCooldown {
 		g.tickDraw()
 	}
-	g.fireChain()
-	g.fireChain()
+	g.startDraw()
+	g.startDraw()
 	if len(g.chambers) != 1 || len(g.arrowObjs) != 2 || len(g.pack) != 6 {
 		t.Fatalf("second shot: %d chambers, %d bolts, %d in the pack", len(g.chambers), len(g.arrowObjs), len(g.pack))
+	}
+}
+
+// TestPatterns splits the presets into the patterns bound to the left
+// button, the right button and F: sideways, overhead and stab, the stab
+// first for a long reaching weapon.
+func TestPatterns(t *testing.T) {
+	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
+		t.Fatal(err)
+	}
+	want := map[int]string{
+		rogue.LongSword:   "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_stab]]",
+		rogue.Katana:      "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slash_vertical_left two_handed_slash_vertical_right]]",
+		rogue.Battlestaff: "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left two_handed_spin] [two_handed_slam] [two_handed_stab_left two_handed_stab_right]]",
+		rogue.Halberd:     "[[two_handed_stab_right] [two_handed_slash_vertical_left]]",
+		rogue.Spear:       "[[two_handed_stab_right]]",
+	}
+	for k, w := range want {
+		var got [][]string
+		for _, pat := range patterns(weaponPresets[k], weaponFeel[k].reach >= longReach) {
+			var names []string
+			for _, a := range pat {
+				names = append(names, a.anim)
+			}
+			got = append(got, names)
+		}
+		if fmt.Sprint(got) != w {
+			t.Errorf("%s: %v, want %v", rogue.WeaponNames[k], got, w)
+		}
 	}
 }

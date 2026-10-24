@@ -65,8 +65,9 @@ func main() {
 		looseAt = flag.Int("loose", -1, "debug: with -swing, let the launcher go this many ticks before the shot")
 		zapKind = flag.Int("zap", -1, "debug: with -shot, hold a wand of this kind and zap it -zap-at ticks before the shot")
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
-		clickAt = flag.Int("click", -1, "debug: with -shot, click the left button (a loaded chain crossbow shoots) this many ticks before the shot")
+		throwAt = flag.Int("throw", -1, "debug: with -shot, throw a missile (T) this many ticks before the shot")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
+		pattern = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
 		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
 		renew   = flag.Int("renew", -1, "debug: start a new game (as R does) at this tick")
 		renewTo = flag.Int64("renew-seed", 0, "debug: with -renew, the new game's seed (0 = random)")
@@ -164,11 +165,11 @@ func main() {
 		g.addPack(&rogue.Object{Type: rogue.Amulet, Count: 1})
 		g.amulet = true
 	}
-	g.combo, g.comboOf = *combo, g.weapon
+	g.combo, g.comboOf, g.comboPat = *combo, g.weapon, *pattern
 	if *swingAt >= 0 {
 		g.swingShot = *shotAt - *swingAt
 	}
-	g.looseShot, g.clickShot, g.zapShot = -1, -1, -1
+	g.looseShot, g.throwShot, g.zapShot = -1, -1, -1
 	if *zapKind >= 0 {
 		w := &rogue.Object{Type: rogue.Stick, Which: *zapKind, Charges: 9}
 		g.addPack(w)
@@ -178,8 +179,11 @@ func main() {
 	if *looseAt >= 0 {
 		g.looseShot = *shotAt - *looseAt
 	}
-	if *clickAt >= 0 {
-		g.clickShot = *shotAt - *clickAt
+	if *throwAt >= 0 {
+		g.throwShot = *shotAt - *throwAt
+		if g.findAmmo() == nil {
+			g.debugWeapon(rogue.Dagger)
+		}
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
 	if *look >= 0 {
@@ -221,7 +225,7 @@ type game struct {
 	wizard    bool
 	swingShot int   // -swing: the tick to attack on
 	looseShot int   // -loose: the tick to let a launcher go on
-	clickShot int   // -click: the tick to click the left button on
+	throwShot int   // -throw: the tick to throw a missile on
 	zapShot   int   // -zap: the tick to zap the held wand on
 	renewAt   int   // -renew: the tick to start a new game on
 	renewSeed int64 // its seed
@@ -244,7 +248,7 @@ func (g *game) newGame(seed int64) {
 	g.monsters, g.distTick = nil, -1
 	g.floor, g.confuseHit, g.zapping = nil, false, nil
 	g.clearArrows()
-	g.drawing, g.drawTicks, g.fireHeld, g.reload = false, 0, false, 0
+	g.drawing, g.drawTicks, g.fireHeld, g.reload, g.spanning, g.chambers = false, 0, false, 0, false, nil
 	g.handItem, g.handHeight, g.prevHandHeight, g.fovMod = nil, 0, 0, 0
 	g.attack, g.hitIn, g.combo, g.comboOf, g.sinceAttack = nil, 0, 0, nil, 0
 	if g.stack != nil {
@@ -325,8 +329,8 @@ func (g *game) step() {
 	if g.tick == g.looseShot {
 		g.releaseDraw()
 	}
-	if g.tick == g.clickShot {
-		g.fireChain()
+	if g.tick == g.throwShot {
+		g.throwItem()
 	}
 	if g.tick == g.zapShot {
 		g.zap(g.zapping)
@@ -336,7 +340,7 @@ func (g *game) step() {
 			g.startDraw()
 		} else {
 			g.sinceAttack = 0 // keep -combo's attack
-			g.heroAttack()
+			g.heroAttack(g.comboPat)
 		}
 	}
 	g.tickDraw()

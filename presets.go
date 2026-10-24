@@ -189,6 +189,42 @@ func resolveAttacks(id string) []attrAttack {
 	return attacks
 }
 
+// patternOf sorts an attack animation into its pattern: 0 sideways
+// (horizontal slashes, swipes, spins), 1 overhead (vertical slashes,
+// slams, uppercuts, punches), 2 stabs.
+func patternOf(anim string) int {
+	switch {
+	case strings.Contains(anim, "stab"):
+		return 2
+	case strings.Contains(anim, "vertical") || strings.Contains(anim, "slam") || strings.Contains(anim, "uppercut") || strings.Contains(anim, "punch"):
+		return 1
+	}
+	return 0
+}
+
+// patterns splits a preset's attacks into the weapon's attack patterns,
+// each a combo of its own, in the order they are bound to the left
+// button, the right button and F: sideways, overhead, stab; a long
+// reaching weapon leads with its stab.
+func patterns(p []bcAttack, long bool) [][]bcAttack {
+	var by [3][]bcAttack
+	for _, a := range p {
+		k := patternOf(a.anim)
+		by[k] = append(by[k], a)
+	}
+	order := []int{0, 1, 2}
+	if long {
+		order = []int{2, 0, 1}
+	}
+	var out [][]bcAttack
+	for _, k := range order {
+		if len(by[k]) > 0 {
+			out = append(out, by[k])
+		}
+	}
+	return out
+}
+
 // presetFor is the wielded weapon's attacks, nil for a weapon the mod
 // leaves to the vanilla swing.
 func presetFor(o *rogue.Object) []bcAttack {

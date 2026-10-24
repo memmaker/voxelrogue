@@ -11,9 +11,10 @@ import (
 
 // Controls (keep helpLines in hud.go in sync):
 //
-//	WASD walk, mouse look, Space jump, LMB attack, RMB fire/zap (hold to
-//	draw a bow; a crossbow repeats while held),
-//	F search, < climb (with the Amulet), Tab/I inventory, M map, F1 help,
+//	WASD walk, mouse look, Space jump, LMB the weapon's first attack
+//	pattern, RMB its second (or zap a held wand; hold to draw a bow; a
+//	spanned crossbow shoots), F its third, T throw, R span a crossbow,
+//	C search, < climb (with the Amulet), Tab/I inventory, M map, F1 help,
 //	F9 debug weapon menu, 3 next weapon, Esc release mouse (again: quit), R new game
 //	after death or victory.
 type inputState struct {
@@ -86,6 +87,14 @@ func (g *game) setupInput() {
 			}
 		case glfw.Key0 + 3:
 			g.nextWeapon()
+		case glfw.KeyT:
+			if g.attackCD == 0 && g.noCommand == 0 {
+				g.throwItem()
+			}
+		case glfw.KeyR:
+			if g.launcher() && g.noCommand == 0 {
+				g.startReload()
+			}
 		}
 	})
 	g.win.SetMouseButtonCallback(func(w *glfw.Window, b glfw.MouseButton, a glfw.Action, m glfw.ModifierKey) {
@@ -100,15 +109,14 @@ func (g *game) setupInput() {
 			g.capture(true)
 			return
 		}
-		switch {
-		case g.dead || g.won || g.noCommand > 0:
-		case b == glfw.MouseButtonLeft:
-			g.fireChain()
-		case b != glfw.MouseButtonRight:
-		case g.zapping == nil && g.launcher():
+		switch { // melee patterns are polled (wantPattern)
+		case g.dead || g.won || g.noCommand > 0 || b != glfw.MouseButtonRight:
+		case g.zapping != nil:
+			if g.attackCD == 0 {
+				g.zap(g.zapping)
+			}
+		case g.launcher():
 			g.startDraw()
-		case g.attackCD == 0:
-			g.fire()
 		}
 	})
 	lastX, lastY := g.win.GetCursorPos()
@@ -234,8 +242,24 @@ func (g *game) moveInput() character.Input {
 	return in
 }
 
-func (g *game) wantAttack() bool {
-	return !g.automated && g.captured && !g.won && !g.showInv && !g.showDebug && g.win.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
+func (g *game) wantAttack(b glfw.MouseButton) bool {
+	return !g.automated && g.captured && !g.won && !g.showInv && !g.showDebug && g.win.GetMouseButton(b) == glfw.Press
 }
 
-func (g *game) wantSearch() bool { return g.key(glfw.KeyF) }
+// wantPattern is the attack pattern held down: 0 left button, 1 right
+// button, 2 F (a launcher or a held wand uses the right button for its
+// own purpose); -1 none.
+func (g *game) wantPattern() int {
+	melee := !g.launcher() && g.zapping == nil
+	switch {
+	case g.wantAttack(glfw.MouseButtonLeft):
+		return 0
+	case melee && g.wantAttack(glfw.MouseButtonRight):
+		return 1
+	case melee && g.key(glfw.KeyF):
+		return 2
+	}
+	return -1
+}
+
+func (g *game) wantSearch() bool { return g.key(glfw.KeyC) }

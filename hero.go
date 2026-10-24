@@ -229,7 +229,7 @@ func (g *game) tickHero() {
 		in.Yaw += math.Sin(float64(g.tick)*0.37) * 1.4
 	}
 	in.Sprint = g.hasted > 0
-	if g.drawing { // Minecraft slows the hero while a bow is drawn
+	if g.drawing || g.spanning { // Minecraft slows the hero while a bow is drawn; spanning a crossbow is a crawl too
 		in.Forward *= 0.2
 		in.Strafe *= 0.2
 		in.Sprint = false
@@ -267,8 +267,8 @@ func (g *game) tickHero() {
 		g.searchCD = searchTicks
 		g.search()
 	}
-	if g.wantAttack() && g.attackCD == 0 && g.noCommand == 0 && !g.chainLoaded() {
-		g.heroAttack()
+	if pat := g.wantPattern(); pat >= 0 && g.attackCD == 0 && g.noCommand == 0 {
+		g.heroAttack(pat)
 	}
 	g.tickCombat()
 	g.tickHand()

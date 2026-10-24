@@ -2,14 +2,14 @@ package main
 
 // Bows and crossbows as in Minecraft: hold the right button to draw a bow
 // and let go to shoot, the arrow the faster the longer it was drawn
-// (BowItem). The crossbows fire as VoxelStealth's: on the click, then
-// span themselves again (over Minecraft's charge) and repeat while the
-// button is held. The hand draws them as ItemInHandRenderer does, with
-// its item swap and view sway (handanim.go). Arrows fly as
-// real projectiles (voxellib's projectile:
-// Minecraft's arc and drag). An arrow that strikes a monster rolls
-// fight.c's dice for a thrown missile; one that misses its roll, or
-// sticks in a wall, drops where it came down.
+// (BowItem). A crossbow is spanned with R (over Minecraft's charge, at a
+// crawl) and shoots a spanned bolt on the click; the chain crossbow holds
+// three. T throws a missile by hand. The hand draws them as
+// ItemInHandRenderer does, with its item swap and view sway
+// (handanim.go). Everything flies as a real projectile (voxellib's
+// projectile: Minecraft's arc and drag) and sticks in what it hits, a
+// wall or a monster, which it rolls fight.c's dice for a thrown missile
+// against; stuck ones are picked up by touch (Arrow.playerTouch).
 
 import (
 	"fmt"
@@ -54,11 +54,21 @@ func reloadTicks(which int) int { return int(chargeTicks(which)) + 3 }
 func isCrossbow(which int) bool { return which == rogue.Crossbow || which == rogue.ChainCrossbow }
 
 // weapons_expanded's chain crossbow (its config's defaults): the magazine's
-// chambers, and the cooldown between shots. Each chamber is loaded by
-// holding the right button over the crossbow's charge and letting go; the
-// left button shoots instead of attacking while one is loaded, and the
-// next chamber slides in at once.
+// chambers, and the cooldown between shots. R loads one chamber over the
+// crossbow's charge; a shot chambers the next at once.
 const chainMagazine, chainCooldown = 3, 8
+
+// magazine is how many bolts a crossbow holds spanned.
+func magazine(which int) int {
+	if which == rogue.ChainCrossbow {
+		return chainMagazine
+	}
+	return 1
+}
+
+// throwSpeed is a thrown missile's, blocks per tick: Minecraft's thrown
+// trident's.
+const throwSpeed = 2.5
 
 // crossbowGroup is the bone holding the crossbow in cleannrooster's artmob.
 const crossbowGroup = "repeater_crossbow_arrow"
@@ -70,9 +80,10 @@ type arrowState struct {
 	arrowInsts  []render.ModelInstance
 	drawing     bool            // the right button is drawing a bow
 	drawTicks   int             // how long
-	fireHeld    bool            // the right button is down on a crossbow or sling
-	reload      int             // ticks until the crossbow is spanned again
-	chambers    []*rogue.Object // the chain crossbow's loaded bolts, the next shot first
+	fireHeld    bool            // the right button is down on a sling
+	spanning    bool            // R: the crossbow is being spanned
+	reload      int             // ticks until it is
+	chambers    []*rogue.Object // a crossbow's spanned bolts, the next shot first
 	cooldown    int             // ticks until the chain crossbow shoots again
 	sling       slingAction
 	slingModels [2]int // the sling's resting and swinging models
@@ -115,15 +126,51 @@ func (g *game) setupArrows() error {
 		at, ok := t.(arrowTarget)
 		o := g.arrowObjs[a]
 		if !ok || o == nil {
-			return
+			return // stuck in another arrow, Robin Hood style
 		}
-		delete(g.arrowObjs, a)
-		a.Discard()
-		if !g.fight(at.m, o, true) {
-			g.dropMissile(o, at.m.tile)
-		} // a hit breaks it in the monster
+		g.fight(at.m, o, true)
+		if o.Flags&rogue.IsMany != 0 {
+			o.Count = 0 // broke in the monster (fight.c): only its picture stays stuck
+		}
 	}
 	return err
+}
+
+// loseMonster drops the missiles stuck in a monster whose body is gone.
+func (g *game) loseMonster(m *monster) {
+	for _, a := range g.arrows.Detach(arrowTarget{g, m}) {
+		if o := g.arrowObjs[a]; o != nil && o.Count > 0 {
+			g.dropMissile(o, m.tile)
+		}
+		delete(g.arrowObjs, a)
+	}
+}
+
+// throwItem (T) hurls a missile from the pack along the view.
+func (g *game) throwItem() {
+	if g.findAmmo() == nil {
+		g.msg("You have nothing to throw.")
+		return
+	}
+	g.attackCD, g.swing = 12, swingTicks
+	g.shoot(g.takeAmmo(), throwSpeed)
+}
+
+// startReload (R) spans a crossbow over its charge; the bolt goes in at
+// the end (tickDraw).
+func (g *game) startReload() {
+	if !isCrossbow(g.weapon.Which) || g.spanning {
+		return
+	}
+	if len(g.chambers) >= magazine(g.weapon.Which) {
+		g.msg("The crossbow is loaded.")
+		return
+	}
+	if a := g.findAmmo(); a == nil || !rogue.Launches(g.weapon.Which, a) {
+		g.msg("You have nothing to load.")
+		return
+	}
+	g.spanning, g.reload, g.handHeight = true, reloadTicks(g.weapon.Which), 0
 }
 
 // launcher reports whether a bow or crossbow is wielded.
@@ -132,18 +179,13 @@ func (g *game) launcher() bool { return g.weapon != nil && launchSpeed[g.weapon.
 // startDraw is the right button going down with a launcher in hand.
 func (g *game) startDraw() {
 	switch g.weapon.Which {
-	case rogue.Crossbow:
-		g.fireHeld = true
+	case rogue.Crossbow, rogue.ChainCrossbow:
+		g.fireCrossbow()
 		return
 	case rogue.Sling:
 		g.fireHeld = true
 		g.startSling()
 		return
-	case rogue.ChainCrossbow:
-		if len(g.chambers) >= chainMagazine { // ChainCrossbowItem.use: FAIL with its "full" sound
-			g.msg("The chain crossbow is full.")
-			return
-		}
 	}
 	if a := g.findAmmo(); a == nil || !rogue.Launches(g.weapon.Which, a) {
 		g.msg("You have nothing to shoot.")
@@ -154,28 +196,19 @@ func (g *game) startDraw() {
 }
 
 // releaseDraw is the right button coming up: a drawn bow shoots (if
-// drawn a tenth or more), a crossbow stops repeating, and the chain
-// crossbow keeps the chamber if it was held over the whole charge
-// (releaseUsing: the bolt loaded at the charge's end joins the queue).
+// drawn a tenth or more), a sling lets fly.
 func (g *game) releaseDraw() {
 	g.fireHeld = false
 	if !g.drawing {
 		return
 	}
 	g.drawing = false
-	if g.weapon.Which == rogue.ChainCrossbow {
-		if g.drawTicks >= int(chargeTicks(rogue.ChainCrossbow)) {
-			g.chambers = append(g.chambers, g.takeAmmo())
-			g.msg(fmt.Sprintf("Chain crossbow: %d/%d shots.", len(g.chambers), chainMagazine))
-		}
-		return
-	}
 	if pw := float64(drawPower(float32(g.drawTicks), fullDraw(g.weapon.Which))); pw >= 0.1 {
 		g.shoot(g.takeAmmo(), pw*launchSpeed[g.weapon.Which])
 	}
 }
 
-// tickDraw draws the bow on, and spans and fires the crossbow.
+// tickDraw draws the bow on, and spans the crossbow.
 func (g *game) tickDraw() {
 	defer g.tickFov()
 	if g.reload > 0 {
@@ -185,11 +218,15 @@ func (g *game) tickDraw() {
 		g.cooldown--
 	}
 	if !g.launcher() || g.dead || g.showInv || g.noCommand > 0 {
-		g.drawing, g.fireHeld, g.sling = false, false, slingAction{}
+		g.drawing, g.fireHeld, g.spanning, g.reload, g.sling = false, false, false, 0, slingAction{}
 		return
 	}
-	if g.fireHeld && isCrossbow(g.weapon.Which) && g.reload == 0 {
-		g.fireCrossbow()
+	if g.spanning && g.reload == 0 { // spanned: the bolt goes in
+		g.spanning = false
+		if a := g.findAmmo(); a != nil && rogue.Launches(g.weapon.Which, a) {
+			g.chambers = append(g.chambers, g.takeAmmo())
+			g.msg(fmt.Sprintf("Loaded: %d/%d.", len(g.chambers), magazine(g.weapon.Which)))
+		}
 	}
 	g.tickSling()
 	if g.drawing {
@@ -197,35 +234,21 @@ func (g *game) tickDraw() {
 	}
 }
 
-// fireCrossbow shoots a bolt (VoxelStealth's shoot) and starts spanning;
-// the hand dips as on any item use (ItemInHandRenderer.itemUsed).
+// fireCrossbow is the right button with a crossbow: a spanned bolt
+// flies (nothing on the chain crossbow's cooldown, or while spanning), the
+// next chamber slides in at once, and the hand dips as on any item use
+// (ItemInHandRenderer.itemUsed).
 func (g *game) fireCrossbow() {
-	g.reload = reloadTicks(g.weapon.Which)
-	g.handHeight = 0
-	if a := g.findAmmo(); a == nil || !rogue.Launches(g.weapon.Which, a) {
-		g.msg("You have nothing to shoot.")
+	if g.cooldown > 0 || g.spanning {
 		return
 	}
-	g.shoot(g.takeAmmo(), launchSpeed[g.weapon.Which])
-}
-
-// chainLoaded reports whether a chain crossbow with a chamber loaded is
-// wielded (CrossbowItem.isCharged; while a chamber loads, the loaded
-// ones are put aside and the crossbow counts as empty).
-func (g *game) chainLoaded() bool {
-	return g.weapon != nil && g.weapon.Which == rogue.ChainCrossbow && len(g.chambers) > 0 && !g.drawing
-}
-
-// fireChain is the left button with a loaded chain crossbow (the mod's
-// startAttack mixin: the click shoots instead of attacking, and does
-// nothing on the cooldown); the next chamber is loaded at once.
-func (g *game) fireChain() {
-	if !g.chainLoaded() || g.cooldown > 0 {
+	if len(g.chambers) == 0 {
+		g.msg("The crossbow is not spanned.")
 		return
 	}
-	g.shoot(g.chambers[0], launchSpeed[rogue.ChainCrossbow])
+	g.shoot(g.chambers[0], launchSpeed[g.weapon.Which])
 	g.chambers = g.chambers[1:]
-	g.cooldown = chainCooldown
+	g.cooldown, g.handHeight = chainCooldown, 0
 }
 
 // tickHand is ItemInHandRenderer.tick with Player Animation Lib's mixin
@@ -285,17 +308,11 @@ func (g *game) takeAmmo() *rogue.Object {
 func (g *game) handUse(pt float32) (int, float32) {
 	switch {
 	case g.weapon == nil:
-	case g.weapon.Which == rogue.ChainCrossbow && g.drawing: // loading a chamber
-		return useCrossbowCharge, float32(g.drawTicks) - 1 + pt
-	case g.weapon.Which == rogue.ChainCrossbow:
-		if len(g.chambers) > 0 {
-			return useCrossbowHold, 0
-		}
 	case g.drawing:
 		return useBow, float32(g.drawTicks) - 1 + pt
-	case isCrossbow(g.weapon.Which) && g.reload > 0:
+	case isCrossbow(g.weapon.Which) && g.spanning:
 		return useCrossbowCharge, float32(reloadTicks(g.weapon.Which)-g.reload) - 1 + pt
-	case isCrossbow(g.weapon.Which):
+	case isCrossbow(g.weapon.Which) && len(g.chambers) > 0:
 		return useCrossbowHold, 0
 	}
 	return useNone, 0
@@ -317,13 +334,9 @@ func (g *game) shoot(ammo *rogue.Object, speed float64) *projectile.Arrow {
 	return a
 }
 
-// stickTicks is how long an arrow stays stuck in a wall or the floor
-// before it drops as a pickup (Minecraft's stay a minute; Rogue's land at
-// once). ponytail: a second, so the shot can be seen landing.
-const stickTicks = 20
-
-// tickArrows flies the arrows; those stuck in the walls or floor drop as
-// pickups on the square they came down on.
+// tickArrows flies the arrows; one stuck in a wall or the floor is picked
+// up when the hero touches it (Arrow.playerTouch: the hero's box meets
+// its tip).
 func (g *game) tickArrows() {
 	if len(g.arrows.Arrows) == 0 {
 		return
@@ -335,19 +348,20 @@ func (g *game) tickArrows() {
 		}
 	}
 	g.arrows.Tick(g.terrain, targets)
-	l := g.level()
+	p := g.player
 	for _, a := range g.arrows.Arrows {
 		o := g.arrowObjs[a]
-		if !a.Stuck || a.In != nil || o == nil || a.Age < stickTicks {
+		if !a.Stuck || a.In != nil || o == nil || o.Count == 0 {
+			continue
+		}
+		if math.Abs(a.X-p.X) > 0.8 || math.Abs(a.Z-p.Z) > 0.8 || a.Y < p.Y-0.3 || a.Y > p.Y+2 {
 			continue
 		}
 		delete(g.arrowObjs, a)
 		a.Discard()
-		c := tileAt(a.PrevX, a.PrevZ)
-		if !l.At(c).Walkable() {
-			c = g.heroTile()
+		if !g.addPack(o) {
+			g.dropMissile(o, g.heroTile())
 		}
-		g.dropMissile(o, c)
 	}
 }
 
@@ -380,11 +394,23 @@ func (g *game) drawArrows(alpha float64) {
 		if dx, dy, dz := x-g.cam.X, y-g.cam.Y, z-g.cam.Z; a.Flown < 2 && dx*dx+dy*dy+dz*dz < 3.5*3.5 {
 			continue
 		}
-		if o := g.arrowObjs[a]; o.Which == rogue.RockW { // ThrownItemRenderer: the rock's picture turned to the camera, as on the ground
+		switch o := g.arrowObjs[a]; o.Which {
+		case rogue.RockW: // ThrownItemRenderer: the rock's picture turned to the camera, as on the ground
 			sky, blk := g.light(x, y, z)
 			m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z)).
 				Mul4(rotY(-g.yRotMC())).Mul4(rotX(g.xRotMC())).Mul4(rotY(180)).
 				Mul4(mgl32.Translate3D(0, 2.0/16, 0)).Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
+			g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
+			continue
+		case rogue.Arrow, rogue.Bolt, rogue.Dart:
+		default: // a thrown weapon: its picture flying blade first (the sprites' blades point to the top right), the tip at the arrow's, rolled about the flight to face the camera
+			const s = 0.6
+			sky, blk := g.light(x, y, z)
+			along := mgl32.HomogRotate3DY(float32(math.Pi/2 - yaw)).Mul4(mgl32.HomogRotate3DZ(float32(pitch)))
+			toCam := mgl32.Vec4{float32(g.cam.X - x), float32(g.cam.Y - y), float32(g.cam.Z - z), 0}
+			roll := math.Atan2(float64(toCam.Dot(along.Mul4x1(mgl32.Vec4{0, 1, 0, 0}))), float64(toCam.Dot(along.Mul4x1(mgl32.Vec4{0, 0, 1, 0}))))
+			m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z)).Mul4(along).Mul4(mgl32.HomogRotate3DX(float32(-roll))).
+				Mul4(mgl32.Translate3D(-s*math.Sqrt2/2, 0, 0)).Mul4(mgl32.HomogRotate3DZ(-math.Pi / 4)).Mul4(mgl32.Scale3D(s, s, s))
 			g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
 			continue
 		}
