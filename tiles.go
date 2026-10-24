@@ -124,12 +124,12 @@ func (s *sheetTextures) TextureFrames(name string) ([]image.Image, int, error) {
 	return s.pack.TextureFrames(name)
 }
 
-// loadSprites loads the item, weapon ("w:" + id) and monster ("m:" + id)
+// loadSprites loads the item, gear, weapon ("w:" + id) and monster ("m:" + id)
 // sprites of the tile directory's rec files.
 func loadSprites(dir string) ([]string, []image.Image, error) {
 	var names []string
 	var imgs []image.Image
-	for _, f := range []struct{ rec, prefix string }{{"items.rec", ""}, {"weapons.rec", "w:"}, {"weapons32.rec", "w:"}, {"monsters.rec", "m:"}} {
+	for _, f := range []struct{ rec, prefix string }{{"items.rec", ""}, {"gear.rec", ""}, {"weapons.rec", "w:"}, {"weapons32.rec", "w:"}, {"monsters.rec", "m:"}} {
 		tiles, err := loadTiles(filepath.Join(dir, f.rec))
 		if err != nil {
 			return nil, nil, err

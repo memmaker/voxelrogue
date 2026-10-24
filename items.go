@@ -997,9 +997,9 @@ func (g *game) drawHand(alpha float64) {
 		return
 	}
 	switch {
-	case name == "w:bow" && h.use == useBow: // items/bow: use_duration scaled 0.05
+	case name == weaponSprite(rogue.Bow) && h.use == useBow: // items/bow: use_duration scaled 0.05
 		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)*0.05, 0.65, 0.9))
-	case name == "w:great_bow" && h.use == useBow: // the longbow's pulling models, use_duration scaled 1/32
+	case name == weaponSprite(rogue.GreatBow) && h.use == useBow: // the longbow's pulling models, use_duration scaled 1/32
 		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)/fullDraw(rogue.GreatBow), 0.65, 0.9))
 	case crossbowSprite(name) && h.use == useCrossbowCharge: // crossbow/pull
 		name += fmt.Sprintf("_pulling_%d", pullStage((h.useT+1-pt)/h.charge, 0.58, 1)) // the ticks held so far over the charge
@@ -1019,7 +1019,9 @@ func (g *game) drawHand(alpha float64) {
 // and 2 from the model's range_dispatch thresholds.
 // crossbowSprite reports whether a sprite is a crossbow with pulling and
 // loaded pictures (items/crossbow, weapons_expanded's chain crossbow).
-func crossbowSprite(name string) bool { return name == "w:crossbow" || name == "w:chain_crossbow" }
+func crossbowSprite(name string) bool {
+	return name == weaponSprite(rogue.Crossbow) || name == weaponSprite(rogue.ChainCrossbow)
+}
 
 func pullStage(pull, one, two float32) int {
 	switch {

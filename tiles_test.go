@@ -31,12 +31,12 @@ func TestTilesCoverEveryName(t *testing.T) {
 			want = append(want, spriteFor(rg, &rogue.Object{Type: t, Which: which}))
 		}
 	}
-	for _, w := range []string{"bow", "great_bow", "crossbow", "chain_crossbow"} {
+	for _, w := range []int{rogue.Bow, rogue.GreatBow, rogue.Crossbow, rogue.ChainCrossbow} {
 		for i := range 3 {
-			want = append(want, fmt.Sprintf("w:%s_pulling_%d", w, i))
+			want = append(want, fmt.Sprintf("%s_pulling_%d", weaponSprite(w), i))
 		}
 	}
-	want = append(want, "w:crossbow_arrow", "w:chain_crossbow_arrow", "w:sling_model", "w:glaive_hand", "w:greatsword_hand", "w:halberd_hand", "w:scythe_hand")
+	want = append(want, weaponSprite(rogue.Crossbow)+"_arrow", weaponSprite(rogue.ChainCrossbow)+"_arrow", "w:sling_model", "w:greatsword_hand", "w:scythe_hand")
 	for _, n := range want {
 		if !have[n] {
 			t.Errorf("no tile for sprite %q", n)

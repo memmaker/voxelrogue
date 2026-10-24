@@ -77,12 +77,20 @@ func boxModel(name string, w, h float32, tex image.Image) *model.Model {
 }
 
 // spriteNames lists every sprite the game uses, loaded from itemDir.
-// weaponSprites are the weapons drawn with a mod's picture ("w:" + its
-// id in weapons.rec); "" draws the weapon's own name from items.rec.
-var weaponSprites = [rogue.MaxWeapons]string{rogue.Bow: "w:bow", rogue.Sling: "w:sling", rogue.Crossbow: "w:crossbow",
-	12: "w:broadsword", "w:glaive", "w:greatsword", "w:halberd", "w:katana", "w:scythe", "w:war_spear",
-	"w:great_bow", "w:war_glaive", "w:scimitar", "w:wooden_pole", "w:hatchet",
-	rogue.Battlestaff: "w:wooden_pole", rogue.Rapier: "w:rapier", rogue.Sickle: "w:sickle", rogue.ChainCrossbow: "w:chain_crossbow"}
+// weaponSprites are the weapons still drawn with a mod's picture ("w:" +
+// its id in weapons.rec: no 16px picture in assets/hobbit matches them,
+// or the sling's model needs its own); "" draws the weapon's own name
+// from gear.rec or items.rec.
+var weaponSprites = [rogue.MaxWeapons]string{rogue.Sling: "w:sling", rogue.Greatsword: "w:greatsword", rogue.Katana: "w:katana",
+	rogue.Scythe: "w:scythe", rogue.GreatBow: "w:great_bow", rogue.Sickle: "w:sickle"}
+
+// weaponSprite is the sprite a weapon kind is drawn with.
+func weaponSprite(which int) string {
+	if s := weaponSprites[which]; s != "" {
+		return s
+	}
+	return rogue.WeaponNames[which]
+}
 
 // handSprites are the sprites with a separate in-hand picture
 // (name+"_hand"), filled by loadSprites.
@@ -94,10 +102,7 @@ var handSprites = map[string]bool{}
 func spriteFor(g *rogue.Game, o *rogue.Object) string {
 	switch o.Type {
 	case rogue.Weapon:
-		if s := weaponSprites[o.Which]; s != "" {
-			return s
-		}
-		return rogue.WeaponNames[o.Which]
+		return weaponSprite(o.Which)
 	case rogue.Armor:
 		return rogue.ArmorNames[o.Which]
 	case rogue.Scroll:

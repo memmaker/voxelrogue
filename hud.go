@@ -14,6 +14,7 @@ import (
 	"image/png"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/memmaker/voxellib/i18n"
@@ -89,10 +90,43 @@ func (g *game) tickHUD() {
 	}
 }
 
+// armorSets are the VoxelHobbit armour textures (hobbit/armor/<set>_1.png
+// the chest and boots, _2.png the leggings) the inventory's hero wears
+// for each armour kind: the sets of gear.rec's armour icons.
+var armorSets = [rogue.MaxArmors]string{"dunlending", "ranger", "corsair", "near_harad", "chainmail", "dale", "rohan", "iron"}
+
+// loadNRGBA reads a png.
+func loadNRGBA(path string) (*image.NRGBA, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	n := image.NewNRGBA(img.Bounds())
+	draw.Draw(n, n.Rect, img, img.Bounds().Min, draw.Src)
+	return n, nil
+}
+
+// armorLayers is what the inventory's hero wears over the skin: the worn
+// armour's set as chest, leggings and boots (no helmet: the face stays
+// the hero's).
+func (g *game) armorLayers() []guientity.Armor {
+	if g.armor == nil {
+		return nil
+	}
+	l1, l2 := g.layers[armorSets[g.armor.Which]+"_1"], g.layers[armorSets[g.armor.Which]+"_2"]
+	return []guientity.Armor{{Tex: l1, Piece: guientity.Chest}, {Tex: l2, Piece: guientity.Leggings}, {Tex: l1, Piece: guientity.Boots}}
+}
+
 // setupGUI loads the GUI textures, font and language from the client jar
 // and makes the inventory's PlayerGUI: no crafting, no hearts and shanks
-// (the status line has them), the player in the jar's skin.
-func (g *game) setupGUI(jar string) error {
+// (the status line has them), the player in hobbit/skin.png wearing the
+// hobbit/armor layers.
+func (g *game) setupGUI(jar, hobbit string) error {
 	zr, err := zip.OpenReader(jar)
 	if err != nil {
 		return fmt.Errorf("GUI assets (-jar): %w", err)
@@ -110,18 +144,23 @@ func (g *game) setupGUI(jar string) error {
 	g.pg = ui.NewPlayerGUI(ctx, g.inv, g.cont, g.itemStack)
 	g.pg.Keys = []int{ui.KeyE, ui.KeyTab, int(glfw.KeyI)}
 	g.pg.NoCrafting, g.pg.HUD.State.Creative = true, true
-	f, err := zr.Open("assets/minecraft/textures/entity/steve.png")
-	if err != nil {
+	hero := &guientity.Player{}
+	if hero.Skin, err = loadNRGBA(filepath.Join(hobbit, "skin.png")); err != nil {
 		return err
 	}
-	defer f.Close()
-	img, err := png.Decode(f)
-	if err != nil {
-		return err
+	g.layers = map[string]*image.NRGBA{}
+	for _, set := range armorSets {
+		for _, l := range []string{set + "_1", set + "_2"} {
+			if g.layers[l], err = loadNRGBA(filepath.Join(hobbit, "armor", l+".png")); err != nil {
+				return err
+			}
+		}
 	}
-	skin := image.NewNRGBA(img.Bounds())
-	draw.Draw(skin, skin.Rect, img, img.Bounds().Min, draw.Src)
-	g.pg.Model, g.pg.EquipAt = (&guientity.Player{Skin: skin}).Draw, rogueEquipAt
+	g.pg.Model = func(ctx *ui.Context, x, y, mx, my int) {
+		hero.Armor = g.armorLayers()
+		hero.Draw(ctx, x, y, mx, my)
+	}
+	g.pg.EquipAt = rogueEquipAt
 	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["agate ring"]))
 	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
 	g.pg.OnClose = func() {

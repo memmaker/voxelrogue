@@ -5,7 +5,8 @@ what the game draws; ids are the game's own names (a potion by its
 colour, a ring by its stone, a wall by where it stands):
 
   tiles8.png   items.rec     %rec: item    weapons, armour, potions, scrolls, rings, food, wands, gold, the Amulet
-  tiles16.png  textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
+  tiles16.png  gear.rec      %rec: gear    the armour and the weapons with a 16px picture (assets/hobbit: LOTR mod and vanilla sprites)
+               textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
                monsters.rec  %rec: monster the 26 monsters (DynaHack, shadows stripped)
                weapons.rec   %rec: weapon  the mod weapons the game draws (16px): held, in hand, pulling, loaded
   tiles32.png  weapons32.rec %rec: weapon  the mod weapons larger than 16px (w/h keep their own size in a 32px cell)
@@ -95,16 +96,10 @@ t8 = Sheet('tiles8.png', 8, 16)
 def item(rid, sprite, name=None):
     return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
 items = []
-# weapons drawn with an 8px sprite (the rest are mod weapons: weapons.rec); standins.go weaponSprites
-for rid, sprite in [('mace', 'mace_01'), ('long sword', 'sword_01'), ('arrow', 'bow_29'), ('dagger', 'sword_49'),
-                    ('rock', 'valuable_02'), ('two handed sword', 'sword_25'), ('dart', 'bow_35'),
-                    ('crossbow bolt', 'bow_31'), ('spear', 'spear_02'), ('double axe', 'axe_29'), ('great axe', 'axe_35'),
-                    ('maul', 'mace_05'), ('heavy mace', 'mace_04'), ('sceptre', 'staff_26'), ('lance', 'spear_09'),
-                    ('trident', 'spear_05'), ('soul knife', 'sword_44'), ('coral blade', 'sword_18'),
+# the weapons with no 16px picture in assets/hobbit (the Better Combat exotics) keep VoxelLib's 8px sprites
+for rid, sprite in [('two handed sword', 'sword_25'), ('sceptre', 'staff_26'), ('soul knife', 'sword_44'), ('coral blade', 'sword_18'),
                     ('twin blade', 'sword_30'), ('claw', 'sword_57'), ('anchor', 'mace_06'), ('gauntlet', 'gloves_04')]:
     items.append(item(rid, sprite))
-for i, n in enumerate(golist(rules, 'ArmorNames')):
-    items.append(item(n, f'armor_{(i + 1) * 3:02d}'))
 for j, c in enumerate(golist(rules, 'rainbow')):  # a potion looks like its colour
     items.append(item(c + ' potion', f'potion_{j % 24 * 3 + 1:02d}'))
 for i in range(1, 16):  # a scroll's title is random each game; it has one of 15 looks
@@ -116,8 +111,29 @@ items += [item('food ration', 'misc_01'), item('slime-mold', 'misc_21'), item('s
 t8.save()
 t8.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
 
-# ---- tiles16: the block textures (world.go's blocks), the monsters, the 16px mod weapons ----
+# ---- tiles16: the armour and weapons (assets/hobbit), the block textures (world.go's blocks), the monsters, the kept mod weapons ----
 t16 = Sheet('tiles16.png', 16, 16)
+HOB = os.path.join(ROOT, 'assets', 'hobbit')
+def gear(rid, src, name=None):
+    im = rgba(os.path.join(HOB, src + '.png')).crop((0, 0, 16, 16))  # an animation strip's first frame; a stray 17th row
+    return (rid, name or rid, t16.add('h:' + src, im))
+gears = [gear(n, src) for n, src in zip(golist(rules, 'ArmorNames'),
+         ['bodyDunlending', 'bodyRanger', 'bodyCorsair', 'bodyNearHarad', 'chainmail_chestplate', 'bodyDale', 'bodyRohan', 'iron_chestplate'])]
+for rid, src in [('mace', 'maceBlackNumenorean'), ('long sword', 'swordGondor'), ('long bow', 'bow_standby'), ('arrow', 'arrow'),
+                 ('dagger', 'daggerGondor'), ('rock', 'flint'), ('dart', 'tauredainDart'), ('crossbow', 'ironCrossbow'),
+                 ('crossbow bolt', 'crossbowBolt'), ('spear', 'spearGondor'), ('broadsword', 'swordRohan'), ('glaive', 'polearmElven'),
+                 ('halberd', 'halberdMithril'), ('war spear', 'longspearRivendell'), ('war glaive', 'poleaxeNearHarad'),
+                 ('scimitar', 'scimitarNearHarad'), ('wooden pole', 'mallornStick'), ('hatchet', 'axeDwarven'),
+                 ('double axe', 'battleaxeDwarven'), ('great axe', 'battleaxeUtumno'), ('maul', 'hammerDwarven'),
+                 ('heavy mace', 'maceHalfTroll'), ('battlestaff', 'gandalfStaffGrey'), ('lance', 'lanceGondor'),
+                 ('trident', 'tridentPelargir'), ('rapier', 'swordDolAmroth'), ('chain crossbow', 'urukCrossbow')]:
+    gears.append(gear(rid, src))
+for i in range(3):  # the frames items.go shows while a bow is drawn or a crossbow spanned
+    gears.append(gear(f'long bow_pulling_{i}', f'bow_pulling_{i}', f'long bow (pulling {i})'))
+    gears.append(gear(f'crossbow_pulling_{i}', f'ironCrossbow_pull_{i}', f'crossbow (pulling {i})'))
+    gears.append(gear(f'chain crossbow_pulling_{i}', f'urukCrossbow_pull_{i}', f'chain crossbow (pulling {i})'))
+gears.append(gear('crossbow_arrow', 'ironCrossbow_pull_2', 'crossbow (loaded)'))
+gears.append(gear('chain crossbow_arrow', 'urukCrossbow_pull_2', 'chain crossbow (loaded)'))
 def block(rid, tex):
     return (rid, rid, t16.add('b:' + tex, rgba(os.path.join(BLOCKS, tex + '.png'))))
 blocks = [block('room floor', 'oak_planks'), block('room wall', 'stone_bricks'), block('room ceiling', 'stone'),
@@ -158,6 +174,7 @@ for p in sorted(glob.glob(os.path.join(ROOT, 'assets', 'weapons', '*.png'))):
         cell.paste(im, (0, 0))
         weapons32.append((n, name, t32.add('w:' + n, cell), im.size[0], im.size[1]))
 t16.save()
+t16.rec(os.path.join(HERE, 'gear.rec'), 'Armour and weapons (16px)', 'gear', gears)
 t16.rec(os.path.join(HERE, 'textures.rec'), 'Block textures', 'block', blocks)
 t16.rec(os.path.join(HERE, 'monsters.rec'), 'Monsters', 'monster', monsters)
 t16.rec(os.path.join(HERE, 'weapons.rec'), 'Weapons (mod pictures, 16px)', 'weapon', weapons)

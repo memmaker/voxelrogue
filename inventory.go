@@ -41,7 +41,8 @@ type invState struct {
 	cont   *inventory.Container
 	pg     *ui.PlayerGUI
 	icons  map[string]*ui.Sprite
-	sprite map[string]image.Image // item sprites by name, for the icons
+	sprite map[string]image.Image  // item sprites by name, for the icons
+	layers map[string]*image.NRGBA // armour textures by set and layer, for the hero preview
 }
 
 // resetInv makes the hero's empty inventory: Rogue has no half stacks,

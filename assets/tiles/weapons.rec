@@ -15,118 +15,38 @@ gap_y: 0
 %rec: weapon
 %doc: Weapons (mod pictures, 16px)
 
-id: bow
-name: bow
-icon: 35
-
-id: bow_pulling_0
-name: bow (pulling 0)
-icon: 36
-
-id: bow_pulling_1
-name: bow (pulling 1)
-icon: 37
-
-id: bow_pulling_2
-name: bow (pulling 2)
-icon: 38
-
-id: broadsword
-name: broadsword
-icon: 39
-
-id: chain_crossbow
-name: chain crossbow
-icon: 40
-
-id: chain_crossbow_arrow
-name: chain crossbow (loaded)
-icon: 41
-
-id: chain_crossbow_pulling_0
-name: chain crossbow (pulling 0)
-icon: 42
-
-id: chain_crossbow_pulling_1
-name: chain crossbow (pulling 1)
-icon: 43
-
-id: chain_crossbow_pulling_2
-name: chain crossbow (pulling 2)
-icon: 44
-
-id: crossbow
-name: crossbow
-icon: 45
-
-id: crossbow_arrow
-name: crossbow (loaded)
-icon: 46
-
-id: crossbow_pulling_0
-name: crossbow (pulling 0)
-icon: 47
-
-id: crossbow_pulling_1
-name: crossbow (pulling 1)
-icon: 48
-
-id: crossbow_pulling_2
-name: crossbow (pulling 2)
-icon: 49
-
-id: glaive
-name: glaive
-icon: 50
-
 id: great_bow
 name: great bow
-icon: 51
+icon: 79
 
 id: great_bow_pulling_0
 name: great bow (pulling 0)
-icon: 52
+icon: 80
 
 id: great_bow_pulling_1
 name: great bow (pulling 1)
-icon: 53
+icon: 81
 
 id: great_bow_pulling_2
 name: great bow (pulling 2)
-icon: 54
+icon: 82
 
 id: greatsword
 name: greatsword
-icon: 55
-
-id: halberd
-name: halberd
-icon: 56
-
-id: hatchet
-name: hatchet
-icon: 57
-
-id: rapier
-name: rapier
-icon: 58
+icon: 83
 
 id: scythe
 name: scythe
-icon: 59
+icon: 84
 
 id: sickle
 name: sickle
-icon: 60
+icon: 85
 
 id: sling
 name: sling
-icon: 61
+icon: 86
 
 id: sling_model
 name: sling (model texture)
-icon: 62
-
-id: war_spear
-name: war spear
-icon: 63
+icon: 87

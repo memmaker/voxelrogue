@@ -158,7 +158,7 @@ func main() {
 	if err := g.setupArt(*tileDir); err != nil {
 		log.Fatal(err)
 	}
-	if err := g.setupGUI(*jar); err != nil {
+	if err := g.setupGUI(*jar, filepath.Join(*tileDir, "..", "hobbit")); err != nil {
 		log.Fatal(err)
 	}
 	g.tp, g.animName, g.animAt = *tp, *anim, float32(*animAt)

@@ -28,13 +28,13 @@ type bcAttack struct {
 // drawn sprite; the rest are item/handheld's.
 var thirdPerson = map[string]display{
 	"w:scythe_hand":     {mgl32.Vec3{5, 270, -35}, mgl32.Vec3{0, 8, 2}, mgl32.Vec3{1.7, 1.7, 0.85}},
-	"w:halberd_hand":    {mgl32.Vec3{5, 270, -40}, mgl32.Vec3{0, 2, 2}, mgl32.Vec3{1.7, 1.7, 0.85}},
-	"w:glaive_hand":     {mgl32.Vec3{5, 270, -40}, mgl32.Vec3{0, 2, 2}, mgl32.Vec3{1.7, 1.7, 0.85}},
+	"halberd":           {mgl32.Vec3{5, 270, -40}, mgl32.Vec3{0, 2, 2}, mgl32.Vec3{1.7, 1.7, 0.85}},
+	"glaive":            {mgl32.Vec3{5, 270, -40}, mgl32.Vec3{0, 2, 2}, mgl32.Vec3{1.7, 1.7, 0.85}},
 	"w:greatsword_hand": {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 6, 0.5}, mgl32.Vec3{1.25, 1.25, 1.25}},
 	"w:katana":          {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 8.5, 0}, mgl32.Vec3{1.275, 1.275, 0.85}},
-	"w:scimitar":        {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 8.5, 0}, mgl32.Vec3{1.275, 1.275, 0.85}},
-	"w:war_spear":       {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 4, 0.5}, mgl32.Vec3{1.7, 1.7, 0.85}},
-	"w:war_glaive":      {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 4, 0.5}, mgl32.Vec3{1.7, 1.7, 0.85}},
+	"scimitar":          {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 8.5, 0}, mgl32.Vec3{1.275, 1.275, 0.85}},
+	"war spear":         {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 4, 0.5}, mgl32.Vec3{1.7, 1.7, 0.85}},
+	"war glaive":        {mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 4, 0.5}, mgl32.Vec3{1.7, 1.7, 0.85}},
 }
 
 var handheld3 = display{mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 4, 0.5}, mgl32.Vec3{0.85, 0.85, 0.85}}

@@ -15,50 +15,20 @@ gap_y: 0
 %rec: weapon
 %doc: Weapons (mod pictures larger than 16px)
 
-id: glaive_hand
-name: glaive (in hand)
-icon: 0
-w: 32
-h: 32
-
 id: greatsword_hand
 name: greatsword (in hand)
-icon: 1
+icon: 0
 w: 24
 h: 24
 
-id: halberd_hand
-name: halberd (in hand)
-icon: 2
-w: 32
-h: 32
-
 id: katana
 name: katana
-icon: 3
+icon: 1
 w: 18
 h: 18
 
-id: scimitar
-name: scimitar
-icon: 4
-w: 20
-h: 20
-
 id: scythe_hand
 name: scythe (in hand)
-icon: 5
-w: 32
-h: 32
-
-id: war_glaive
-name: war glaive
-icon: 6
-w: 32
-h: 32
-
-id: wooden_pole
-name: wooden pole
-icon: 7
+icon: 2
 w: 32
 h: 32
