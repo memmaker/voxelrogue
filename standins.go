@@ -99,7 +99,7 @@ var handSprites = map[string]bool{}
 
 // spriteFor is the rec id an object is drawn with: its name, or for
 // potions the colour, for scrolls and rings the look (scrolls.rec,
-// rings.rec) it has this game; wands are a staff or a wand.
+// rings.rec, staffs.rec) it has this game.
 func spriteFor(g *rogue.Game, o *rogue.Object) string {
 	switch o.Type {
 	case rogue.Weapon:
@@ -118,7 +118,7 @@ func spriteFor(g *rogue.Game, o *rogue.Object) string {
 		}
 		return "food ration"
 	case rogue.Stick:
-		return g.SType[o.Which]
+		return fmt.Sprintf("staff %d", g.StLook[o.Which]+1)
 	case rogue.Gold:
 		return "gold"
 	}

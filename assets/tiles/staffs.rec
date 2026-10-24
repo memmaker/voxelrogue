@@ -1,0 +1,176 @@
+# staffs.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
+# (remap_staffs.sh). icon: cell of tiles16.png; -1: unassigned.
+
+%rec: Tileset
+id: tiles16
+name: VoxelRogue 16px tiles
+file: tiles16.png
+tile_w: 16
+tile_h: 16
+off_x: 0
+off_y: 0
+gap_x: 0
+gap_y: 0
+
+%rec: staff
+%doc: Staff looks
+
+id: staff 1
+name: staff (look 1)
+icon: 204
+
+id: staff 2
+name: staff (look 2)
+icon: 205
+
+id: staff 3
+name: staff (look 3)
+icon: 206
+
+id: staff 4
+name: staff (look 4)
+icon: 207
+
+id: staff 5
+name: staff (look 5)
+icon: 208
+
+id: staff 6
+name: staff (look 6)
+icon: 209
+
+id: staff 7
+name: staff (look 7)
+icon: 210
+
+id: staff 8
+name: staff (look 8)
+icon: 211
+
+id: staff 9
+name: staff (look 9)
+icon: 212
+
+id: staff 10
+name: staff (look 10)
+icon: 213
+
+id: staff 11
+name: staff (look 11)
+icon: 214
+
+id: staff 12
+name: staff (look 12)
+icon: 215
+
+id: staff 13
+name: staff (look 13)
+icon: 216
+
+id: staff 14
+name: staff (look 14)
+icon: 217
+
+id: staff 15
+name: staff (look 15)
+icon: 218
+
+id: staff 16
+name: staff (look 16)
+icon: 219
+
+id: staff 17
+name: staff (look 17)
+icon: 220
+
+id: staff 18
+name: staff (look 18)
+icon: 221
+
+id: staff 19
+name: staff (look 19)
+icon: 222
+
+id: staff 20
+name: staff (look 20)
+icon: 223
+
+id: staff 21
+name: staff (look 21)
+icon: 224
+
+id: staff 22
+name: staff (look 22)
+icon: 225
+
+id: staff 23
+name: staff (look 23)
+icon: 226
+
+id: staff 24
+name: staff (look 24)
+icon: 227
+
+id: staff 25
+name: staff (look 25)
+icon: 228
+
+id: staff 26
+name: staff (look 26)
+icon: 229
+
+id: staff 27
+name: staff (look 27)
+icon: 230
+
+id: staff 28
+name: staff (look 28)
+icon: 231
+
+id: staff 29
+name: staff (look 29)
+icon: 232
+
+id: staff 30
+name: staff (look 30)
+icon: 233
+
+id: staff 31
+name: staff (look 31)
+icon: 234
+
+id: staff 32
+name: staff (look 32)
+icon: 235
+
+id: staff 33
+name: staff (look 33)
+icon: 236
+
+id: staff 34
+name: staff (look 34)
+icon: 237
+
+id: staff 35
+name: staff (look 35)
+icon: 238
+
+id: staff 36
+name: staff (look 36)
+icon: 239
+
+id: staff 37
+name: staff (look 37)
+icon: 240
+
+id: staff 38
+name: staff (look 38)
+icon: 241
+
+id: staff 39
+name: staff (look 39)
+icon: 242
+
+id: staff 40
+name: staff (look 40)
+icon: 243

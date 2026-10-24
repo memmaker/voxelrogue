@@ -754,7 +754,7 @@ func (g *game) lineOfFire(m *monster) bool {
 	return true
 }
 
-// zap uses a wand or staff (sticks.c do_zap). Light and striking act at
+// zap uses a staff (sticks.c do_zap; wands are folded into staffs). Light and striking act at
 // once, the bolts walk their squares (fireBolt), the rest fly to the
 // monster in front as a missile and act when it lands (wandHits).
 func (g *game) zap(o *rogue.Object) {

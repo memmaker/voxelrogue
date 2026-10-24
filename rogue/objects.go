@@ -177,7 +177,6 @@ type Game struct {
 	SNames  [MaxScrolls]string
 	RStones [MaxRings]string
 	SMade   [MaxSticks]string
-	SType   [MaxSticks]string // wand or staff
 	PKnow   [MaxPotions]bool
 	SKnow   [MaxScrolls]bool
 	RKnow   [MaxRings]bool
@@ -187,6 +186,7 @@ type Game struct {
 	PLook       [MaxPotions]int
 	SLook       [MaxScrolls]int
 	RLook       [MaxRings]int
+	StLook      [MaxSticks]int
 	NoFood      int
 	groupSerial int
 }
@@ -207,7 +207,6 @@ var (
 	woods = []string{"avocado wood", "balsa", "banyan", "birch", "cedar", "cherry", "cinnibar", "driftwood",
 		"ebony", "eucalyptus", "hemlock", "ironwood", "mahogany", "manzanita", "maple", "oak", "persimmon wood",
 		"redwood", "rosewood", "teak", "walnut", "zebra wood"}
-	metals = []string{"aluminium", "bone", "brass", "bronze", "copper", "iron", "lead", "pewter", "steel", "tin", "zinc"}
 )
 
 // NewGame rolls the random names for a game (init_colors, init_names,
@@ -245,23 +244,15 @@ func NewGame(rng *rand.Rand) *Game {
 		used[j] = true
 		g.RStones[i], g.RLook[i] = stones[j], looks[i]
 	}
-	usedW, usedM := map[int]bool{}, map[int]bool{}
+	usedW := map[int]bool{}
+	looks = rng.Perm(StaffLooks) // every staff kind its own look this game
 	for i := range g.SMade {
-		if Rnd(rng, 2) == 0 {
-			j := Rnd(rng, len(metals))
-			for usedM[j] && len(usedM) < len(metals) {
-				j = Rnd(rng, len(metals))
-			}
-			usedM[j] = true
-			g.SMade[i], g.SType[i] = metals[j], "wand"
-		} else {
-			j := Rnd(rng, len(woods))
-			for usedW[j] && len(usedW) < len(woods) {
-				j = Rnd(rng, len(woods))
-			}
-			usedW[j] = true
-			g.SMade[i], g.SType[i] = woods[j], "staff"
+		j := Rnd(rng, len(woods))
+		for usedW[j] {
+			j = Rnd(rng, len(woods))
 		}
+		usedW[j] = true
+		g.SMade[i], g.StLook[i] = woods[j], looks[i]
 	}
 	return g
 }
@@ -329,12 +320,10 @@ func (g *Game) NewThing() *Object {
 	return o
 }
 
-// fixStick sets a new wand's or staff's damage and charges (fix_stick).
+// fixStick sets a new staff's damage and charges (fix_stick; every
+// stick is a staff, wands are folded in).
 func (g *Game) fixStick(o *Object) {
-	o.Damage, o.HurlDmg = "1d1", "1d1"
-	if g.SType[o.Which] == "staff" {
-		o.Damage = "2d3"
-	}
+	o.Damage, o.HurlDmg = "2d3", "1d1"
 	o.Charges = 3 + Rnd(g.Rng, 5)
 	switch o.Which {
 	case 1: // striking
@@ -459,9 +448,9 @@ func (g *Game) Name(o *Object) string {
 		return "The Amulet of Yendor"
 	case Stick:
 		if g.WKnow[o.Which] {
-			return fmt.Sprintf("A %s of %s [%d charges](%s)", g.SType[o.Which], StickMagic[o.Which].Name, o.Charges, g.SMade[o.Which])
+			return fmt.Sprintf("A staff of %s [%d charges](%s)", StickMagic[o.Which].Name, o.Charges, g.SMade[o.Which])
 		}
-		return "A" + vowelstr(g.SMade[o.Which]) + " " + g.SMade[o.Which] + " " + g.SType[o.Which]
+		return "A" + vowelstr(g.SMade[o.Which]) + " " + g.SMade[o.Which] + " staff"
 	case Ring:
 		st := g.RStones[o.Which]
 		if g.RKnow[o.Which] {

@@ -70,10 +70,10 @@ type ArmorKind struct {
 var (
 	Weapons []WeaponKind
 	Armors  []ArmorKind
-	// ScrollLooks and RingLooks are how many scroll and ring pictures
-	// there are to draw a game's kinds from (scrolls.rec's and rings.rec's
-	// records); SLook and RLook index them.
-	ScrollLooks, RingLooks = 1000, 1000
+	// ScrollLooks, RingLooks and StaffLooks are how many scroll, ring and
+	// staff pictures there are to draw a game's kinds from (scrolls.rec's,
+	// rings.rec's and staffs.rec's records); SLook, RLook and StLook index them.
+	ScrollLooks, RingLooks, StaffLooks = 1000, 1000, 1000
 )
 
 // LoadKinds reads dir's weapons.rec (with animations.rec, its attacks'
@@ -146,7 +146,7 @@ func LoadKinds(dir string) error {
 		file string
 		n    *int
 		need int
-	}{{"scrolls.rec", &ScrollLooks, MaxScrolls}, {"rings.rec", &RingLooks, MaxRings}} {
+	}{{"scrolls.rec", &ScrollLooks, MaxScrolls}, {"rings.rec", &RingLooks, MaxRings}, {"staffs.rec", &StaffLooks, MaxSticks}} {
 		recs, err = ReadRecs(filepath.Join(dir, l.file))
 		if err != nil {
 			return err

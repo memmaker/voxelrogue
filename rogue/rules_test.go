@@ -28,15 +28,15 @@ func TestAttackScale(t *testing.T) {
 	}
 }
 
-// TestScrollLooks: every scroll and ring kind gets a look of its own
-// each game, drawn from the whole pool.
+// TestScrollLooks: every scroll, ring and staff kind gets a look of its
+// own each game, drawn from the whole pool.
 func TestScrollLooks(t *testing.T) {
-	ScrollLooks, RingLooks = 62, 49
+	ScrollLooks, RingLooks, StaffLooks = 62, 49, 40
 	for _, pool := range []struct {
 		name  string
 		n     int
 		looks func(*Game) []int
-	}{{"scroll", ScrollLooks, func(g *Game) []int { return g.SLook[:] }}, {"ring", RingLooks, func(g *Game) []int { return g.RLook[:] }}} {
+	}{{"scroll", ScrollLooks, func(g *Game) []int { return g.SLook[:] }}, {"ring", RingLooks, func(g *Game) []int { return g.RLook[:] }}, {"staff", StaffLooks, func(g *Game) []int { return g.StLook[:] }}} {
 		seen := map[int]bool{}
 		for seed := int64(1); seed <= 20; seed++ {
 			g := NewGame(rand.New(rand.NewSource(seed)))

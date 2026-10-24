@@ -1,0 +1,2 @@
+The staff sprites are the "RPG Items 16x16 Pack 1" staves (staff1..40.png, 16x16), numbered in the pack's file order.
+The download carried no licence file; check the pack's page before distributing.
