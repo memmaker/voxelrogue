@@ -193,3 +193,23 @@ func TestPushIntoWall(t *testing.T) {
 		t.Fatalf("no wall: pushed to z %.3f, want %.3f", p.Z, want)
 	}
 }
+
+// TestMonsterStepSmooth: a leaning monster's step starts where it stood
+// and ends on its new square's lean; no frame jumps.
+func TestMonsterStepSmooth(t *testing.T) {
+	g := &game{}
+	m := &monster{tile: dungeon.Coord{X: 5, Y: 5}, from: dungeon.Coord{X: 5, Y: 5}, leanX: 0.8, leanZ: -0.4}
+	x0, _, z0 := g.monsterPos(m, 0.99)
+	m.from, m.tile, m.moveT = m.tile, dungeon.Coord{X: 6, Y: 5}, 1 // the step begins
+	x1, _, z1 := g.monsterPos(m, 0)
+	if math.Hypot(x1-x0, z1-z0) > 1e-9 {
+		t.Fatalf("the step's first frame jumped %.3f", math.Hypot(x1-x0, z1-z0))
+	}
+	m.moveT = m.moveTicks()
+	xe, _, ze := g.monsterPos(m, 1)
+	m.moveT, m.from = 0, m.tile // as the tick ends it
+	xs, _, zs := g.monsterPos(m, 0)
+	if math.Hypot(xe-xs, ze-zs) > 1e-9 {
+		t.Fatalf("the step's last frame is %.3f from where it stands", math.Hypot(xe-xs, ze-zs))
+	}
+}

@@ -313,7 +313,7 @@ func (g *game) tickMonsters() {
 		}
 		g.lean(m, h)
 		if m.moveT > 0 {
-			if m.moveT++; m.moveT >= m.moveTicks() {
+			if m.moveT++; m.moveT > m.moveTicks() {
 				m.moveT, m.from = 0, m.tile
 			}
 			continue
@@ -778,17 +778,18 @@ func (g *game) killed(m *monster) {
 }
 
 // monsterPos is where a monster is drawn: between its squares while it
-// walks.
+// walks, its lean on top. A step's first tick (moveT 1) draws it still
+// leaving its square, and the lean eases off over the step, so the
+// position never jumps.
 func (g *game) monsterPos(m *monster, alpha float64) (x, y, z float64) {
 	x, y, z = tileCenter(g.slot(), m.tile)
-	x, z = x+m.leanX, z+m.leanZ
 	if m.moveT > 0 {
 		fx, _, fz := tileCenter(g.slot(), m.from)
-		t := (float64(m.moveT) + alpha) / float64(m.moveTicks())
+		t := (float64(m.moveT-1) + alpha) / float64(m.moveTicks())
 		t = math.Min(t, 1)
 		x, z = fx+(x-fx)*t, fz+(z-fz)*t
 	}
-	return x, y, z
+	return x + m.leanX, y, z + m.leanZ
 }
 
 // pushOutOfMonsters keeps the hero's body out of the monsters' boxes,
@@ -948,7 +949,7 @@ func (g *game) drawMonsters(alpha float64) {
 		x, y, z := g.monsterPos(m, alpha)
 		y += float64(lk.hover)
 		if lk.hover > 0 {
-			y += 0.1 * math.Sin(float64(g.tick)*0.15+float64(m.tile.X))
+			y += 0.1 * math.Sin(float64(g.tick)*0.15+x+z) // a phase of its own that drifts, never jumps, as it moves
 		}
 		dx, dz := g.player.X-x, g.player.Z-z
 		yaw := math.Atan2(dx, -dz)
