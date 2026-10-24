@@ -411,3 +411,15 @@ name: crown decoration
 piece: helmet
 geo: ../knight/meshes/crown.json
 tex: ../knight/armor/crown_layer_1.png
+
+id: flowercrown_decoration
+name: flowercrown decoration
+piece: helmet
+geo: ../knight/meshes/flowercrown.json
+tex: ../knight/armor/flowercrown_layer_1.png
+
+id: minicrown_decoration
+name: minicrown decoration
+piece: helmet
+geo: ../knight/meshes/minicrown.json
+tex: ../knight/armor/minicrown_layer_1.png

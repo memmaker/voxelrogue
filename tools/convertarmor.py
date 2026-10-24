@@ -41,8 +41,9 @@ def parse_model(path):
     src = open(path).read()
     m = re.search(r'LayerDefinition\.create\(\w+,\s*(\d+),\s*(\d+)\)', src)
     tex = [int(m.group(1)), int(m.group(2))]
-    parts, byvar = [], {}
-    stmt = re.compile(r'PartDefinition\s+(\w+)\s*=\s*([^\n;]+?)\.addOrReplaceChild\("(\w+)",\s*(CubeListBuilder\.create\(\).*?),\s*(PartPose\.\w+(?:\([^)]*\))?)\);', re.S)
+    parts, byvar, calls = [], {}, 0  # calls: the texOffs/mirror/addBox calls parsed, against the source's count
+    # one statement per part: [PartDefinition var =] parent.addOrReplaceChild("name", CubeListBuilder.create()..., PartPose...);
+    stmt = re.compile(r'^\s*(?:PartDefinition\s+(\w+)\s*=\s*)?(\w+(?:\.getChild\("\w+"\))?)\.addOrReplaceChild\("(\w+)",\s*(CubeListBuilder\.create\(\).*?),\s*(PartPose\.\w+(?:\([^)]*\))?)\);', re.S | re.M)
     for var, parent_expr, name, builder, pose in stmt.findall(src):
         parent = -1
         g = re.search(r'getChild\("(\w+)"\)', parent_expr)
@@ -61,8 +62,9 @@ def parse_model(path):
             elif pm.group(1) == 'rotation':
                 rot = vals
         boxes, uv, mirror = [], [0, 0], False
-        for call in re.finditer(r'\.(texOffs|mirror|addBox)\((.*?)\)(?=\.|$)', builder, re.S):
+        for call in re.finditer(r'\.(texOffs|mirror|addBox)\((.*?)\)(?=\s*\.|\s*$)', builder, re.S):
             kind, args = call.group(1), call.group(2)
+            calls += 1
             if kind == 'texOffs':
                 uv = [int(v) for v in args.split(',')]
             elif kind == 'mirror':
@@ -72,8 +74,11 @@ def parse_model(path):
                 v = [num(x) for x in am.group(1).split(',')]
                 boxes.append({'pos': v[:3], 'size': [int(x) for x in v[3:6]], 'inflate': num(am.group(2)),
                               'uv': uv, 'mirror': mirror, 'tex': [float(tex[0]), float(tex[1])]})
-        byvar[var] = len(parts)
+        if var:
+            byvar[var] = len(parts)
         parts.append({'name': name, 'parent': parent, 'pivot': pivot, 'rot': rot, 'boxes': boxes})
+    want = sum(src.count('.' + k + '(') for k in ('texOffs', 'mirror', 'addBox'))
+    assert calls == want, f'{path}: parsed {calls} of {want} builder calls (a chained call the regex missed?)'
     return parts, tex
 
 

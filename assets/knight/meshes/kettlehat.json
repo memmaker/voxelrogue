@@ -55,7 +55,7 @@
      "inflate": 0.5,
      "uv": [
       0,
-      18
+      0
      ],
      "mirror": false,
      "tex": [
@@ -76,8 +76,8 @@
      ],
      "inflate": 0.6,
      "uv": [
-      0,
-      18
+      32,
+      0
      ],
      "mirror": false,
      "tex": [
