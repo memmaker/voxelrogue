@@ -182,7 +182,7 @@ func arrowModel() *model.Model {
 // rock sprite's average colour.
 func stoneModel() *model.Model {
 	tex := image.NewNRGBA(image.Rect(0, 0, 1, 1))
-	tex.Set(0, 0, color.NRGBA{141, 134, 152, 255})
+	tex.Set(0, 0, color.NRGBA{104, 111, 140, 255})
 	m := bare("stone", tex)
 	var me model.Mesh
 	const r = 0.25 / 2

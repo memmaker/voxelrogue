@@ -126,7 +126,7 @@ attack_2: one_handed_stab
 
 id: rock
 name: rock
-picture: ../hobbit/flint.png
+picture: ../weapons/rock.png
 icon: 13
 kind: projectile
 hands: 1
