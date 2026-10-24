@@ -2,8 +2,7 @@ package main
 
 // The pack is VoxelLib's player inventory, run by ui.PlayerGUI: the
 // hotbar (1-9, the wheel) holds what is wielded, E/Tab/I opens the
-// inventory screen (no crafting) with the amulet over the armour and a
-// ring each side, and right click uses what is held. The slots are the
+// inventory screen (no crafting) with a ring each side of the armour, and right click uses what is held. The slots are the
 // pack; Rogue's rules come in through the events and Deny.
 
 import (
@@ -21,7 +20,6 @@ const (
 	equipRingR = iota
 	equipRingL
 	equipArmor
-	equipAmulet
 )
 
 func takes(t rogue.ObjType) func(*inventory.Stack) bool {
@@ -32,13 +30,11 @@ var rogueEquip = []inventory.EquipSlot{
 	{Name: "ring", Icon: "rogue:ring_slot", Accept: takes(rogue.Ring), Max: 1},
 	{Name: "ring", Icon: "rogue:ring_slot", Accept: takes(rogue.Ring), Max: 1},
 	{Name: "armor", Icon: "textures/items/empty_armor_slot_chestplate.png", Accept: takes(rogue.Armor), Max: 1},
-	{Name: "amulet", Icon: "rogue:amulet_slot", Accept: takes(rogue.Amulet), Max: 1},
 }
 
-// rogueEquipAt lays the equipment out round the armour: the amulet above,
-// a ring on each side (the right hand's on the left, as the player faces
-// out of the screen).
-var rogueEquipAt = [][2]int{equipRingR: {0, 1}, equipRingL: {2, 1}, equipArmor: {1, 1}, equipAmulet: {1, 0}}
+// rogueEquipAt puts a ring on each side of the armour (the right hand's
+// on the left, as the player faces out of the screen).
+var rogueEquipAt = [][2]int{equipRingR: {0, 0}, equipRingL: {2, 0}, equipArmor: {1, 0}}
 
 type invState struct {
 	inv    *inventory.Player

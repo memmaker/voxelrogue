@@ -121,7 +121,6 @@ func (g *game) setupGUI(jar string) error {
 	draw.Draw(skin, skin.Rect, img, img.Bounds().Min, draw.Src)
 	g.pg.Model, g.pg.EquipAt = (&guientity.Player{Skin: skin}).Draw, rogueEquipAt
 	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["ring_01"]))
-	ctx.SetTexture("rogue:amulet_slot", slotIcon(g.sprite["amulet_01"]))
 	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
 	g.pg.OnClose = func() {
 		if g.prompt == 'i' {
