@@ -205,6 +205,9 @@ func (g *game) pickUp() {
 			}
 			if f.o.Type == rogue.Amulet {
 				g.amulet = true
+				for d := 1; d < maxDepth; d++ { // the way up opens again
+					g.sealStairs(d, false)
+				}
 			}
 		}
 		g.floor = append(g.floor[:i], g.floor[i+1:]...)

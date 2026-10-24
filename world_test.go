@@ -26,3 +26,40 @@ func TestGenerate(t *testing.T) {
 		t.Errorf("tile %v not carved: %v", c, b)
 	}
 }
+
+// TestSealStairs: a sealed staircase has no open way through its upper
+// half (no air over the steps, the upper floor whole), while its foot in
+// the room below stays open; reopened, it is the staircase again.
+func TestSealStairs(t *testing.T) {
+	levels := buildLevels(7)
+	gen := newLevelGen(voxel.NewRegistry(), levels)
+	l, f := levels[0], floorY(1)
+	column := func(i int) map[int]voxel.StateID {
+		x := l.Stairs.X*tileW + i
+		if l.StairsDir < 0 {
+			x = l.Stairs.X*tileW + tileW - 1 - i
+		}
+		col := map[int]voxel.StateID{}
+		gen.fill(levels, x, l.Stairs.Y*tileD+tileD/2, func(y int, id voxel.StateID) { col[y] = id })
+		return col
+	}
+	open := func(i int) bool { return column(i)[f-i+1] == voxel.Air } // the air over step i
+	gen.seal(1, true)
+	for i := range sealedSteps {
+		if open(i) && i > 0 { // step 0 is the upper floor's own tile
+			t.Errorf("sealed step %d still open", i)
+		}
+	}
+	if column(1)[f] == voxel.Air {
+		t.Error("the upper floor has a hole")
+	}
+	if !open(sealedSteps) {
+		t.Error("the foot of the staircase is shut")
+	}
+	gen.seal(1, false)
+	for i := 1; i < levelPitch; i++ {
+		if !open(i) {
+			t.Errorf("reopened step %d shut", i)
+		}
+	}
+}

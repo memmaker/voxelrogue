@@ -79,6 +79,9 @@ type levelGen struct {
 	b      blocks
 	mu     sync.RWMutex
 	found  map[[3]int]bool // depth, x, y of found secret doors and traps
+	// sealed are the levels whose staircase down is filled in above its
+	// halfway point: the hero went down without the Amulet.
+	sealed map[int]bool
 }
 
 // cube registers a solid block whose every face shows the texture
@@ -123,12 +126,29 @@ func (g *levelGen) isFound(depth int, c dungeon.Coord) bool {
 	return g.found[[3]int{depth, c.X, c.Y}]
 }
 
+// seal fills in (or with false reopens) the upper half of level depth's
+// staircase down; the game redraws it (redrawStairs).
+func (g *levelGen) seal(depth int, on bool) {
+	g.mu.Lock()
+	if g.sealed == nil {
+		g.sealed = map[int]bool{}
+	}
+	g.sealed[depth] = on
+	g.mu.Unlock()
+}
+
+func (g *levelGen) isSealed(depth int) bool {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	return g.sealed[depth]
+}
+
 func (g *levelGen) level(depth int) *dungeon.Level { return g.levels[depth-1] }
 
 // reset swaps in a new dungeon (a new game); the engine must regenerate.
 func (g *levelGen) reset(levels []*dungeon.Level) {
 	g.mu.Lock()
-	g.levels, g.found = levels, map[[3]int]bool{}
+	g.levels, g.found, g.sealed = levels, map[[3]int]bool{}, nil
 	g.mu.Unlock()
 }
 
@@ -137,30 +157,33 @@ func (g *levelGen) Generate(w *voxel.World, ch *voxel.Chunk) {
 	g.mu.RLock()
 	levels := g.levels // the game may reset it while workers generate
 	g.mu.RUnlock()
-	top := floorY(1) + levelPitch + 4
-	bottom := floorY(len(levels)) - levelPitch
 	for lz := 0; lz < 16; lz++ {
 		for lx := 0; lx < 16; lx++ {
-			x, z := ch.Pos.X*16+lx, ch.Pos.Z*16+lz
-			for y := bottom; y < top; y++ {
-				ch.SetRaw(lx, y, lz, g.b.rock)
-			}
-			if x < 0 || z < 0 {
-				continue
-			}
-			c := dungeon.Coord{X: x / tileW, Y: z / tileD}
-			sx, sz := x%tileW, z%tileD
-			set := func(y int, id voxel.StateID) { ch.SetRaw(lx, y, lz, id) }
-			for d := 1; d <= len(levels); d++ {
-				g.column(set, d, levels[d-1], c, sx, sz)
-			}
-			// the staircases last: they cut through the levels below
-			for d := 1; d <= len(levels); d++ {
-				g.staircase(set, d, levels[d-1], x, z)
-			}
+			g.fill(levels, ch.Pos.X*16+lx, ch.Pos.Z*16+lz, func(y int, id voxel.StateID) { ch.SetRaw(lx, y, lz, id) })
 		}
 	}
 	ch.RecomputeHeights(w.Reg.Table())
+}
+
+// fill makes block column x,z of the stacked levels through set.
+func (g *levelGen) fill(levels []*dungeon.Level, x, z int, set func(y int, id voxel.StateID)) {
+	top := floorY(1) + levelPitch + 4
+	bottom := floorY(len(levels)) - levelPitch
+	for y := bottom; y < top; y++ {
+		set(y, g.b.rock)
+	}
+	if x < 0 || z < 0 {
+		return
+	}
+	c := dungeon.Coord{X: x / tileW, Y: z / tileD}
+	sx, sz := x%tileW, z%tileD
+	for d := 1; d <= len(levels); d++ {
+		g.column(set, d, levels[d-1], c, sx, sz)
+	}
+	// the staircases last: they cut through the levels below
+	for d := 1; d <= len(levels); d++ {
+		g.staircase(set, d, levels[d-1], x, z)
+	}
 }
 
 // staircase fills block column x,z with its part of level depth's
@@ -175,7 +198,7 @@ func (g *levelGen) staircase(set func(y int, id voxel.StateID), depth int, l *du
 	if l.StairsDir < 0 {
 		i, id = s.X*tileW+tileW-1-x, g.b.stairs[1]
 	}
-	if z/tileD != s.Y || i < 0 || i >= levelPitch {
+	if z/tileD != s.Y || i < 0 || i >= levelPitch || i < sealedSteps && g.isSealed(depth) {
 		return
 	}
 	f := floorY(depth)
@@ -190,6 +213,10 @@ func (g *levelGen) staircase(set func(y int, id voxel.StateID), depth int, l *du
 		}
 	}
 }
+
+// sealedSteps are the steps a sealed staircase fills in: down past its
+// halfway point, so even a jump from the last open step stays below it.
+const sealedSteps = levelPitch/2 + 2
 
 // opens reports whether a passage reaches over into tile t.
 func opens(t dungeon.Tile) bool {

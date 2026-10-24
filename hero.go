@@ -249,8 +249,7 @@ func (g *game) tickHero() {
 	// halfway down a staircase the hero is on the level below; Rogue's
 	// way up is shut without the Amulet
 	if d := depthAt(p.Y); d != g.depth && d >= 1 && d <= maxDepth {
-		if d < g.depth && !g.amulet {
-			p.Teleport(p.PrevX, p.PrevY, p.PrevZ)
+		if d < g.depth && g.gen.isSealed(d) { // its top half is filled in: still below
 			if g.heldMsg == 0 {
 				g.msg("You cannot climb without the Amulet.")
 				g.heldMsg = 2 * turnTicks
@@ -261,6 +260,9 @@ func (g *game) tickHero() {
 	}
 	// on a staircase, under or over the map, no tile is underfoot
 	onFloor := math.Abs(p.Y-float64(floorY(g.depth)+1)) < 0.6
+	if onFloor && p.OnGround && !g.amulet { // down for good without the Amulet: the way up fills in
+		g.sealStairs(g.depth-1, true)
+	}
 	if t := g.heroTile(); t != g.lastTile && onFloor {
 		g.lastTile = t
 		g.look()
@@ -463,6 +465,34 @@ func (g *game) redrawTile(c dungeon.Coord) {
 			for y := f; y <= f+roomHeight+1; y++ {
 				if id, ok := col[y]; ok && g.eng.Block(x, y, z) != id {
 					g.eng.SetBlock(x, y, z, id)
+				}
+			}
+		}
+	}
+}
+
+// sealStairs fills in (on) or reopens the upper half of level depth's
+// staircase down and redraws its blocks.
+func (g *game) sealStairs(depth int, on bool) {
+	if depth < 1 || depth >= maxDepth || g.gen.isSealed(depth) == on {
+		return
+	}
+	g.gen.seal(depth, on)
+	if g.eng == nil {
+		return
+	}
+	l, f := g.gen.level(depth), floorY(depth)
+	col := map[int]voxel.StateID{}
+	for i := range levelPitch {
+		x := l.Stairs.X*tileW + i
+		if l.StairsDir < 0 {
+			x = l.Stairs.X*tileW + tileW - 1 - i
+		}
+		for z := l.Stairs.Y * tileD; z < (l.Stairs.Y+1)*tileD; z++ {
+			g.gen.fill(g.gen.levels, x, z, func(y int, id voxel.StateID) { col[y] = id })
+			for y := f - levelPitch; y <= f+roomHeight+1; y++ {
+				if g.eng.Block(x, y, z) != col[y] {
+					g.eng.SetBlock(x, y, z, col[y]) // ponytail: an unloaded chunk misses this; it generates sealed or open anyway
 				}
 			}
 		}

@@ -70,6 +70,7 @@ func main() {
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
 		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
 		mobs    = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
+		landing = flag.Bool("landing", false, "debug: start on the landing of the staircase down from the level above -depth")
 		boxes   = flag.Bool("boxes", false, "debug: show the monsters' hit boxes (F3)")
 		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
 		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
@@ -214,6 +215,9 @@ func main() {
 			g.killMob = g.monsters[n]
 			g.killShot = *shotAt - *killAt
 		}
+	}
+	if *landing && g.depth > 1 {
+		g.placeHero(g.gen.level(g.depth - 1).Landing())
 	}
 	if *look >= 0 {
 		g.cam.Yaw = *look * math.Pi / 180
