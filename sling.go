@@ -30,7 +30,7 @@ const (
 	slingCharge   = 1
 	slingVelocity = 3.1  // the rock's speed at full charge, blocks per tick
 	rockGravity   = 0.04 // ItemProjectileEntity.getGravity
-	rockBounce    = 0.3  // speed kept rebounding off a wall or the floor: a pebble, not a ball
+	rockBounce    = 0.3  // speed a stone or blunt thrown weapon keeps rebounding off a wall or the floor: a pebble, not a ball
 )
 
 // slingAction is Nightfall's ActionTracker for the sling: the state and

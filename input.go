@@ -166,7 +166,10 @@ func (g *game) debugWeapon(which int) {
 // nextWeapon (3, a debug key) wields the next weapon kind, with one of
 // every kind to try: the pack's if it has one, else a fresh one.
 func (g *game) nextWeapon() {
-	which := g.weapon.Which
+	which := -1 // bare hands (after a throw): the first kind
+	if g.weapon != nil {
+		which = g.weapon.Which
+	}
 	for which = (which + 1) % rogue.MaxWeapons; weaponItem[which] == ""; which = (which + 1) % rogue.MaxWeapons { // ammo
 	}
 	o := rogue.NewWeapon(g.rng, which)

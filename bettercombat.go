@@ -457,13 +457,18 @@ func partMat(p part) mgl32.Mat4 {
 // its ItemInHandLayerMixin and the model's thirdperson_righthand
 // ItemTransform. body, arm and item are the animated bones, bodyRot the
 // body yaw in degrees, disp the display's rotation (degrees), translation
-// (sixteenths) and scale.
-func bcChain(body, arm, item [axes]float32, bodyRot float32, disp display) (root, armM, itemM mgl32.Mat4) {
+// (sixteenths) and scale. headYaw (the head's yaw from the body) and
+// xRot (the pitch), in degrees, turn the body about the eye with the
+// camera: the lib's firstPersonFollowsCamera, which Better Combat leaves
+// off, so that the weapon stays on screen looking up or down.
+func bcChain(body, arm, item [axes]float32, bodyRot, headYaw, xRot float32, disp display) (root, armM, itemM mgl32.Mat4) {
 	m := mgl32.Translate3D(0, -eyeHeight, 0)
 	m = m.Mul4(mgl32.HomogRotate3DY((180 - bodyRot) * (piF / 180)))
 	m = m.Mul4(mgl32.Scale3D(-1, -1, 1))
-	// doTranslations (first person, not following the camera)
-	m = m.Mul4(mgl32.Scale3D(-1, -1, 1)).Mul4(mgl32.Translate3D(0, eyeHeight, 0)).Mul4(mgl32.Translate3D(0, -eyeHeight, 0))
+	// doTranslations (first person pass)
+	m = m.Mul4(mgl32.Scale3D(-1, -1, 1)).Mul4(mgl32.Translate3D(0, eyeHeight, 0))
+	m = m.Mul4(mgl32.HomogRotate3DY(-headYaw * (piF / 180))).Mul4(mgl32.HomogRotate3DX(-xRot * (piF / 180)))
+	m = m.Mul4(mgl32.Translate3D(0, -eyeHeight, 0))
 	m = m.Mul4(mgl32.Translate3D(-body[axPX]/16, body[axPY]/16+0.75, body[axPZ]/16))
 	m = rotateZYX(m, body[axRZ], -body[axRY], -body[axRX])
 	m = m.Mul4(mgl32.Scale3D(body[axSX], body[axSY], body[axSZ])).Mul4(mgl32.Translate3D(0, -0.75, 0)).Mul4(mgl32.Scale3D(-1, -1, 1))
@@ -518,7 +523,13 @@ func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
 		return false
 	}
 	fp := !g.tp
-	g.stack.pitch = g.xRotMC()
+	// ponytail: first person follows the camera instead of Better Combat's
+	// tilt of the body at the hips, which would add to it
+	var follow float32
+	g.stack.pitch, follow = 0, g.xRotMC()
+	if g.tp {
+		g.stack.pitch, follow = follow, 0
+	}
 	g.stack.handle(pt, false, fp)
 	bodyRot := g.bodyRotAt(pt)
 	head, torso, rArm, lArm, rLeg, lLeg := vanillaPose(g.walk.positionAt(pt), g.walk.speedAt(pt), float32(g.tick)+pt, g.stack.pitch, wrapDegrees(g.yRotMC()-bodyRot))
@@ -535,7 +546,7 @@ func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
 	if !ok {
 		d = handheld3
 	}
-	root, _, itemM := bcChain(body.v, arm.v, item.v, bodyRot, d)
+	root, _, itemM := bcChain(body.v, arm.v, item.v, bodyRot, wrapDegrees(g.yRotMC()-bodyRot), follow, d)
 	model := itemM.Mul4(spriteTurn(sprite))
 	if !g.tp {
 		// the lib's first-person pass: the player model in the world with

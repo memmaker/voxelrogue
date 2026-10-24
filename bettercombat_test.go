@@ -110,7 +110,7 @@ func TestChain(t *testing.T) {
 		copy(body[:], c.Body[:])
 		copy(arm[:], c.Arm[:])
 		copy(item[:], c.Item[:])
-		_, armM, itemM := bcChain(body, arm, item, c.BodyRot, disp)
+		_, armM, itemM := bcChain(body, arm, item, c.BodyRot, 0, 0, disp)
 		itemM = itemM.Mul4(mgl32.Translate3D(-0.5, -0.5, -0.5)) // the item model's centring
 		for k := range 16 {
 			if !near(armM[k], c.ArmM[k], 2e-4) {

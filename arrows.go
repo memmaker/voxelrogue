@@ -9,7 +9,8 @@ package main
 // (handanim.go). Everything flies as a real projectile (voxellib's
 // projectile: Minecraft's arc and drag) and sticks in what it hits, a
 // wall or a monster, which it rolls fight.c's dice for a thrown missile
-// against; sling stones bounce off and come to rest on the floor instead.
+// against; sharp ones stick with their tip at the face, sling stones and
+// blunt weapons bounce off and come to rest on the floor instead.
 // Nothing fired ever despawns or turns back into a floor item: stuck or
 // resting ones are picked up by touch (Arrow.playerTouch), and a dead
 // monster's fall out of it.
@@ -84,6 +85,8 @@ type arrowState struct {
 	arrows      projectile.World
 	arrowObjs   map[*projectile.Arrow]*rogue.Object // what each arrow is
 	arrowModel  int
+	stoneModel  int
+	com         map[string][2]float32 // each sprite's centre of mass (massCenter)
 	arrowInsts  []render.ModelInstance
 	drawing     bool            // the right button is drawing a bow
 	drawTicks   int             // how long
@@ -125,8 +128,10 @@ func (t arrowTarget) Box() collide.AABB {
 func (g *game) setupArrows() error {
 	g.arrowObjs = map[*projectile.Arrow]*rogue.Object{}
 	var err error
-	g.arrowModel, err = g.modelRend.Add(arrowModel())
-	if err != nil {
+	if g.arrowModel, err = g.modelRend.Add(arrowModel()); err != nil {
+		return err
+	}
+	if g.stoneModel, err = g.modelRend.Add(stoneModel()); err != nil {
 		return err
 	}
 	g.arrows.Keep = true
@@ -338,7 +343,7 @@ func (g *game) fovZoom(alpha float64) float64 {
 func (g *game) shoot(ammo *rogue.Object, speed float64) *projectile.Arrow {
 	ex, ey, ez := g.player.Eye()
 	a := g.arrows.Shoot(ex, ey-0.1, ez, g.cam.Yaw, g.cam.Pitch, speed)
-	if ammo.Which == rogue.RockW {
+	if blunt[ammo.Which] {
 		a.Bounce = rockBounce
 	}
 	g.arrowObjs[a] = ammo
@@ -406,30 +411,40 @@ func (g *game) drawArrows(alpha float64) {
 			continue
 		}
 		switch o := g.arrowObjs[a]; o.Which {
-		case rogue.RockW: // ThrownItemRenderer: the rock's picture turned to the camera, as on the ground
+		case rogue.RockW: // a solid little cube, sitting flat once at rest
+			if a.Stuck {
+				y, pitch = y+stoneSize/2, 0
+			}
 			sky, blk := g.light(x, y, z)
-			m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z)).
-				Mul4(rotY(-g.yRotMC())).Mul4(rotX(g.xRotMC())).Mul4(rotY(180)).
-				Mul4(mgl32.Translate3D(0, 2.0/16, 0)).Mul4(mgl32.Scale3D(0.5, 0.5, 0.5))
-			g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
+			g.arrowInsts = append(g.arrowInsts, render.ModelInstance{Model: g.stoneModel, X: x, Y: y, Z: z, Yaw: yaw, Pitch: pitch, Sky: sky, Block: blk})
 			continue
 		case rogue.Arrow, rogue.Bolt, rogue.Dart:
-		default: // a thrown weapon: in flight its picture turned to the camera and tumbling (ThrownItemRenderer); stuck, blade first (the sprites' blades point to the top right) with the tip at the arrow's, rolled about the flight to face the camera
+		default: // a thrown weapon in its extruded form, its flat sideways
 			const s = 0.6
-			sky, blk := g.light(x, y, z)
-			if !a.Stuck {
-				spin := mgl32.DegToRad((float32(a.Flown) + float32(alpha)) * tumble)
-				m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z)).
-					Mul4(rotY(-g.yRotMC())).Mul4(rotX(g.xRotMC())).Mul4(rotY(180)).Mul4(mgl32.HomogRotate3DZ(spin)).Mul4(mgl32.Scale3D(s, s, s))
-				g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
-				continue
+			sprite := spriteFor(g.rg, o)
+			t := mgl32.DegToRad((float32(a.Flown) + float32(alpha)) * tumble)
+			lx, ly, lz := x, y, z // where its light is sampled: outside the block a stuck one's tip is in
+			if a.Stuck && a.Bounce == 0 {
+				y += s / 2
+				back := projectile.Penetration + s/2
+				lx, ly, lz = x-math.Sin(yaw)*math.Cos(pitch)*back, y-math.Sin(pitch)*back, z+math.Cos(yaw)*math.Cos(pitch)*back
 			}
-			along := mgl32.HomogRotate3DY(float32(math.Pi/2 - yaw)).Mul4(mgl32.HomogRotate3DZ(float32(pitch)))
-			toCam := mgl32.Vec4{float32(g.cam.X - x), float32(g.cam.Y - y), float32(g.cam.Z - z), 0}
-			roll := math.Atan2(float64(toCam.Dot(along.Mul4x1(mgl32.Vec4{0, 1, 0, 0}))), float64(toCam.Dot(along.Mul4x1(mgl32.Vec4{0, 0, 1, 0}))))
-			m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z)).Mul4(along).Mul4(mgl32.HomogRotate3DX(float32(-roll))).
-				Mul4(mgl32.Translate3D(-s*math.Sqrt2/2, 0, 0)).Mul4(mgl32.HomogRotate3DZ(-math.Pi / 4)).Mul4(mgl32.Scale3D(s, s, s))
-			g.itemRend.DrawInWorld(spriteFor(g.rg, o), &g.cam, m, sky, blk)
+			m := mgl32.Translate3D(float32(x-g.cam.X), float32(y-g.cam.Y), float32(z-g.cam.Z))
+			along := mgl32.HomogRotate3DY(float32(math.Pi/2 - yaw)).Mul4(mgl32.HomogRotate3DZ(float32(pitch))) // local +X along the flight
+			tipFirst := mgl32.Translate3D(-s*math.Sqrt2/2, 0, 0).Mul4(mgl32.HomogRotate3DZ(-math.Pi / 4))      // the sprites' blades point to the top right: turned onto +X, the tip at the origin
+			switch {
+			case a.Stuck && a.Bounce > 0: // blunt, at rest on the floor. ponytail: camera-facing until VoxelLib's dropped-item pose (hover and spin) lands
+				m = m.Mul4(rotY(-g.yRotMC())).Mul4(rotX(g.xRotMC())).Mul4(rotY(180))
+			case a.Stuck: // sharp, stuck: the tip at the face it struck
+				m = m.Mul4(along).Mul4(mgl32.Translate3D(-projectile.Penetration, 0, 0)).Mul4(tipFirst)
+			case weaponFeel[o.Which].reach >= longReach: // long: thrown like a spear, tip first and rolling about its length
+				m = m.Mul4(along).Mul4(mgl32.HomogRotate3DX(t / 4)).Mul4(tipFirst)
+			default: // short: a throwing knife, end over end in the vertical plane of its flight about its centre of mass, the tip leading at first
+				c := g.com[sprite]
+				m = m.Mul4(along).Mul4(mgl32.HomogRotate3DZ(-math.Pi/4 - t)).Mul4(mgl32.Translate3D(-s*c[0], -s*c[1], 0))
+			}
+			sky, blk := g.light(lx, ly, lz)
+			g.itemRend.DrawInWorld(sprite, &g.cam, m.Mul4(mgl32.Scale3D(s, s, s)), sky, blk)
 			continue
 		}
 		back := 0.4 * math.Cos(pitch) // light from the middle of the shaft
@@ -450,32 +465,10 @@ func arrowModel() *model.Model {
 	m := &model.Model{Name: "arrow", Textures: []image.Image{tex}, Clips: map[string]*model.Clip{}, Tags: map[string]bool{},
 		Bones: []model.Bone{{Name: "arrow", Parent: -1, R: mgl32.QuatIdent(), S: mgl32.Vec3{1, 1, 1}, InvBind: mgl32.Ident4()}}}
 	var me model.Mesh
-	box := func(lo, hi mgl32.Vec3, px int) {
-		u := (float32(px) + 0.5) / 4
-		for _, f := range [6]struct {
-			n mgl32.Vec3
-			c [4]mgl32.Vec3
-		}{
-			{mgl32.Vec3{1, 0, 0}, [4]mgl32.Vec3{{hi[0], lo[1], lo[2]}, {hi[0], hi[1], lo[2]}, {hi[0], hi[1], hi[2]}, {hi[0], lo[1], hi[2]}}},
-			{mgl32.Vec3{-1, 0, 0}, [4]mgl32.Vec3{{lo[0], lo[1], hi[2]}, {lo[0], hi[1], hi[2]}, {lo[0], hi[1], lo[2]}, {lo[0], lo[1], lo[2]}}},
-			{mgl32.Vec3{0, 1, 0}, [4]mgl32.Vec3{{lo[0], hi[1], lo[2]}, {lo[0], hi[1], hi[2]}, {hi[0], hi[1], hi[2]}, {hi[0], hi[1], lo[2]}}},
-			{mgl32.Vec3{0, -1, 0}, [4]mgl32.Vec3{{lo[0], lo[1], hi[2]}, {lo[0], lo[1], lo[2]}, {hi[0], lo[1], lo[2]}, {hi[0], lo[1], hi[2]}}},
-			{mgl32.Vec3{0, 0, 1}, [4]mgl32.Vec3{{lo[0], lo[1], hi[2]}, {hi[0], lo[1], hi[2]}, {hi[0], hi[1], hi[2]}, {lo[0], hi[1], hi[2]}}},
-			{mgl32.Vec3{0, 0, -1}, [4]mgl32.Vec3{{hi[0], lo[1], lo[2]}, {lo[0], lo[1], lo[2]}, {lo[0], hi[1], lo[2]}, {hi[0], hi[1], lo[2]}}},
-		} {
-			base := uint32(len(me.Verts))
-			for _, c := range f.c {
-				me.Verts = append(me.Verts, model.Vertex{Pos: c, Normal: f.n, UV: mgl32.Vec2{u, 0.5}, Weights: [4]float32{1}})
-			}
-			me.Indices = append(me.Indices, base, base+1, base+2, base, base+2, base+3)
-		}
-	}
-	const s = 1.0 / 32 // half the shaft's thickness
-	box(mgl32.Vec3{-s, -s, -0.75}, mgl32.Vec3{s, s, -0.28}, 0)
+	box := func(lo, hi mgl32.Vec3, px int) { addBox(&me, lo, hi, (float32(px)+0.5)/4) }
 	// head: a four-sided pyramid, its point at the origin
 	u := (1 + 0.5) / float32(4)
 	apex := mgl32.Vec3{0, 0, 0}
-	c := [4]mgl32.Vec3{{-2 * s, -2 * s, -0.3}, {2 * s, -2 * s, -0.3}, {2 * s, 2 * s, -0.3}, {-2 * s, 2 * s, -0.3}}
 	tri := func(a, b, c mgl32.Vec3) {
 		n := b.Sub(a).Cross(c.Sub(a)).Normalize()
 		i := uint32(len(me.Verts))
@@ -484,6 +477,9 @@ func arrowModel() *model.Model {
 		}
 		me.Indices = append(me.Indices, i, i+1, i+2)
 	}
+	const s = 1.0 / 32 // half the shaft's thickness
+	box(mgl32.Vec3{-s, -s, -0.75}, mgl32.Vec3{s, s, -0.28}, 0)
+	c := [4]mgl32.Vec3{{-2 * s, -2 * s, -0.3}, {2 * s, -2 * s, -0.3}, {2 * s, 2 * s, -0.3}, {-2 * s, 2 * s, -0.3}}
 	for k := 0; k < 4; k++ {
 		tri(c[k], c[(k+1)%4], apex)
 	}
@@ -502,4 +498,69 @@ func arrowModel() *model.Model {
 	box(mgl32.Vec3{-1.2 * s, -1.2 * s, -0.78}, mgl32.Vec3{1.2 * s, 1.2 * s, -0.74}, 3) // nock
 	m.Meshes = []model.Mesh{me}
 	return m
+}
+
+// blunt weapons bounce off what they hit; the rest stick like arrows.
+var blunt = map[int]bool{rogue.Mace: true, rogue.Bow: true, rogue.RockW: true, rogue.Sling: true, rogue.Crossbow: true,
+	rogue.GreatBow: true, rogue.WoodenPole: true, rogue.Maul: true, rogue.HeavyMace: true, rogue.Battlestaff: true,
+	rogue.Sceptre: true, rogue.Anchor: true, rogue.Gauntlet: true, rogue.ChainCrossbow: true}
+
+// massCenter is the centroid of a sprite's opaque pixels in the item
+// slab's units (X, Y in [-0.5, 0.5], the picture's left-bottom at
+// -0.5, -0.5): what a thrown weapon spins about.
+func massCenter(img image.Image) [2]float32 {
+	b := img.Bounds()
+	var sx, sy, n float64
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if _, _, _, a := img.At(x, y).RGBA(); a > 0 {
+				sx, sy, n = sx+float64(x-b.Min.X)+0.5, sy+float64(y-b.Min.Y)+0.5, n+1
+			}
+		}
+	}
+	if n == 0 {
+		return [2]float32{}
+	}
+	return [2]float32{float32(sx/n/float64(b.Dx()) - 0.5), float32(0.5 - sy/n/float64(b.Dy()))}
+}
+
+// stoneSize is a sling stone's cube, in blocks.
+const stoneSize = 0.25
+
+// stoneModel is a sling stone: a solid little cube in the rock sprite's
+// average colour.
+func stoneModel() *model.Model {
+	tex := image.NewNRGBA(image.Rect(0, 0, 1, 1))
+	tex.Set(0, 0, color.NRGBA{141, 134, 152, 255})
+	m := &model.Model{Name: "stone", Textures: []image.Image{tex}, Clips: map[string]*model.Clip{}, Tags: map[string]bool{},
+		Bones: []model.Bone{{Name: "stone", Parent: -1, R: mgl32.QuatIdent(), S: mgl32.Vec3{1, 1, 1}, InvBind: mgl32.Ident4()}}}
+	var me model.Mesh
+	const r = stoneSize / 2
+	addBox(&me, mgl32.Vec3{-r, -r, -r}, mgl32.Vec3{r, r, r}, 0.5)
+	m.Meshes = []model.Mesh{me}
+	return m
+}
+
+// addBox appends a box's six faces to the mesh, all with the texture
+// column u.
+func addBox(me *model.Mesh, lo, hi mgl32.Vec3, u float32) {
+	{
+		for _, f := range [6]struct {
+			n mgl32.Vec3
+			c [4]mgl32.Vec3
+		}{
+			{mgl32.Vec3{1, 0, 0}, [4]mgl32.Vec3{{hi[0], lo[1], lo[2]}, {hi[0], hi[1], lo[2]}, {hi[0], hi[1], hi[2]}, {hi[0], lo[1], hi[2]}}},
+			{mgl32.Vec3{-1, 0, 0}, [4]mgl32.Vec3{{lo[0], lo[1], hi[2]}, {lo[0], hi[1], hi[2]}, {lo[0], hi[1], lo[2]}, {lo[0], lo[1], lo[2]}}},
+			{mgl32.Vec3{0, 1, 0}, [4]mgl32.Vec3{{lo[0], hi[1], lo[2]}, {lo[0], hi[1], hi[2]}, {hi[0], hi[1], hi[2]}, {hi[0], hi[1], lo[2]}}},
+			{mgl32.Vec3{0, -1, 0}, [4]mgl32.Vec3{{lo[0], lo[1], hi[2]}, {lo[0], lo[1], lo[2]}, {hi[0], lo[1], lo[2]}, {hi[0], lo[1], hi[2]}}},
+			{mgl32.Vec3{0, 0, 1}, [4]mgl32.Vec3{{lo[0], lo[1], hi[2]}, {hi[0], lo[1], hi[2]}, {hi[0], hi[1], hi[2]}, {lo[0], hi[1], hi[2]}}},
+			{mgl32.Vec3{0, 0, -1}, [4]mgl32.Vec3{{hi[0], lo[1], lo[2]}, {lo[0], lo[1], lo[2]}, {lo[0], hi[1], lo[2]}, {hi[0], hi[1], lo[2]}}},
+		} {
+			base := uint32(len(me.Verts))
+			for _, c := range f.c {
+				me.Verts = append(me.Verts, model.Vertex{Pos: c, Normal: f.n, UV: mgl32.Vec2{u, 0.5}, Weights: [4]float32{1}})
+			}
+			me.Indices = append(me.Indices, base, base+1, base+2, base, base+2, base+3)
+		}
+	}
 }

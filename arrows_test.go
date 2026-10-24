@@ -1,6 +1,8 @@
 package main
 
 import (
+	"image"
+	"image/color"
 	"math/rand"
 	"testing"
 
@@ -47,7 +49,8 @@ func TestThrowWeapon(t *testing.T) {
 	darts := rogue.NewWeapon(g.rng, rogue.Dart)
 	darts.Count = 3
 	dagger := rogue.NewWeapon(g.rng, rogue.Dagger)
-	g.pack = []*rogue.Object{darts, dagger}
+	mace := rogue.NewWeapon(g.rng, rogue.Mace)
+	g.pack = []*rogue.Object{darts, dagger, mace}
 	g.weapon = darts
 	g.throwItem()
 	if darts.Count != 2 || g.weapon != darts || len(g.arrowObjs) != 1 {
@@ -56,7 +59,31 @@ func TestThrowWeapon(t *testing.T) {
 	g.weapon = dagger
 	g.throwItem()
 	g.throwItem() // bare hands
-	if g.weapon != nil || len(g.pack) != 1 || len(g.arrowObjs) != 2 {
+	if g.weapon != nil || len(g.pack) != 2 || len(g.arrowObjs) != 2 {
 		t.Fatalf("dagger: wielding %v, pack %d, %d flying", g.weapon, len(g.pack), len(g.arrowObjs))
+	}
+	g.weapon = mace
+	g.throwItem()
+	for a, o := range g.arrowObjs {
+		if (a.Bounce > 0) != blunt[o.Which] {
+			t.Errorf("%s: bounce %.1f; sharp weapons stick, blunt ones drop", rogue.WeaponNames[o.Which], a.Bounce)
+		}
+	}
+	if len(g.arrowObjs) != 3 {
+		t.Fatalf("mace: %d flying", len(g.arrowObjs))
+	}
+	g.nextWeapon() // 3 with bare hands used to crash
+	if g.weapon == nil {
+		t.Fatal("nextWeapon wielded nothing")
+	}
+}
+
+// TestMassCenter: a sprite with only its top-right pixel set has its
+// centre of mass there.
+func TestMassCenter(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 4, 4))
+	img.Set(3, 0, color.NRGBA{255, 255, 255, 255})
+	if c := massCenter(img); c != [2]float32{0.375, 0.375} {
+		t.Errorf("centre of mass %v, want 0.375, 0.375", c)
 	}
 }

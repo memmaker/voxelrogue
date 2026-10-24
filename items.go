@@ -41,6 +41,10 @@ func (g *game) setupArt(spriteDir, weaponDir string) error {
 	if g.itemRend, err = render.NewItemRenderer(g.eng.Renderer, names, imgs); err != nil {
 		return err
 	}
+	g.com = map[string][2]float32{}
+	for i, n := range names {
+		g.com[n] = massCenter(imgs[i])
+	}
 	if g.partRend, err = render.NewParticleRenderer(g.eng.Renderer); err != nil {
 		return err
 	}
