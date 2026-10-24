@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-gl/mathgl/mgl32"
 	"math"
 	"slices"
 	"strings"
@@ -26,7 +27,8 @@ type floorObj struct {
 type itemState struct {
 	floor      []*floorObj
 	itemRend   *render.ItemRenderer
-	itemInsts  []render.ItemInstance
+	itemPoses  []render.ItemPose // drawFloorItems and drawArrows reuse it
+	dropMats   []mgl32.Mat4
 	confuseHit bool // scroll of monster confusion: the next hit confuses
 	zapping    *rogue.Object
 }
@@ -820,26 +822,33 @@ func (g *game) drainLife() {
 
 // drawFloorItems draws the objects lying around, slowly turning.
 func (g *game) drawFloorItems(alpha float64) {
-	g.itemInsts = g.itemInsts[:0]
-	t := (float64(g.tick) + alpha) / 20
+	g.itemPoses = g.itemPoses[:0]
 	for i, f := range g.floor {
 		x, y, z := tileCenter(g.slot(), f.tile)
-		y += 0.3 + 0.06*math.Sin(t*2+float64(i))
-		sky, blk := g.light(x, y, z)
-		g.itemInsts = append(g.itemInsts, render.ItemInstance{Item: spriteFor(g.rg, f.o), X: x, Y: y, Z: z,
-			Yaw: t + float64(i), Scale: 0.6, Sky: sky, Block: blk})
+		g.dropPoses(f.o, x, y, z, g.tick+i*7, alpha)
 	}
 	for i, m := range g.monsters { // a mimic looks like what it pretends to be
 		if m.disguise == nil {
 			continue
 		}
 		x, y, z := tileCenter(g.slot(), m.tile)
-		y += 0.3 + 0.06*math.Sin(t*2+float64(i))
-		sky, blk := g.light(x, y, z)
-		g.itemInsts = append(g.itemInsts, render.ItemInstance{Item: spriteFor(g.rg, m.disguise), X: x, Y: y, Z: z,
-			Yaw: t + float64(i), Scale: 0.6, Sky: sky, Block: blk})
+		g.dropPoses(m.disguise, x, y, z, g.tick+i*7, alpha)
 	}
-	g.itemRend.DrawWorld(&g.cam, g.itemInsts)
+	g.itemRend.DrawPosed(&g.cam, g.itemPoses)
+}
+
+// dropPoses adds an object lying on the floor at x, y (the floor's top),
+// z to itemPoses as the reference's dropped item: hovering, spinning, a
+// copy more per stack size step. age ticks spread the spins.
+func (g *game) dropPoses(o *rogue.Object, x, y, z float64, age int, alpha float64) {
+	k := spriteFor(g.rg, o)
+	ms, bob := render.FlatDropPoses(age, alpha, o.Count, g.itemRend.In2D(k), g.dropMats[:0])
+	g.dropMats = ms
+	y += render.DropYOffset + bob
+	sky, blk := g.light(x, y, z)
+	for _, m := range ms {
+		g.itemPoses = append(g.itemPoses, render.ItemPose{Item: k, X: x, Y: y, Z: z, M: m, Sky: sky, Block: blk})
+	}
 }
 
 // drawHand draws the wielded weapon (or held wand) in first person.

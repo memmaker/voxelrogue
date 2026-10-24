@@ -399,7 +399,7 @@ func (g *game) clearArrows() {
 }
 
 func (g *game) drawArrows(alpha float64) {
-	g.arrowInsts = g.arrowInsts[:0]
+	g.arrowInsts, g.itemPoses = g.arrowInsts[:0], g.itemPoses[:0]
 	for _, a := range g.arrows.Arrows {
 		if g.arrowObjs[a] == nil {
 			continue // landed this tick
@@ -433,8 +433,9 @@ func (g *game) drawArrows(alpha float64) {
 			along := mgl32.HomogRotate3DY(float32(math.Pi/2 - yaw)).Mul4(mgl32.HomogRotate3DZ(float32(pitch))) // local +X along the flight
 			tipFirst := mgl32.Translate3D(-s*math.Sqrt2/2, 0, 0).Mul4(mgl32.HomogRotate3DZ(-math.Pi / 4))      // the sprites' blades point to the top right: turned onto +X, the tip at the origin
 			switch {
-			case a.Stuck && a.Bounce > 0: // blunt, at rest on the floor. ponytail: camera-facing until VoxelLib's dropped-item pose (hover and spin) lands
-				m = m.Mul4(rotY(-g.yRotMC())).Mul4(rotX(g.xRotMC())).Mul4(rotY(180))
+			case a.Stuck && a.Bounce > 0: // blunt, at rest on the floor: a dropped item
+				g.dropPoses(o, x, y, z, g.tick, alpha)
+				continue
 			case a.Stuck: // sharp, stuck: the tip at the face it struck
 				m = m.Mul4(along).Mul4(mgl32.Translate3D(-projectile.Penetration, 0, 0)).Mul4(tipFirst)
 			case weaponFeel[o.Which].reach >= longReach: // long: thrown like a spear, tip first and rolling about its length
@@ -452,6 +453,7 @@ func (g *game) drawArrows(alpha float64) {
 		g.arrowInsts = append(g.arrowInsts, render.ModelInstance{Model: g.arrowModel, X: x, Y: y, Z: z, Yaw: yaw, Pitch: pitch, Sky: sky, Block: blk})
 	}
 	g.modelRend.Draw(&g.cam, g.arrowInsts)
+	g.itemRend.DrawPosed(&g.cam, g.itemPoses)
 }
 
 // arrowModel is voxellib's explorer arrow: pointing along +Z with its tip
