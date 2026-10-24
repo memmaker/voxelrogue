@@ -77,12 +77,10 @@ func boxModel(name string, w, h float32, tex image.Image) *model.Model {
 }
 
 // spriteNames lists every sprite the game uses, loaded from itemDir.
-// weaponSprites are the weapons still drawn with a mod's picture ("w:" +
-// its id in weapons.rec: no 16px picture in assets/hobbit matches them,
-// or the sling's model needs its own); "" draws the weapon's own name
-// from gear.rec or items.rec.
-var weaponSprites = [rogue.MaxWeapons]string{rogue.Sling: "w:sling", rogue.Greatsword: "w:greatsword", rogue.Katana: "w:katana",
-	rogue.Scythe: "w:scythe", rogue.GreatBow: "w:great_bow", rogue.Sickle: "w:sickle"}
+// weaponSprites are the weapons drawn with a picture of their own ("w:" +
+// its id in weapons.rec: the sling, whose model needs its own); "" draws
+// the weapon's own name from gear.rec or items.rec.
+var weaponSprites = [rogue.MaxWeapons]string{rogue.Sling: "w:sling"}
 
 // weaponSprite is the sprite a weapon kind is drawn with.
 func weaponSprite(which int) string {

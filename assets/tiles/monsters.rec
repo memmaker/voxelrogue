@@ -17,104 +17,104 @@ gap_y: 0
 
 id: giant ant
 name: giant ant
-icon: 53
+icon: 41
 
 id: bat
 name: bat
-icon: 54
+icon: 42
 
 id: centaur
 name: centaur
-icon: 55
+icon: 43
 
 id: dragon
 name: dragon
-icon: 56
+icon: 44
 
 id: floating eye
 name: floating eye
-icon: 57
+icon: 45
 
 id: violet fungi
 name: violet fungi
-icon: 58
+icon: 46
 
 id: gnome
 name: gnome
-icon: 59
+icon: 47
 
 id: hobgoblin
 name: hobgoblin
-icon: 60
+icon: 48
 
 id: invisible stalker
 name: invisible stalker
-icon: 61
+icon: 49
 
 id: jackal
 name: jackal
-icon: 62
+icon: 50
 
 id: kobold
 name: kobold
-icon: 63
+icon: 51
 
 id: leprechaun
 name: leprechaun
-icon: 64
+icon: 52
 
 id: mimic
 name: mimic
-icon: 65
+icon: 53
 
 id: nymph
 name: nymph
-icon: 66
+icon: 54
 
 id: orc
 name: orc
-icon: 67
+icon: 55
 
 id: purple worm
 name: purple worm
-icon: 68
+icon: 56
 
 id: quasit
 name: quasit
-icon: 69
+icon: 57
 
 id: rust monster
 name: rust monster
-icon: 70
+icon: 58
 
 id: snake
 name: snake
-icon: 71
+icon: 59
 
 id: troll
 name: troll
-icon: 72
+icon: 60
 
 id: umber hulk
 name: umber hulk
-icon: 73
+icon: 61
 
 id: vampire
 name: vampire
-icon: 74
+icon: 62
 
 id: wraith
 name: wraith
-icon: 75
+icon: 63
 
 id: xorn
 name: xorn
-icon: 76
+icon: 64
 
 id: yeti
 name: yeti
-icon: 77
+icon: 65
 
 id: zombie
 name: zombie
-icon: 78
+icon: 66

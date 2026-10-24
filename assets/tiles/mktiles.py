@@ -8,9 +8,10 @@ colour, a ring by its stone, a wall by where it stands):
   tiles16.png  gear.rec      %rec: gear    the armour and the weapons with a 16px picture (assets/hobbit: LOTR mod and vanilla sprites)
                textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
                monsters.rec  %rec: monster the 26 monsters (DynaHack, shadows stripped)
-               weapons.rec   %rec: weapon  the mod weapons the game draws (16px): held, in hand, pulling, loaded
-  tiles32.png  weapons32.rec %rec: weapon  the mod weapons larger than 16px (w/h keep their own size in a 32px cell)
+               weapons.rec   %rec: weapon  the sling's pictures (Nightfall's), held and its model texture
 
+A rerun keeps the recs' icons (the remapper's edits); after adding or cutting a look,
+run it with --fresh, since the cells behind the kept icons have moved.
 The game reads only the recs and sheets (tiles.go); the remapper edits
 the recs (remap_*.sh). The first look of everything comes from the art
 the game used before: VoxelLib's CC0 item sprites and RPG16 pack, the
@@ -24,7 +25,9 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-LIB = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, '..', 'VoxelLib')
+FRESH = '--fresh' in sys.argv  # ignore the recs' kept icons: the cells moved (a look added or cut)
+ARGS = [a for a in sys.argv[1:] if a != '--fresh']
+LIB = ARGS[0] if ARGS else os.path.join(ROOT, '..', 'VoxelLib')
 ITEMS, BLOCKS = os.path.join(LIB, 'assets', 'items'), os.path.join(LIB, 'assets', 'rpg16pack', 'assets', 'minecraft', 'textures', 'block')
 
 
@@ -76,6 +79,8 @@ class Sheet:
     def rec(self, path, doc, cat, records):
         """records: (id, name, icon[, w, h]); a remapped id keeps its icon."""
         keep, meshes = existing(path)
+        if FRESH:
+            keep = {}
         out = [f'# {os.path.basename(path)}: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper',
                f'# (remap_{os.path.basename(path)[:-4]}.sh). icon: cell of {self.name}; -1: unassigned.',
                '', '%rec: Tileset', f'id: {self.name[:-4]}', f'name: VoxelRogue {self.size}px tiles',
@@ -107,9 +112,7 @@ def item(rid, sprite, name=None):
     return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
 items = []
 # the weapons with no 16px picture in assets/hobbit (the Better Combat exotics) keep VoxelLib's 8px sprites
-for rid, sprite in [('two handed sword', 'sword_25'), ('sceptre', 'staff_26'), ('soul knife', 'sword_44'), ('coral blade', 'sword_18'),
-                    ('twin blade', 'sword_30'), ('claw', 'sword_57'), ('anchor', 'mace_06'), ('gauntlet', 'gloves_04')]:
-    items.append(item(rid, sprite))
+items.append(item('two handed sword', 'sword_25'))
 for j, c in enumerate(golist(rules, 'rainbow')):  # a potion looks like its colour
     items.append(item(c + ' potion', f'potion_{j % 24 * 3 + 1:02d}'))
 for i in range(1, 16):  # a scroll's title is random each game; it has one of 15 looks
@@ -131,12 +134,8 @@ gears = [gear(n, src) for n, src in zip(golist(rules, 'ArmorNames'),
          ['bodyDunlending', 'bodyRanger', 'bodyCorsair', 'bodyNearHarad', 'chainmail_chestplate', 'bodyDale', 'bodyRohan', 'iron_chestplate'])]
 for rid, src in [('mace', 'maceBlackNumenorean'), ('long sword', 'swordGondor'), ('long bow', 'bow_standby'), ('arrow', 'arrow'),
                  ('dagger', 'daggerGondor'), ('rock', 'flint'), ('dart', 'tauredainDart'), ('crossbow', 'ironCrossbow'),
-                 ('crossbow bolt', 'crossbowBolt'), ('spear', 'spearGondor'), ('broadsword', 'swordRohan'), ('glaive', 'polearmElven'),
-                 ('halberd', 'halberdMithril'), ('war spear', 'longspearRivendell'), ('war glaive', 'poleaxeNearHarad'),
-                 ('scimitar', 'scimitarNearHarad'), ('wooden pole', 'mallornStick'), ('hatchet', 'axeDwarven'),
-                 ('double axe', 'battleaxeDwarven'), ('great axe', 'battleaxeUtumno'), ('maul', 'hammerDwarven'),
-                 ('heavy mace', 'maceHalfTroll'), ('battlestaff', 'gandalfStaffGrey'), ('lance', 'lanceGondor'),
-                 ('trident', 'tridentPelargir'), ('rapier', 'swordDolAmroth'), ('chain crossbow', 'urukCrossbow')]:
+                 ('crossbow bolt', 'crossbowBolt'), ('spear', 'spearGondor'), ('axe', 'axeDwarven'), ('halberd', 'halberdMithril'),
+                 ('maul', 'hammerDwarven'), ('battle axe', 'battleaxeDwarven'), ('chain crossbow', 'urukCrossbow')]:
     gears.append(gear(rid, src))
 for i in range(3):  # the frames items.go shows while a bow is drawn or a crossbow spanned
     gears.append(gear(f'long bow_pulling_{i}', f'bow_pulling_{i}', f'long bow (pulling {i})'))
@@ -164,10 +163,9 @@ for m in re.finditer(r'^# tile \d+ \((.*?)\).*\n\{\n((?:  .{16}\n){16})\}', txt,
                 im.putpixel((x, y), pal[c] + (255,))
     monsters.append((m.group(1), m.group(1), t16.add('m:' + m.group(1), im)))
 
-# the mod weapons standins.go names ("w:" + id), with the pictures items.go derives from them
+# the weapons standins.go draws with a picture of their own ("w:" + id: the sling and its model texture)
 refs = set(re.findall(r'"w:(\w+)"', standins)) | {'sling_model'}
-t32 = Sheet('tiles32.png', 32, 8)
-weapons, weapons32 = [], []
+weapons = []
 for p in sorted(glob.glob(os.path.join(ROOT, 'assets', 'weapons', '*.png'))):
     n = os.path.basename(p)[:-4]
     base, kind = re.fullmatch(r'(.*?)(?:_(hand|arrow|pulling_\d))?', n).groups()
@@ -176,17 +174,9 @@ for p in sorted(glob.glob(os.path.join(ROOT, 'assets', 'weapons', '*.png'))):
     name = base.replace('_', ' ') + {None: '', 'hand': ' (in hand)', 'arrow': ' (loaded)'}.get(kind, f' ({kind.replace("_", " ")})' if kind else '')
     if n == 'sling_model':
         name = 'sling (model texture)'
-    im = rgba(p)
-    if im.size == (16, 16):
-        weapons.append((n, name, t16.add('w:' + n, im)))
-    else:
-        cell = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
-        cell.paste(im, (0, 0))
-        weapons32.append((n, name, t32.add('w:' + n, cell), im.size[0], im.size[1]))
+    weapons.append((n, name, t16.add('w:' + n, rgba(p))))
 t16.save()
 t16.rec(os.path.join(HERE, 'gear.rec'), 'Armour and weapons (16px)', 'gear', gears)
 t16.rec(os.path.join(HERE, 'textures.rec'), 'Block textures', 'block', blocks)
 t16.rec(os.path.join(HERE, 'monsters.rec'), 'Monsters', 'monster', monsters)
 t16.rec(os.path.join(HERE, 'weapons.rec'), 'Weapons (mod pictures, 16px)', 'weapon', weapons)
-t32.save()
-t32.rec(os.path.join(HERE, 'weapons32.rec'), 'Weapons (mod pictures larger than 16px)', 'weapon', weapons32)

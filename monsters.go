@@ -586,26 +586,19 @@ func (g *game) removeMonster(m *monster) {
 }
 
 // weaponFeel is how a weapon handles in real time: ticks between swings
-// and reach in blocks (plus the target's size). Missing = 12, 2.4; the
-// pole arms reach at least twice that.
+// and reach in blocks (plus the target's size). Missing = 12, 2.4: the
+// one-handed weapons; the dagger is short and fast, the two-handed
+// weapons slow and long, the pole arms twice as long.
 var weaponFeel = map[int]struct {
 	cd    int
 	reach float64
 }{
-	rogue.Dagger:     {8, 2.0},
-	rogue.TwoSword:   {18, 2.6},
-	rogue.Spear:      {13, 4.8},
-	rogue.Broadsword: {14, 2.5},
-	rogue.Glaive:     {16, 5.0},
-	rogue.Greatsword: {18, 2.7},
-	rogue.Halberd:    {18, 5.0},
-	rogue.Katana:     {9, 2.5},
-	rogue.Scythe:     {16, 4.8},
-	rogue.WarSpear:   {13, 4.8},
-	rogue.WarGlaive:  {16, 5.0},
-	rogue.Scimitar:   {9, 2.4},
-	rogue.WoodenPole: {11, 5.0},
-	rogue.Lance:      {16, 5.2},
+	rogue.Dagger:    {8, 2.0},
+	rogue.Spear:     {13, 4.8},
+	rogue.TwoSword:  {18, 3.2},
+	rogue.Halberd:   {18, 5.0},
+	rogue.Maul:      {18, 3.2},
+	rogue.BattleAxe: {18, 3.2},
 }
 
 // sweeps reports whether a blow strikes every monster in its path: an
@@ -615,7 +608,7 @@ func sweeps(w *rogue.Object, pattern int) bool {
 		return false
 	}
 	switch meleeKind(w) {
-	case rogue.Hatchet, rogue.DoubleAxe, rogue.GreatAxe:
+	case rogue.Axe, rogue.BattleAxe:
 		return true
 	}
 	return false

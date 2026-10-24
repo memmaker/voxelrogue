@@ -29,13 +29,7 @@ var handheld = display{mgl32.Vec3{0, -90, 25}, mgl32.Vec3{1.13, 3.2, 1.13}, mgl3
 // sprite; the rest of their weapons inherit item/handheld.
 var modDisplay = map[string]display{
 	// weapons_expanded *_in_hand models
-	"w:glaive_hand":     {mgl32.Vec3{-20, -90, -75}, mgl32.Vec3{3.13, 0, -1.13}, mgl32.Vec3{1.36, 1.36, 0.68}},
-	"w:halberd_hand":    {mgl32.Vec3{-20, -90, -75}, mgl32.Vec3{3.13, 0, -1.13}, mgl32.Vec3{1.36, 1.36, 0.68}},
-	"w:scythe_hand":     {mgl32.Vec3{-20, -90, -75}, mgl32.Vec3{1.13, 0, -1.13}, mgl32.Vec3{1.36, 1.36, 0.68}},
-	"w:greatsword_hand": {mgl32.Vec3{0, -90, 25}, mgl32.Vec3{1.13, 4, 1.13}, mgl32.Vec3{0.85, 0.85, 0.85}},
 	// additionalweapon
-	"w:war_glaive": {mgl32.Vec3{0, -90, 35}, mgl32.Vec3{1.13, 0, 1}, mgl32.Vec3{1.36, 1.36, 0.68}},
-	"w:scimitar":   {mgl32.Vec3{0, -90, 35}, mgl32.Vec3{1.13, 4.25, 1.13}, mgl32.Vec3{1.02, 1.02, 0.68}},
 }
 
 // crossbowDisplay is minecraft:item/crossbow's (its pulling and loaded
@@ -96,12 +90,7 @@ func drawPower(t, full float32) float32 {
 }
 
 // fullDraw is how many ticks a bow takes to draw fully.
-func fullDraw(which int) float32 {
-	if which == rogue.GreatBow {
-		return 32
-	}
-	return 20
-}
+func fullDraw(which int) float32 { return 20 }
 
 // bowZoom is the field of view factor after t ticks of drawing
 // (AbstractClientPlayer.getFieldOfViewModifier; the longbow's mixin zooms

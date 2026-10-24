@@ -132,7 +132,7 @@ func TestSweep(t *testing.T) {
 	if ms := g.monstersInFront(tileD + 1); len(ms) != 2 || ms[0] != near {
 		t.Fatalf("in front: %d monsters, the nearest first %v", len(ms), len(ms) > 0 && ms[0] == near)
 	}
-	axe, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.Hatchet}, &rogue.Object{Type: rogue.Weapon, Which: rogue.Mace}
+	axe, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.Axe}, &rogue.Object{Type: rogue.Weapon, Which: rogue.Mace}
 	if !sweeps(axe, 0) || sweeps(axe, 1) || sweeps(mace, 0) || sweeps(nil, 0) {
 		t.Fatal("only an axe's sideways swing sweeps")
 	}

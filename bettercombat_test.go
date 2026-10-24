@@ -146,24 +146,20 @@ func TestHand(t *testing.T) {
 	}
 }
 
-// TestPresets checks the weapon kinds' Better Combat attacks against the
-// mods' data: a registered item with a parent chain (hatchet), one with
-// its own attacks (claymore through the game's data), the fallback by
-// name (spear, rapier), and the kinds Better Combat leaves to vanilla
-// (ranged items have no attacks, a pole matches nothing).
+// TestPresets checks the weapon kinds' attacks against their files: a
+// one-handed weapon's, a two-handed one's, and the kinds with the vanilla
+// swing (launchers, missiles).
 func TestPresets(t *testing.T) {
 	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
 		t.Fatal(err)
 	}
 	want := map[int][]bcAttack{
-		rogue.Hatchet:       {{"one_handed_slash_horizontal_right", 0.3}, {"one_handed_slash_horizontal_left", 0.3}, {"one_handed_slam", 0.5}},
-		rogue.GreatAxe:      {{"two_handed_slash_horizontal_right", 0.5}, {"two_handed_spin", 0.5}, {"two_handed_slash_vertical_right", 0.5}, {"two_handed_slash_vertical_left", 0.5}},
-		rogue.TwoSword:      {{"two_handed_slash_horizontal_right", 0.5}, {"two_handed_stab_left", 0.5}, {"two_handed_slam", 0.5}},
-		rogue.Spear:         {{"two_handed_stab_right", 0.5}},
-		rogue.Rapier:        {{"one_handed_slash_horizontal_left", 0.5}, {"one_handed_stab", 0.5}},
+		rogue.Axe:           {{"one_handed_slash_horizontal_right", 0.3}, {"one_handed_slash_horizontal_left", 0.3}, {"one_handed_slam", 0.5}},
+		rogue.BattleAxe:     {{"two_handed_slash_horizontal_right", 0.5}, {"two_handed_spin", 0.5}, {"two_handed_slash_vertical_right", 0.5}, {"two_handed_slash_vertical_left", 0.5}},
+		rogue.Spear:         {{"one_handed_stab", 0.5}},
 		rogue.Bow:           nil,
 		rogue.ChainCrossbow: nil,
-		rogue.WoodenPole:    nil,
+		rogue.Dart:          nil,
 	}
 	for k, w := range want {
 		if got := weaponPresets[k]; fmt.Sprint(got) != fmt.Sprint(w) {
@@ -284,23 +280,23 @@ func TestCrossbowReload(t *testing.T) {
 	}
 }
 
-// TestPatterns splits the presets into the patterns bound to the left
-// button, the right button and F: sideways, overhead and stab, the stab
-// first for a long reaching weapon.
+// TestPatterns splits the attacks into the patterns bound to the left
+// button, the right button and F, in the weapon list's order: swing,
+// overhead, stab; the horizontal slashes of a swing alternate.
 func TestPatterns(t *testing.T) {
 	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
 		t.Fatal(err)
 	}
 	want := map[int]string{
-		rogue.LongSword:   "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_stab]]",
-		rogue.Katana:      "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slash_vertical_left two_handed_slash_vertical_right]]",
-		rogue.Battlestaff: "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left two_handed_spin] [two_handed_slam] [two_handed_stab_left two_handed_stab_right]]",
-		rogue.Halberd:     "[[two_handed_stab_right] [two_handed_slash_vertical_left]]",
-		rogue.Spear:       "[[two_handed_stab_right]]",
+		rogue.Dagger:    "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_stab]]",
+		rogue.LongSword: "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_slam] [one_handed_stab]]",
+		rogue.Halberd:   "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slash_vertical_right] [two_handed_stab_right]]",
+		rogue.Maul:      "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slam_heavy]]",
+		rogue.Spear:     "[[one_handed_stab]]",
 	}
 	for k, w := range want {
 		var got [][]string
-		for _, pat := range patterns(weaponPresets[k], weaponFeel[k].reach >= longReach) {
+		for _, pat := range patterns(weaponPresets[k]) {
 			var names []string
 			for _, a := range pat {
 				names = append(names, a.anim)

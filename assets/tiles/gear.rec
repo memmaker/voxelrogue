@@ -120,114 +120,66 @@ id: spear
 name: spear
 icon: 17
 
-id: broadsword
-name: broadsword
+id: axe
+name: axe
 icon: 18
-
-id: glaive
-name: glaive
-icon: 19
 
 id: halberd
 name: halberd
-icon: 20
-
-id: war spear
-name: war spear
-icon: 21
-
-id: war glaive
-name: war glaive
-icon: 22
-
-id: scimitar
-name: scimitar
-icon: 23
-
-id: wooden pole
-name: wooden pole
-icon: 24
-
-id: hatchet
-name: hatchet
-icon: 25
-
-id: double axe
-name: double axe
-icon: 26
-
-id: great axe
-name: great axe
-icon: 27
+icon: 19
 
 id: maul
 name: maul
-icon: 28
+icon: 20
 
-id: heavy mace
-name: heavy mace
-icon: 29
-
-id: battlestaff
-name: battlestaff
-icon: 30
-
-id: lance
-name: lance
-icon: 31
-
-id: trident
-name: trident
-icon: 32
-
-id: rapier
-name: rapier
-icon: 33
+id: battle axe
+name: battle axe
+icon: 21
 
 id: chain crossbow
 name: chain crossbow
-icon: 34
+icon: 22
 
 id: long bow_pulling_0
 name: long bow (pulling 0)
-icon: 35
+icon: 23
 
 id: crossbow_pulling_0
 name: crossbow (pulling 0)
-icon: 36
+icon: 24
 
 id: chain crossbow_pulling_0
 name: chain crossbow (pulling 0)
-icon: 37
+icon: 25
 
 id: long bow_pulling_1
 name: long bow (pulling 1)
-icon: 38
+icon: 26
 
 id: crossbow_pulling_1
 name: crossbow (pulling 1)
-icon: 39
+icon: 27
 
 id: chain crossbow_pulling_1
 name: chain crossbow (pulling 1)
-icon: 40
+icon: 28
 
 id: long bow_pulling_2
 name: long bow (pulling 2)
-icon: 41
+icon: 29
 
 id: crossbow_pulling_2
 name: crossbow (pulling 2)
-icon: 42
+icon: 30
 
 id: chain crossbow_pulling_2
 name: chain crossbow (pulling 2)
-icon: 43
+icon: 31
 
 id: crossbow_arrow
 name: crossbow (loaded)
-icon: 42
+icon: 30
 
 id: chain crossbow_arrow
 name: chain crossbow (loaded)
-icon: 43
+icon: 31

@@ -1,0 +1,8 @@
+{
+  "attacks": [
+    {
+      "animation": "bettercombat:one_handed_stab",
+      "upswing": 0.5
+    }
+  ]
+}

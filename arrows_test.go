@@ -14,7 +14,7 @@ import (
 // TestLaunchers spans (crossbows), holds and lets go of every launcher,
 // given its ammunition as the debug keys do, and expects a shot.
 func TestLaunchers(t *testing.T) {
-	for _, which := range []int{rogue.Bow, rogue.GreatBow, rogue.Crossbow, rogue.ChainCrossbow, rogue.Sling} {
+	for _, which := range []int{rogue.Bow, rogue.Crossbow, rogue.ChainCrossbow, rogue.Sling} {
 		g := &game{rng: rand.New(rand.NewSource(1))}
 		g.arrowObjs, g.player, g.rg = map[*projectile.Arrow]*rogue.Object{}, &character.Character{}, rogue.NewGame(g.rng)
 		g.weapon = rogue.NewWeapon(g.rng, which)

@@ -31,11 +31,9 @@ import (
 )
 
 // launchSpeed is a launcher's arrow speed in blocks per tick, fully
-// drawn: Minecraft's bow and crossbow, and weapons_expanded's longbow
-// for the great bow.
+// drawn: Minecraft's bow and crossbow.
 var launchSpeed = map[int]float64{
 	rogue.Bow:           3.0,
-	rogue.GreatBow:      4.0,
 	rogue.Crossbow:      projectile.Speed,
 	rogue.ChainCrossbow: projectile.Speed,
 	rogue.Sling:         slingVelocity, // Nightfall's, at full charge (sling.go)
@@ -324,7 +322,7 @@ func (g *game) tickFov() {
 	}
 	g.prevFovMod = g.fovMod
 	target := float32(1)
-	if g.drawing && g.weapon.Which == rogue.Bow { // only Items.BOW zooms, not the longbow
+	if g.drawing && g.weapon.Which == rogue.Bow {
 		target = bowZoom(float32(g.drawTicks), fullDraw(g.weapon.Which))
 	}
 	if g.sling.frame != 0 && g.sling.state == slingCharge {
@@ -533,8 +531,7 @@ func arrowModel() *model.Model {
 
 // blunt weapons bounce off what they hit; the rest stick like arrows.
 var blunt = map[int]bool{rogue.Mace: true, rogue.Bow: true, rogue.RockW: true, rogue.Sling: true, rogue.Crossbow: true,
-	rogue.GreatBow: true, rogue.WoodenPole: true, rogue.Maul: true, rogue.HeavyMace: true, rogue.Battlestaff: true,
-	rogue.Sceptre: true, rogue.Anchor: true, rogue.Gauntlet: true, rogue.ChainCrossbow: true}
+	rogue.Maul: true, rogue.ChainCrossbow: true}
 
 // massCenter is the centroid of a sprite's opaque pixels in the item
 // slab's units (X, Y in [-0.5, 0.5], the picture's left-bottom at

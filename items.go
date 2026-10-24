@@ -238,7 +238,7 @@ func (g *game) addPack(o *rogue.Object) bool {
 		}
 	}
 	g.msg("You now have " + lowerFirst(g.rg.Name(p)) + fmt.Sprintf(" (%c).", g.packLetter(p)))
-	if g.weapon == nil && p.Type == rogue.Weapon && weaponItem[p.Which] != "" {
+	if g.weapon == nil && p.Type == rogue.Weapon && !rogue.IsAmmo(p.Which) {
 		g.place(p, g.inv.Held)
 	}
 	return true
@@ -1000,8 +1000,6 @@ func (g *game) drawHand(alpha float64) {
 	switch {
 	case name == weaponSprite(rogue.Bow) && h.use == useBow: // items/bow: use_duration scaled 0.05
 		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)*0.05, 0.65, 0.9))
-	case name == weaponSprite(rogue.GreatBow) && h.use == useBow: // the longbow's pulling models, use_duration scaled 1/32
-		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)/fullDraw(rogue.GreatBow), 0.65, 0.9))
 	case crossbowSprite(name) && h.use == useCrossbowCharge: // crossbow/pull
 		name += fmt.Sprintf("_pulling_%d", pullStage((h.useT+1-pt)/h.charge, 0.58, 1)) // the ticks held so far over the charge
 	case crossbowSprite(name) && h.use == useCrossbowHold: // charge_type arrow

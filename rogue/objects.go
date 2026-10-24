@@ -46,8 +46,8 @@ type Object struct {
 	GoldVal      int
 }
 
-// Weapons (weapons.c), in table order; after Spear come the weapons
-// added from the weapons_expanded and additionalweapon mods.
+// Weapons (weapons.c), in table order; after Spear come the game's
+// own additions: the axes, the halberd, the maul and the chain crossbow.
 const (
 	Mace = iota
 	LongSword
@@ -61,46 +61,17 @@ const (
 	Crossbow
 	Bolt
 	Spear
-	Broadsword
-	Glaive
-	Greatsword
+	Axe
 	Halberd
-	Katana
-	Scythe
-	WarSpear
-	GreatBow
-	WarGlaive
-	Scimitar
-	WoodenPole
-	// one weapon for each of Better Combat's remaining presets
-	Hatchet
-	DoubleAxe
-	GreatAxe
 	Maul
-	HeavyMace
-	Battlestaff
-	Sceptre
-	Lance
-	Trident
-	Rapier
-	Sickle
-	SoulKnife
-	CoralBlade
-	TwinBlade
-	Claw
-	Anchor
-	Gauntlet
+	BattleAxe
 	ChainCrossbow
 	MaxWeapons
 )
 
 var WeaponNames = [MaxWeapons]string{"mace", "long sword", "long bow", "arrow", "dagger", "rock",
 	"two handed sword", "sling", "dart", "crossbow", "crossbow bolt", "spear",
-	"broadsword", "glaive", "greatsword", "halberd", "katana", "scythe", "war spear", "great bow",
-	"war glaive", "scimitar", "wooden pole",
-	"hatchet", "double axe", "great axe", "maul", "heavy mace", "battlestaff", "sceptre", "lance", "trident",
-	"rapier", "sickle", "soul knife", "coral blade", "twin blade", "claw", "anchor", "gauntlet",
-	"chain crossbow"}
+	"axe", "halberd", "maul", "battle axe", "chain crossbow"}
 
 var weaponInit = [MaxWeapons]struct {
 	dam, hrl string
@@ -119,39 +90,19 @@ var weaponInit = [MaxWeapons]struct {
 	{"1d1", "1d1", -1, 0},
 	{"1d2", "1d10", Crossbow, IsMany | IsMissile},
 	{"1d8", "1d6", -1, IsMissile},
-	{"2d5", "1d2", -1, 0},
-	{"1d10", "1d3", -1, 0},
-	{"3d5", "1d2", -1, 0},
-	{"2d6", "1d3", -1, 0},
-	{"1d8", "1d2", -1, 0},
-	{"2d4", "1d2", -1, 0},
-	{"1d10", "1d8", -1, IsMissile},
-	{"1d1", "1d1", -1, 0},
-	{"2d5", "1d3", -1, 0},
-	{"1d8", "1d2", -1, 0},
-	{"1d6", "1d2", -1, 0},
-	{"1d6", "1d4", -1, IsMissile}, // hatchet
-	{"2d6", "1d2", -1, 0},
-	{"3d5", "1d2", -1, 0},
-	{"2d8", "1d2", -1, 0},
-	{"2d6", "1d2", -1, 0},
-	{"1d8", "1d2", -1, 0},
-	{"1d4", "1d2", -1, 0},
-	{"2d5", "1d3", -1, 0},
-	{"2d4", "1d6", -1, IsMissile}, // trident
-	{"1d8", "1d2", -1, 0},
-	{"1d6", "1d2", -1, 0},
-	{"1d6", "1d4", -1, IsMissile}, // soul knife
-	{"1d8", "1d2", -1, 0},
-	{"2d4", "1d2", -1, 0},
-	{"1d6", "1d2", -1, 0},
-	{"2d6", "1d2", -1, 0},
-	{"1d4", "1d2", -1, 0},
-	{"1d1", "1d1", -1, 0}, // chain crossbow
+	{"1d6", "1d4", -1, IsMissile}, // axe
+	{"2d6", "1d3", -1, 0},         // halberd
+	{"2d8", "1d2", -1, 0},         // maul
+	{"3d5", "1d2", -1, 0},         // battle axe
+	{"1d1", "1d1", -1, 0},         // chain crossbow
 }
 
-// launchesAs maps the mods' launchers to the vanilla one whose ammo they fire.
-var launchesAs = map[int]int{GreatBow: Bow, ChainCrossbow: Crossbow}
+// IsAmmo reports whether a weapon kind is ammunition (comes in bundles),
+// not something to wield.
+func IsAmmo(which int) bool { return weaponInit[which].flags&IsMany != 0 }
+
+// launchesAs maps a launcher to the one whose ammo it fires.
+var launchesAs = map[int]int{ChainCrossbow: Crossbow}
 
 // Launches reports whether launcher fires ammo.
 func Launches(launcher int, ammo *Object) bool {
@@ -161,14 +112,8 @@ func Launches(launcher int, ammo *Object) bool {
 	return ammo.Launch >= 0 && ammo.Launch == launcher
 }
 
-// LaunchDamage is ammo's damage fired from launcher: the great bow
-// drives arrows harder.
-func LaunchDamage(launcher int, ammo *Object) string {
-	if launcher == GreatBow && ammo.Which == Arrow {
-		return "1d8"
-	}
-	return ammo.HurlDmg
-}
+// LaunchDamage is ammo's damage fired from launcher.
+func LaunchDamage(launcher int, ammo *Object) string { return ammo.HurlDmg }
 
 // Armour (init.c), in table order.
 const (

@@ -164,7 +164,7 @@ func (g *game) nextWeapon() {
 	if g.weapon != nil {
 		which = g.weapon.Which
 	}
-	for which = (which + 1) % rogue.MaxWeapons; weaponItem[which] == ""; which = (which + 1) % rogue.MaxWeapons { // ammo
+	for which = (which + 1) % rogue.MaxWeapons; rogue.IsAmmo(which); which = (which + 1) % rogue.MaxWeapons { // ammo
 	}
 	o := rogue.NewWeapon(g.rng, which)
 	o.Flags |= rogue.IsKnow
@@ -185,7 +185,7 @@ func (g *game) nextWeapon() {
 }
 
 // launcherAmmo is what each launcher shoots.
-var launcherAmmo = map[int]int{rogue.Bow: rogue.Arrow, rogue.GreatBow: rogue.Arrow, rogue.Crossbow: rogue.Bolt, rogue.ChainCrossbow: rogue.Bolt, rogue.Sling: rogue.RockW}
+var launcherAmmo = map[int]int{rogue.Bow: rogue.Arrow, rogue.Crossbow: rogue.Bolt, rogue.ChainCrossbow: rogue.Bolt, rogue.Sling: rogue.RockW}
 
 // giveAmmo (debug) puts a bundle of the wielded launcher's ammunition in
 // the pack if it has none, so every launcher can be tried.

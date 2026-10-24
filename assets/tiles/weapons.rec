@@ -15,38 +15,10 @@ gap_y: 0
 %rec: weapon
 %doc: Weapons (mod pictures, 16px)
 
-id: great_bow
-name: great bow
-icon: 79
-
-id: great_bow_pulling_0
-name: great bow (pulling 0)
-icon: 80
-
-id: great_bow_pulling_1
-name: great bow (pulling 1)
-icon: 81
-
-id: great_bow_pulling_2
-name: great bow (pulling 2)
-icon: 82
-
-id: greatsword
-name: greatsword
-icon: 83
-
-id: scythe
-name: scythe
-icon: 84
-
-id: sickle
-name: sickle
-icon: 85
-
 id: sling
 name: sling
-icon: 86
+icon: 67
 
 id: sling_model
 name: sling (model texture)
-icon: 87
+icon: 68
