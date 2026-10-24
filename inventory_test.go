@@ -6,6 +6,7 @@ import (
 
 	"github.com/memmaker/voxellib/character"
 	"github.com/memmaker/voxellib/inventory"
+	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
@@ -91,4 +92,59 @@ func TestEatHeld(t *testing.T) {
 	if g.eating.Use.Using != nil || food.Count != 1 || g.foodLeft == 0 {
 		t.Fatalf("after 32 ticks: using %v, %d left, food %d", g.eating.Use.Using, food.Count, g.foodLeft)
 	}
+}
+
+// TestScrollPickup: a floor scroll of a kind the pack holds joins its
+// stack and the floor copy is used up, never doubled; what the inventory
+// screen drops (one, or the stack) comes back the same way; a new kind
+// leaves the floor too.
+func TestScrollPickup(t *testing.T) {
+	g := &game{rng: rand.New(rand.NewSource(1))}
+	g.rg = rogue.NewGame(g.rng)
+	g.player = &character.Character{}
+	g.resetInv()
+	have := &rogue.Object{Type: rogue.Scroll, Which: 3, Count: 1}
+	g.addPack(have)
+	for n := 2; n <= 4; n++ {
+		f := &rogue.Object{Type: rogue.Scroll, Which: 3, Count: 1}
+		g.floor = []*floorObj{{o: f, tile: g.heroTile()}}
+		g.pickUp()
+		if len(g.floor) != 0 || g.packCount() != 1 || have.Count != n || f.Count != 0 {
+			t.Fatalf("pickup %d: %d on the floor (count %d), %d objects, have %d", n, len(g.floor), f.Count, g.packCount(), have.Count)
+		}
+	}
+	g.cont.Click(g.slotOf(have), 0, inventory.Throw) // Q drops one
+	if len(g.floor) != 1 || g.floor[0].o.Count != 1 || have.Count != 3 || g.packCount() != 1 {
+		t.Fatalf("Q: %d on the floor, have %d, %d objects", len(g.floor), have.Count, g.packCount())
+	}
+	g.lastTile = dungeon.Coord{X: -1}
+	g.pickUp()
+	if len(g.floor) != 0 || g.packCount() != 1 || have.Count != 4 {
+		t.Fatalf("Q and taken back: %d on the floor, %d objects, have %d", len(g.floor), g.packCount(), have.Count)
+	}
+	g.cont.Click(g.slotOf(have), 1, inventory.Throw) // shift-Q the stack
+	if len(g.floor) != 1 || g.floor[0].o != have || have.Count != 4 || g.packCount() != 0 {
+		t.Fatalf("shift-Q: %d on the floor, have %d, %d objects", len(g.floor), have.Count, g.packCount())
+	}
+	g.lastTile = dungeon.Coord{X: -1}
+	g.pickUp()
+	if len(g.floor) != 0 || g.packCount() != 1 || have.Count != 4 {
+		t.Fatalf("shift-Q and taken back: %d on the floor, %d objects, have %d", len(g.floor), g.packCount(), have.Count)
+	}
+	mace := rogue.NewWeapon(g.rng, rogue.WeaponID("mace"))
+	g.floor = []*floorObj{{o: mace, tile: g.heroTile()}}
+	g.pickUp()
+	if len(g.floor) != 0 || g.packCount() != 2 || g.weapon != mace {
+		t.Fatalf("a mace: %d on the floor, %d objects, wielding %v", len(g.floor), g.packCount(), g.weapon)
+	}
+}
+
+// slotOf is the inventory screen's slot of an object.
+func (g *game) slotOf(o *rogue.Object) int {
+	for i, sl := range g.cont.Slots {
+		if obj(sl.Stack()) == o {
+			return i
+		}
+	}
+	return -1
 }

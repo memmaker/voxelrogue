@@ -60,7 +60,7 @@ func (g *game) resetInv() {
 	objOf, itemOf = map[*inventory.Item]*rogue.Object{}, map[string]*inventory.Item{}
 	p := inventory.NewPlayer(inventory.PlayerSpec{Equip: rogueEquip})
 	c, _ := inventory.NewPlayerContainer(p, nil)
-	c.NoSplit, c.Deny, c.Drop = true, g.denyClick, func(s *inventory.Stack) { g.dropAll(obj(s)) }
+	c.NoSplit, c.Deny, c.Drop = true, g.denyClick, g.dropStack
 	p.OnEquip, p.OnHeld = g.onEquip, g.onHeld
 	p.OnChange = func(i int, _, _ *inventory.Stack) {
 		if i == p.Held {

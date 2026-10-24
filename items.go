@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/memmaker/voxellib/inventory"
 	"github.com/memmaker/voxellib/survival"
 	"image"
 	"log"
@@ -178,13 +179,22 @@ func (g *game) heldUse() *rogue.Object {
 	return nil
 }
 
-// dropAll throws a whole object out of the inventory window onto the
-// floor.
-func (g *game) dropAll(o *rogue.Object) {
+// dropStack throws what the inventory window let go of onto the floor:
+// the object itself, or a copy of the count when the rest of its stack
+// stays in the pack (Q drops one).
+func (g *game) dropStack(s *inventory.Stack) {
+	o := obj(s)
 	if o == nil {
 		return
 	}
-	g.removeFromPack(o, true)
+	if in := g.stackIn(s.Item); in != nil && in != s {
+		c := *o
+		c.Count = s.Count
+		o = &c
+		obj(in) // the pack's object keeps the stack's count
+	} else {
+		g.removeFromPack(o, true)
+	}
 	h := g.heroTile()
 	g.floor = append(g.floor, &floorObj{o: o, tile: h})
 	g.lastTile = h
@@ -238,13 +248,16 @@ func (g *game) addPack(o *rogue.Object) bool {
 		g.msg("You can't carry anything else.")
 		return false
 	}
+	left := s.Count // what did not fit
 	p := obj(g.stackIn(s.Item))
-	o.Count = s.Count // what did not fit
+	if p != o {
+		o.Count = left // p is the object in the pack now, its count the stack's (obj); ponytail: a leftover of o itself (over 64) stays on the floor at the stack's count, Rogue never has that many
+	}
 	g.msg("You now have " + lowerFirst(g.rg.Name(p)) + fmt.Sprintf(" (%c).", g.packLetter(p)))
 	if g.weapon == nil && p.Type == rogue.Weapon && !rogue.IsAmmo(p.Which) {
 		g.place(p, g.inv.Held)
 	}
-	return o.Count == 0
+	return left == 0
 }
 
 func (g *game) packLetter(o *rogue.Object) byte {
