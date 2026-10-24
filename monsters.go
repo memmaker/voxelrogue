@@ -703,6 +703,10 @@ func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
 	a := rogue.Attack{}
 	if weap != nil {
 		a = rogue.Attack{Dmg: weap.Damage, HPlus: weap.HPlus, DPlus: weap.DPlus}
+		if weap.Enemy == m.letter { // vorpally enchanted against it
+			a.HPlus += 4
+			a.DPlus += 4
+		}
 		if weap.Type == rogue.Stick && weap.Damage == "" { // a held wand fights as a spear at 3/5 the damage
 			a = rogue.Attack{Dmg: rogue.Weapons[rogue.WeaponID("spear")].Damage, Scale: 0.6}
 		}

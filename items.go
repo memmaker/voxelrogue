@@ -676,6 +676,21 @@ func (g *game) read(o *rogue.Object) {
 		know = true
 		g.msg("You have been granted the boon of genocide. Press a monster's letter.")
 		g.prompt = 'g'
+	case rogue.SVorpal: // +1,+1, and +4,+4 and one zap (Z) against its enemy; a second reading loses the weapon
+		w := g.weapon
+		switch {
+		case w == nil:
+			g.msg("You hear maniacal laughter in the distance.")
+		case w.Enemy != 0:
+			g.msg("Your " + rogue.Weapons[w.Which].Name + " vanishes in a puff of smoke.")
+			g.removeFromPack(w, true)
+		default:
+			w.Enemy = rogue.PickMons(g.rng)
+			w.HPlus++
+			w.DPlus++
+			w.Charges = 1
+			g.msg(g.flash(w))
+		}
 	}
 	if know {
 		g.rg.SKnow[o.Which] = true
@@ -716,7 +731,51 @@ func (g *game) identify(o *rogue.Object) {
 		g.rg.WKnow[o.Which] = true
 	}
 	o.Flags |= rogue.IsKnow
+	if o.Enemy != 0 {
+		o.Flags |= rogue.IsReveal
+	}
 	g.msg(g.rg.Name(o) + ".")
+}
+
+// flash is a vorpalized weapon's tell: read, and at the first sight of
+// its enemy (see_monst).
+func (g *game) flash(w *rogue.Object) string {
+	w.Flags |= rogue.DidFlash
+	return "Your " + rogue.Weapons[w.Which].Name + " gives off a flash of intense white light."
+}
+
+// vorpalZap is Z: the wielded vorpalized weapon's one zap, at the
+// monster in front (do_zap's MAXSTICKS case).
+func (g *game) vorpalZap() {
+	w := g.weapon
+	if w == nil || w.Enemy == 0 {
+		g.msg("You can't zap with that!")
+		return
+	}
+	m := g.monsterInFront(18)
+	if m != nil && !g.lineOfFire(m) {
+		m = nil
+	}
+	g.vorpalHit(w, m)
+}
+
+// vorpalHit is the zap's effect: its enemy vanishes, anything else is
+// chuckled at; either way the charge is spent.
+func (g *game) vorpalHit(w *rogue.Object, m *monster) {
+	g.attackCD = 12
+	if w.Charges <= 0 {
+		g.msg("Nothing happens.")
+		return
+	}
+	w.Charges--
+	g.noise(g.player.X, g.player.Z, zapNoise)
+	if m == nil || m.letter != w.Enemy {
+		g.msg("You hear a maniacal chuckle in the distance.")
+		return
+	}
+	g.msg("The " + m.name() + " vanishes in a puff of smoke.")
+	g.vanish(g.monsterPos(m, 0))
+	g.killed(m)
 }
 
 // genocide wipes out a monster kind for the rest of the game.

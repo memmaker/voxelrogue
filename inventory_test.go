@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"strings"
 	"testing"
 
 	"github.com/memmaker/voxellib/character"
@@ -147,4 +148,44 @@ func (g *game) slotOf(o *rogue.Object) int {
 		}
 	}
 	return -1
+}
+
+// TestVorpalize: the scroll gives the wielded weapon an enemy, +1,+1 and
+// one zap that makes that enemy vanish; identifying names the enemy; a
+// second reading loses the weapon.
+func TestVorpalize(t *testing.T) {
+	g := &game{rng: rand.New(rand.NewSource(1))}
+	g.rg = rogue.NewGame(g.rng)
+	g.player = &character.Character{}
+	g.resetInv()
+	mace := rogue.NewWeapon(g.rng, rogue.WeaponID("mace"))
+	hp, dp := mace.HPlus, mace.DPlus
+	g.addPack(mace)
+	scroll := &rogue.Object{Type: rogue.Scroll, Which: rogue.SVorpal, Count: 1}
+	g.read(scroll)
+	if g.weapon != mace || mace.Enemy == 0 || mace.HPlus != hp+1 || mace.DPlus != dp+1 || mace.Charges != 1 {
+		t.Fatalf("read: enemy %q, +%d,+%d, %d charges", mace.Enemy, mace.HPlus, mace.DPlus, mace.Charges)
+	}
+	if n := g.rg.Name(mace); strings.Contains(n, "slaying") {
+		t.Fatalf("named %q before identifying", n)
+	}
+	g.identify(mace)
+	if n, want := g.rg.Name(mace), "of "+rogue.Monsters[mace.Enemy-'A'].Name+" slaying"; !strings.Contains(n, want) {
+		t.Fatalf("named %q, want %q", n, want)
+	}
+	other := &monster{letter: mace.Enemy%26 + 'A', st: rogue.Stats{HP: 5}}
+	g.vorpalHit(mace, other)
+	if other.dying != 0 || mace.Charges != 0 {
+		t.Fatalf("zapped another: dying %d, %d charges", other.dying, mace.Charges)
+	}
+	mace.Charges = 1
+	enemy := &monster{letter: mace.Enemy, st: rogue.Stats{HP: 5}}
+	g.vorpalHit(mace, enemy)
+	if enemy.dying == 0 || mace.Charges != 0 {
+		t.Fatalf("zapped the enemy: dying %d, %d charges", enemy.dying, mace.Charges)
+	}
+	g.read(scroll)
+	if g.weapon != nil || g.packCount() != 0 {
+		t.Fatalf("read again: weapon %v, %d objects", g.weapon, g.packCount())
+	}
 }

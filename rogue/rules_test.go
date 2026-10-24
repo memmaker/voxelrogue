@@ -53,3 +53,21 @@ func TestScrollLooks(t *testing.T) {
 		}
 	}
 }
+
+// TestPickMons: a vorpalized weapon's enemy is always a monster of the
+// level list, mostly from its mean end.
+func TestPickMons(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	n := map[byte]int{}
+	for range 1000 {
+		n[PickMons(rng)]++
+	}
+	for c := range n {
+		if c < 'A' || c > 'Z' {
+			t.Fatalf("picked %q", c)
+		}
+	}
+	if n['P'] < 50 || n['P'] > 150 || n['K'] > 10 {
+		t.Fatalf("1000 picks: %d purple worms, %d kobolds", n['P'], n['K'])
+	}
+}

@@ -1,6 +1,6 @@
 # gear.rec: the armour, every kind a record here and nowhere else (rogue/kinds.go reads it);
 # a new record is a new armour. mktiles.py cuts the pictures onto tiles16.png and fills in
-# the icons, the remapper (remap_gear.sh) re-maps them; every other field is yours.
+# the icons, the remapper (remap_armors.sh) re-maps them; every other field is yours.
 # icon: cell of tiles16.png; -1: unassigned. picture: the source picture.
 #
 #   ac        armour class (lower is better)       prob: the chance of a found armour being this kind, of 100

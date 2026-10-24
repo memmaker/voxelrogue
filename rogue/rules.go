@@ -242,6 +242,18 @@ func RandMonster(rng *rand.Rand, level int, wander bool) byte {
 	}
 }
 
+// PickMons picks the enemy of a vorpalized weapon (pick_mons): walking
+// down the level list from the meanest, each step kept with 9 in 10;
+// off the end, the mimic. Genocided gaps are skipped.
+func PickMons(rng *rand.Rand) byte {
+	for i := len(lvlMons) - 1; i >= 0; i-- {
+		if lvlMons[i] != ' ' && Rnd(rng, 10) == 0 {
+			return lvlMons[i]
+		}
+	}
+	return 'M'
+}
+
 // NewMonsterStats rolls a new monster's stats (new_monster).
 func NewMonsterStats(rng *rand.Rand, letter byte) Stats {
 	mk := &Monsters[letter-'A']

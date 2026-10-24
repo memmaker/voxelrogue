@@ -45,6 +45,7 @@ var helpLines = [][2]string{
 	{"1-9, wheel", "hold a hotbar slot: a weapon is wielded, a staff held"},
 	{"F", "the weapon's third attack pattern"},
 	{"T", "throw the wielded weapon"},
+	{"Z", "zap a vorpalized weapon at the monster in front (once)"},
 	{"R", "span a crossbow (slow going)"},
 	{"Shift (tap)", "sprint until you stop walking forward"},
 	{"Ctrl (hold)", "sneak: slow, but silent to sleeping monsters"},

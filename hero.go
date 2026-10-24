@@ -441,6 +441,9 @@ func (g *game) look() {
 	for _, m := range g.monsters {
 		if g.canSee(m.tile) {
 			g.wakeMonster(m)
+			if w := g.weapon; w != nil && m.letter == w.Enemy && w.Flags&rogue.DidFlash == 0 { // a hint at what the weapon is good for
+				g.msg(g.flash(w))
+			}
 		}
 	}
 }

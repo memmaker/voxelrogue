@@ -95,6 +95,10 @@ func (g *game) setupInput() {
 			if g.attackCD == 0 && g.noCommand == 0 {
 				g.throwItem()
 			}
+		case glfw.KeyZ:
+			if g.attackCD == 0 && g.noCommand == 0 {
+				g.vorpalZap()
+			}
 		case glfw.KeyR:
 			if g.launcher() && g.noCommand == 0 {
 				g.startReload()

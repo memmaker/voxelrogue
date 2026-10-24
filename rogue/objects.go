@@ -27,7 +27,9 @@ const (
 	IsKnow
 	IsMissile
 	IsMany
-	IsFound // a scare monster scroll that was picked up once
+	IsFound  // a scare monster scroll that was picked up once
+	IsReveal // a vorpalized weapon's enemy is known (identified: ISREVEAL)
+	DidFlash // a vorpalized weapon flashed at the sight of its enemy (DIDFLASH)
 )
 
 // Object is struct object.
@@ -44,6 +46,7 @@ type Object struct {
 	Charges      int
 	Group        int
 	GoldVal      int
+	Enemy        byte // the monster letter a vorpalized weapon slays (o_enemy), 0 none
 }
 
 // MagicItem is struct magic_item: a name and a pick probability.
@@ -90,6 +93,7 @@ const (
 	SAggr
 	SNop
 	SGenocide
+	SVorpal // Rogue 5.3's (and Epyx's) vorpalize weapon, gone in 5.4
 	MaxScrolls
 )
 
@@ -125,7 +129,7 @@ var (
 		{"hold monster", 2, 200}, {"sleep", 5, 50}, {"enchant armor", 8, 130}, {"identify", 21, 100},
 		{"scare monster", 4, 180}, {"gold detection", 4, 110}, {"teleportation", 7, 175},
 		{"enchant weapon", 10, 150}, {"create monster", 5, 75}, {"remove curse", 8, 105},
-		{"aggravate monsters", 1, 60}, {"blank paper", 1, 50}, {"genocide", 1, 200}}
+		{"aggravate monsters", 1, 60}, {"blank paper", 1, 50}, {"genocide", 1, 200}, {"vorpalize weapon", 1, 300}}
 	RingMagic = []MagicItem{{"protection", 9, 200}, {"add strength", 9, 200}, {"sustain strength", 5, 180},
 		{"searching", 10, 200}, {"see invisible", 10, 175}, {"adornment", 1, 100},
 		{"aggravate monster", 11, 100}, {"dexterity", 8, 220}, {"increase damage", 8, 220},
@@ -438,6 +442,9 @@ func (g *Game) Name(o *Object) string {
 		s += Weapons[o.Which].Name
 		if o.Count > 1 {
 			s += "s"
+		}
+		if o.Enemy != 0 && o.Flags&IsReveal != 0 {
+			s += " of " + Monsters[o.Enemy-'A'].Name + " slaying"
 		}
 		return s
 	case Armor:
