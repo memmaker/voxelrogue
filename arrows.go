@@ -2,8 +2,10 @@ package main
 
 // Bows and crossbows as in Minecraft: hold the right button to draw a bow
 // and let go to shoot, the arrow the faster the longer it was drawn
-// (BowItem). The crossbow is VoxelStealth's: it shoots on the click,
-// spans itself again and repeats while the button is held. Arrows fly as
+// (BowItem). The crossbows fire as VoxelStealth's: on the click, then
+// span themselves again (over Minecraft's charge) and repeat while the
+// button is held. The hand draws them as ItemInHandRenderer does, with
+// its item swap and view sway (handanim.go). Arrows fly as
 // real projectiles (voxellib's projectile:
 // Minecraft's arc and drag). An arrow that strikes a monster rolls
 // fight.c's dice for a thrown missile; one that misses its roll, or
@@ -29,16 +31,22 @@ import (
 // drawn: Minecraft's bow and crossbow, and weapons_expanded's longbow
 // for the great bow.
 var launchSpeed = map[int]float64{
-	rogue.Bow:      3.0,
-	rogue.GreatBow: 4.0,
-	rogue.Crossbow: projectile.Speed,
+	rogue.Bow:           3.0,
+	rogue.GreatBow:      4.0,
+	rogue.HeavyBow:      3.0,
+	rogue.Crossbow:      projectile.Speed,
+	rogue.HeavyCrossbow: projectile.Speed,
 }
 
-// The crossbow's timing, from VoxelStealth.
+// A crossbow spans over Minecraft's charge (CrossbowItem.getChargeDuration,
+// 1.25 s) and the three ticks of use beyond it (getUseDuration).
 const (
-	reloadTicks = 24 // a hand-spanned crossbow
-	recoilTicks = 5
+	chargeTicks = 25
+	reloadTicks = chargeTicks + 3
 )
+
+// isCrossbow reports whether a weapon kind is a crossbow.
+func isCrossbow(which int) bool { return which == rogue.Crossbow || which == rogue.HeavyCrossbow }
 
 // crossbowGroup is the bone holding the crossbow in cleannrooster's artmob.
 const crossbowGroup = "repeater_crossbow_arrow"
@@ -52,8 +60,15 @@ type arrowState struct {
 	drawTicks  int  // how long
 	fireHeld   bool // the right button is down on a crossbow
 	reload     int  // ticks until the crossbow is spanned again
-	recoil     int  // ticks of the crossbow's kick left
 	bowModel   int  // VoxelStealth's crossbow (-1: none)
+
+	// the first-person hand (ItemInHandRenderer): the item it shows and its
+	// height, which dips to swap items; the sway (LocalPlayer's xBob,
+	// yBob) and the smoothed field of view (Camera's fovModifier)
+	handItem                       *rogue.Object
+	handHeight, prevHandHeight     float32
+	xBob, yBob, prevXBob, prevYBob float32
+	fovMod, prevFovMod             float32
 }
 
 // arrowTarget makes a monster something arrows can hit.
@@ -104,7 +119,7 @@ func (g *game) launcher() bool { return g.weapon != nil && launchSpeed[g.weapon.
 
 // startDraw is the right button going down with a launcher in hand.
 func (g *game) startDraw() {
-	if g.weapon.Which == rogue.Crossbow {
+	if isCrossbow(g.weapon.Which) {
 		g.fireHeld = true
 		return
 	}
@@ -130,17 +145,15 @@ func (g *game) releaseDraw() {
 
 // tickDraw draws the bow on, and spans and fires the crossbow.
 func (g *game) tickDraw() {
+	defer g.tickFov()
 	if g.reload > 0 {
 		g.reload--
-	}
-	if g.recoil > 0 {
-		g.recoil--
 	}
 	if !g.launcher() || g.dead || g.showInv || g.noCommand > 0 {
 		g.drawing, g.fireHeld = false, false
 		return
 	}
-	if g.fireHeld && g.weapon.Which == rogue.Crossbow && g.reload == 0 {
+	if g.fireHeld && isCrossbow(g.weapon.Which) && g.reload == 0 {
 		g.fireCrossbow()
 	}
 	if g.drawing {
@@ -148,15 +161,55 @@ func (g *game) tickDraw() {
 	}
 }
 
-// fireCrossbow shoots a bolt (VoxelStealth's shoot).
+// fireCrossbow shoots a bolt (VoxelStealth's shoot) and starts spanning;
+// the hand dips as on any item use (ItemInHandRenderer.itemUsed).
 func (g *game) fireCrossbow() {
 	g.reload = reloadTicks
-	if a := g.findAmmo(); a == nil || !rogue.Launches(rogue.Crossbow, a) {
+	g.handHeight = 0
+	if a := g.findAmmo(); a == nil || !rogue.Launches(g.weapon.Which, a) {
 		g.msg("You have nothing to shoot.")
 		return
 	}
-	g.recoil = recoilTicks
-	g.shoot(g.takeAmmo(), launchSpeed[rogue.Crossbow])
+	g.shoot(g.takeAmmo(), launchSpeed[g.weapon.Which])
+}
+
+// tickHand is ItemInHandRenderer.tick with Player Animation Lib's mixin
+// (the hand sinks while a Better Combat attack plays, 0.4 + 0.6 * (1 -
+// the first-person transition's progress), instant for the mod), and
+// LocalPlayer's sway, xBob and yBob following the view.
+func (g *game) tickHand() {
+	g.prevHandHeight = g.handHeight
+	if g.handItem != nil && g.weapon != nil && g.handItem.Type == g.weapon.Type && g.handItem.Which == g.weapon.Which {
+		g.handItem = g.weapon // shouldInstantlyReplaceVisibleItem: the same item
+	}
+	target := float32(1) // getItemSwapScale is 1 without a swap animation
+	if g.handItem != g.weapon {
+		target = 0
+	}
+	g.handHeight += max(-0.4, min(target-g.handHeight, 0.4))
+	if g.handHeight < 0.1 {
+		g.handItem = g.weapon
+	}
+	if g.stack.c.isActive() {
+		g.handHeight *= 0.4
+	}
+	g.prevXBob, g.prevYBob = g.xBob, g.yBob
+	g.xBob += (g.xRotMC() - g.xBob) * 0.5
+	g.yBob += wrapDegrees(g.yRotMC()-g.yBob) * 0.5 // the camera's yaw wraps
+}
+
+// tickFov is Camera.tick: the field of view modifier follows the player's
+// (a drawn bow zooms in) by half each tick.
+func (g *game) tickFov() {
+	if g.fovMod == 0 {
+		g.fovMod = 1
+	}
+	g.prevFovMod = g.fovMod
+	target := float32(1)
+	if g.drawing {
+		target = bowZoom(float32(g.drawTicks), fullDraw(g.weapon.Which))
+	}
+	g.fovMod = max(0.1, min(g.fovMod+(target-g.fovMod)*0.5, 1.5))
 }
 
 // takeAmmo takes one of the launcher's ammunition out of the pack.
@@ -168,21 +221,28 @@ func (g *game) takeAmmo() *rogue.Object {
 	return &o
 }
 
-// handUse is what the hand is doing with a launcher for drawHand, and
-// for how many ticks (with the partial tick).
-func (g *game) handUse(alpha float64) (int, float32) {
-	if g.drawing {
-		return useBow, float32(g.drawTicks) + float32(alpha)
+// handUse is what the hand is doing with the wielded launcher for
+// drawHand, and for how long: Minecraft's timeHeld, which lags the use's
+// ticks by one (getUseDuration - (getUseItemRemainingTicks - pt + 1)).
+func (g *game) handUse(pt float32) (int, float32) {
+	switch {
+	case g.weapon == nil:
+	case g.drawing:
+		return useBow, float32(g.drawTicks) - 1 + pt
+	case isCrossbow(g.weapon.Which) && g.reload > 0:
+		return useCrossbowCharge, float32(reloadTicks-g.reload) - 1 + pt
+	case isCrossbow(g.weapon.Which):
+		return useCrossbowHold, 0
 	}
 	return useNone, 0
 }
 
-// fovZoom is the view's zoom factor while a bow is drawn.
+// fovZoom is the view's zoom factor, the smoothed field of view modifier.
 func (g *game) fovZoom(alpha float64) float64 {
-	if !g.drawing {
+	if g.fovMod == 0 {
 		return 1
 	}
-	return float64(bowZoom(float32(g.drawTicks)+float32(alpha), fullDraw(g.weapon.Which)))
+	return float64(g.prevFovMod + (g.fovMod-g.prevFovMod)*float32(alpha))
 }
 
 // shoot looses an arrow or bolt along the view at speed.
@@ -207,25 +267,14 @@ func loadCrossbow(mr *render.ModelRenderer, packDir string) (int, error) {
 	return -1, nil
 }
 
-// bowHold turns the cut-out crossbow so it points into the screen.
-var bowHold = mgl32.HomogRotate3DY(mgl32.DegToRad(-90)).
-	Mul4(mgl32.HomogRotate3DX(mgl32.DegToRad(-90))).
-	Mul4(mgl32.HomogRotate3DZ(mgl32.DegToRad(45)))
-
-// drawCrossbow holds the crossbow as VoxelStealth does, kicking back on
-// a shot.
-func (g *game) drawCrossbow(alpha float64, bobX, bobY, aspect float32, sky, blk uint8) {
-	kick := float32(0)
-	if g.recoil > 0 {
-		kick = (float32(g.recoil) - float32(alpha)) / recoilTicks
-	}
-	view := mgl32.Translate3D(0.42+bobX, -0.36+bobY, -0.75+0.12*kick).
-		Mul4(mgl32.HomogRotate3DY(mgl32.DegToRad(8))).
-		Mul4(mgl32.HomogRotate3DX(mgl32.DegToRad(4 + 8*kick))).
-		Mul4(bowHold).
-		Mul4(mgl32.Scale3D(0.55, 0.55, 0.55))
-	g.modelRend.DrawHand(g.bowModel, aspect, view, sky, blk)
-}
+// crossbowModelDisplay stands in for a sprite for VoxelStealth's crossbow
+// model: Minecraft's crossbow display transform over the model turned to
+// lie like the crossbow in Minecraft's texture (stock bottom left, bow
+// top right, the limbs in the picture's plane).
+var crossbowModelDisplay = displayMat(crossbowDisplay).
+	Mul4(rotZ(45)).Mul4(rotX(-90)).Mul4(rotY(-90)).
+	Mul4(rotY(-90)).Mul4(rotX(-90)).Mul4(rotZ(45)). // the cut-out model pointing forward, limbs across
+	Mul4(mgl32.Scale3D(0.8, 0.8, 0.8))
 
 // tickArrows flies the arrows; those stuck in the walls or floor drop as
 // pickups on the square they came down on.

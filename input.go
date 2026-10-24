@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"slices"
 
 	"github.com/memmaker/voxellib/character"
 	"github.com/memmaker/voxellib/platform/glfw"
@@ -152,21 +153,28 @@ func (g *game) debugWeapon(which int) {
 	g.addPack(o)
 }
 
-// nextWeapon wields the pack's next weapon after the current one.
+// nextWeapon (3, a debug key) wields the next weapon kind, with one of
+// every kind to try: the pack's if it has one, else a fresh one.
 func (g *game) nextWeapon() {
-	at := -1
-	for i, o := range g.pack {
-		if o == g.weapon {
-			at = i
+	which := g.weapon.Which
+	for which = (which + 1) % rogue.MaxWeapons; weaponItem[which] == ""; which = (which + 1) % rogue.MaxWeapons { // ammo
+	}
+	o := rogue.NewWeapon(g.rng, which)
+	o.Flags |= rogue.IsKnow
+	for _, p := range g.pack {
+		if p.Type == rogue.Weapon && p.Which == which {
+			o = p
 		}
 	}
-	for n := 1; n <= len(g.pack); n++ {
-		if o := g.pack[(at+n+len(g.pack))%len(g.pack)]; o.Type == rogue.Weapon {
-			g.weapon = o
-			g.msg("You are now wielding " + lowerFirst(g.rg.Name(o)) + ".")
-			return
+	if o != g.weapon && !slices.Contains(g.pack, o) {
+		if g.packCount() >= maxPack { // ponytail: a full pack swaps the fresh weapon in for the wielded one
+			g.pack[slices.Index(g.pack, g.weapon)] = o
+		} else {
+			g.pack = append(g.pack, o)
 		}
 	}
+	g.weapon = o
+	g.msg("You are now wielding " + lowerFirst(g.rg.Name(o)) + ".")
 }
 
 func (g *game) capture(on bool) {

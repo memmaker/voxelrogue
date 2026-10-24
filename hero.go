@@ -93,12 +93,6 @@ func (g *game) initHero() {
 	food := &rogue.Object{Type: rogue.Food, Count: 1, Launch: -1}
 	g.pack = []*rogue.Object{mace, bow, arrows, mail, food}
 	g.weapon, g.armor = mace, mail
-	// for now the hero carries one of every weapon: 3 cycles through them
-	for w := 0; w < rogue.MaxWeapons; w++ {
-		if w != rogue.Mace && w != rogue.Bow && w != rogue.Arrow {
-			g.debugWeapon(w)
-		}
-	}
 }
 
 // enterLevel puts the hero on a level at a random spot (the start, and
@@ -272,6 +266,8 @@ func (g *game) tickHero() {
 	if g.wantAttack() && g.attackCD == 0 && g.noCommand == 0 {
 		g.heroAttack()
 	}
+	g.tickCombat()
+	g.tickHand()
 	if g.turnClock++; g.turnClock >= turnTicks {
 		g.turnClock = 0
 		g.turn()

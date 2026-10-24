@@ -47,6 +47,9 @@ func (g *game) setupArt(spriteDir, weaponDir string) error {
 	if err := g.loadAnimations("assets/bettercombat"); err != nil {
 		return err
 	}
+	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
+		return err
+	}
 	return g.setupArrows(filepath.Dir(spriteDir)) // voxellib's assets
 }
 
@@ -850,7 +853,7 @@ func (g *game) drawFloorItems(alpha float64) {
 
 // drawHand draws the wielded weapon (or held wand) in first person.
 func (g *game) drawHand(alpha float64) {
-	held := g.weapon
+	held := g.handItem
 	if g.zapping != nil {
 		held = g.zapping
 	}
@@ -858,32 +861,50 @@ func (g *game) drawHand(alpha float64) {
 		return
 	}
 	sky, blk := g.light(g.cam.X, g.cam.Y, g.cam.Z)
+	pt := float32(alpha)
 	t := (g.prevWalk + (g.walkDist-g.prevWalk)*alpha) * 1.6
-	bobX, bobY := float32(math.Sin(t))*0.02, -float32(math.Abs(math.Cos(t)))*0.03
-	var p float32
-	if g.swing > 0 {
-		p = 1 - (float32(g.swing)-float32(alpha))/swingTicks
+	h := handPose{
+		bobX: float32(math.Sin(t)) * 0.02, bobY: -float32(math.Abs(math.Cos(t))) * 0.03,
+		armHeight: 1 - (g.prevHandHeight + (g.handHeight-g.prevHandHeight)*pt),
+		swayX:     (g.xRotMC() - (g.prevXBob + (g.xBob-g.prevXBob)*pt)) * 0.1,
+		swayY:     wrapDegrees(g.yRotMC()-(g.prevYBob+(g.yBob-g.prevYBob)*pt)) * 0.1,
 	}
-	if held.Type == rogue.Weapon && held.Which == rogue.Crossbow && g.bowModel >= 0 {
-		g.drawCrossbow(alpha, bobX, bobY, float32(g.cam.Aspect), sky, blk)
-		return
+	if g.swing > 0 {
+		h.swing = 1 - (float32(g.swing)-pt)/swingTicks
+	}
+	if held == g.weapon {
+		h.use, h.useT = g.handUse(pt)
 	}
 	name := spriteFor(g.rg, held)
-	use, useT := g.handUse(alpha)
-	if name == "w:great_bow" && use == useBow { // the longbow's pulling models
-		n, pull := 0, useT/fullDraw(rogue.GreatBow) // use_duration scaled 1/32
-		if pull >= 0.9 {
-			n = 2
-		} else if pull >= 0.65 {
-			n = 1
-		}
-		name += fmt.Sprintf("_pulling_%d", n)
+	switch {
+	case name == "w:great_bow" && h.use == useBow: // the longbow's pulling models, use_duration scaled 1/32
+		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)/fullDraw(rogue.GreatBow), 0.65, 0.9))
+	case name == "w:chain_crossbow" && h.use == useCrossbowCharge: // crossbow/pull
+		name += fmt.Sprintf("_pulling_%d", pullStage(float32(reloadTicks-g.reload)/chargeTicks, 0.58, 1))
+	case name == "w:chain_crossbow" && h.use == useCrossbowHold: // charge_type arrow
+		name += "_arrow"
 	}
 	if handSprites[name] {
 		name += "_hand"
 	}
-	if g.zapping == nil && g.drawAttack(name, alpha, bobX, bobY, sky, blk) {
+	if g.zapping == nil && g.drawAttack(name, pt, sky, blk) {
 		return // Better Combat's arms and weapon
 	}
-	g.itemRend.DrawHandModel(name, float32(g.cam.Aspect), handModel(name, p, bobX, bobY, use, useT), sky, blk)
+	if held.Type == rogue.Weapon && held.Which == rogue.Crossbow && g.bowModel >= 0 {
+		g.modelRend.DrawHand(g.bowModel, float32(g.cam.Aspect), handArm(h).Mul4(crossbowModelDisplay), sky, blk)
+		return
+	}
+	g.itemRend.DrawHandModel(name, float32(g.cam.Aspect), handModel(name, h), sky, blk)
+}
+
+// pullStage is a bow's or crossbow's pulling model for its pull: 0, or 1
+// and 2 from the model's range_dispatch thresholds.
+func pullStage(pull, one, two float32) int {
+	switch {
+	case pull >= two:
+		return 2
+	case pull >= one:
+		return 1
+	}
+	return 0
 }

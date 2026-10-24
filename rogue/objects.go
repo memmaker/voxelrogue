@@ -72,13 +72,36 @@ const (
 	WarGlaive
 	Scimitar
 	WoodenPole
+	// one weapon for each of Better Combat's remaining presets
+	Hatchet
+	DoubleAxe
+	GreatAxe
+	Maul
+	HeavyMace
+	Battlestaff
+	Sceptre
+	Lance
+	Trident
+	Rapier
+	Sickle
+	SoulKnife
+	CoralBlade
+	TwinBlade
+	Claw
+	Anchor
+	Gauntlet
+	HeavyBow
+	HeavyCrossbow
 	MaxWeapons
 )
 
 var WeaponNames = [MaxWeapons]string{"mace", "long sword", "long bow", "arrow", "dagger", "rock",
 	"two handed sword", "sling", "dart", "crossbow", "crossbow bolt", "spear",
 	"broadsword", "glaive", "greatsword", "halberd", "katana", "scythe", "war spear", "great bow",
-	"war glaive", "scimitar", "wooden pole"}
+	"war glaive", "scimitar", "wooden pole",
+	"hatchet", "double axe", "great axe", "maul", "heavy mace", "battlestaff", "sceptre", "lance", "trident",
+	"rapier", "sickle", "soul knife", "coral blade", "twin blade", "claw", "anchor", "gauntlet", "heavy bow",
+	"heavy crossbow"}
 
 var weaponInit = [MaxWeapons]struct {
 	dam, hrl string
@@ -108,11 +131,36 @@ var weaponInit = [MaxWeapons]struct {
 	{"2d5", "1d3", -1, 0},
 	{"1d8", "1d2", -1, 0},
 	{"1d6", "1d2", -1, 0},
+	{"1d6", "1d4", -1, IsMissile}, // hatchet
+	{"2d6", "1d2", -1, 0},
+	{"3d5", "1d2", -1, 0},
+	{"2d8", "1d2", -1, 0},
+	{"2d6", "1d2", -1, 0},
+	{"1d8", "1d2", -1, 0},
+	{"1d4", "1d2", -1, 0},
+	{"2d5", "1d3", -1, 0},
+	{"2d4", "1d6", -1, IsMissile}, // trident
+	{"1d8", "1d2", -1, 0},
+	{"1d6", "1d2", -1, 0},
+	{"1d6", "1d4", -1, IsMissile}, // soul knife
+	{"1d8", "1d2", -1, 0},
+	{"2d4", "1d2", -1, 0},
+	{"1d6", "1d2", -1, 0},
+	{"2d6", "1d2", -1, 0},
+	{"1d4", "1d2", -1, 0},
+	{"1d1", "1d1", -1, 0}, // heavy bow
+	{"1d1", "1d1", -1, 0}, // heavy crossbow
 }
 
-// Launches reports whether launcher fires ammo; arrows fit both bows.
+// launchesAs maps the mods' launchers to the vanilla one whose ammo they fire.
+var launchesAs = map[int]int{GreatBow: Bow, HeavyBow: Bow, HeavyCrossbow: Crossbow}
+
+// Launches reports whether launcher fires ammo.
 func Launches(launcher int, ammo *Object) bool {
-	return ammo.Launch >= 0 && (ammo.Launch == launcher || ammo.Launch == Bow && launcher == GreatBow)
+	if l, ok := launchesAs[launcher]; ok {
+		launcher = l
+	}
+	return ammo.Launch >= 0 && ammo.Launch == launcher
 }
 
 // LaunchDamage is ammo's damage fired from launcher: the great bow

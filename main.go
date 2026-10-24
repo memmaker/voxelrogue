@@ -149,11 +149,12 @@ func main() {
 				g.weapon = o
 			}
 		}
-		if g.weapon == nil || g.weapon.Which != *wield {
-			g.debugWeapon(*wield)
-			g.weapon = g.pack[len(g.pack)-1]
+		if g.weapon == nil || g.weapon.Which != *wield { // past the pack's limit
+			g.weapon = rogue.NewWeapon(g.rng, *wield)
+			g.weapon.Flags |= rogue.IsKnow
+			g.pack = append(g.pack, g.weapon)
 		}
-		if *wield == rogue.Crossbow {
+		if isCrossbow(*wield) {
 			g.debugWeapon(rogue.Bolt)
 		}
 	}
@@ -224,8 +225,12 @@ func (g *game) newGame(seed int64) {
 	g.monsters, g.distTick = nil, -1
 	g.floor, g.confuseHit, g.zapping = nil, false, nil
 	g.clearArrows()
-	g.drawing, g.drawTicks, g.fireHeld, g.reload, g.recoil = false, 0, false, 0, 0
-	g.attack, g.hitIn, g.combo, g.comboOf, g.sinceSwing = nil, 0, 0, nil, 0
+	g.drawing, g.drawTicks, g.fireHeld, g.reload = false, 0, false, 0
+	g.handItem, g.handHeight, g.prevHandHeight, g.fovMod = nil, 0, 0, 0
+	g.attack, g.hitIn, g.combo, g.comboOf, g.sinceAttack = nil, 0, 0, nil, 0
+	if g.stack != nil {
+		g.stack = newAttackStack()
+	}
 	g.msgs, g.winLoot = nil, nil
 	g.showInv, g.showMap, g.showHelp, g.showDebug, g.prompt, g.detect = false, false, false, false, 0, 0
 	g.initHero()
@@ -301,11 +306,10 @@ func (g *game) step() {
 		if g.launcher() {
 			g.startDraw()
 		} else {
-			g.sinceSwing = 0 // keep -combo's attack
+			g.sinceAttack = 0 // keep -combo's attack
 			g.heroAttack()
 		}
 	}
-	g.tickAttack()
 	g.tickDraw()
 	g.tickHero()
 	g.tickMonsters()
