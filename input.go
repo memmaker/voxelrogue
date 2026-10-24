@@ -177,7 +177,20 @@ func (g *game) nextWeapon() {
 		}
 	}
 	g.weapon = o
+	g.giveAmmo()
 	g.msg("You are now wielding " + lowerFirst(g.rg.Name(o)) + ".")
+}
+
+// launcherAmmo is what each launcher shoots.
+var launcherAmmo = map[int]int{rogue.Bow: rogue.Arrow, rogue.GreatBow: rogue.Arrow, rogue.Crossbow: rogue.Bolt, rogue.ChainCrossbow: rogue.Bolt, rogue.Sling: rogue.RockW}
+
+// giveAmmo (debug) puts a bundle of the wielded launcher's ammunition in
+// the pack if it has none, so every launcher can be tried.
+func (g *game) giveAmmo() {
+	a, ok := launcherAmmo[g.weapon.Which]
+	if f := g.findAmmo(); ok && (f == nil || !rogue.Launches(g.weapon.Which, f)) {
+		g.debugWeapon(a)
+	}
 }
 
 func (g *game) capture(on bool) {

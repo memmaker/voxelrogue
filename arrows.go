@@ -261,7 +261,7 @@ func (g *game) tickFov() {
 	}
 	g.prevFovMod = g.fovMod
 	target := float32(1)
-	if g.drawing {
+	if g.drawing && g.weapon.Which == rogue.Bow { // only Items.BOW zooms, not the longbow
 		target = bowZoom(float32(g.drawTicks), fullDraw(g.weapon.Which))
 	}
 	if g.sling.frame != 0 && g.sling.state == slingCharge {
@@ -317,6 +317,11 @@ func (g *game) shoot(ammo *rogue.Object, speed float64) *projectile.Arrow {
 	return a
 }
 
+// stickTicks is how long an arrow stays stuck in a wall or the floor
+// before it drops as a pickup (Minecraft's stay a minute; Rogue's land at
+// once). ponytail: a second, so the shot can be seen landing.
+const stickTicks = 20
+
 // tickArrows flies the arrows; those stuck in the walls or floor drop as
 // pickups on the square they came down on.
 func (g *game) tickArrows() {
@@ -333,7 +338,7 @@ func (g *game) tickArrows() {
 	l := g.level()
 	for _, a := range g.arrows.Arrows {
 		o := g.arrowObjs[a]
-		if !a.Stuck || a.In != nil || o == nil {
+		if !a.Stuck || a.In != nil || o == nil || a.Age < stickTicks {
 			continue
 		}
 		delete(g.arrowObjs, a)

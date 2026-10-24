@@ -156,12 +156,7 @@ func main() {
 			g.weapon.Flags |= rogue.IsKnow
 			g.pack = append(g.pack, g.weapon)
 		}
-		if isCrossbow(*wield) {
-			g.debugWeapon(rogue.Bolt)
-		}
-		if *wield == rogue.Sling {
-			g.debugWeapon(rogue.RockW)
-		}
+		g.giveAmmo()
 	}
 	if *amulet {
 		g.addPack(&rogue.Object{Type: rogue.Amulet, Count: 1})

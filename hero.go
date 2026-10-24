@@ -91,7 +91,11 @@ func (g *game) initHero() {
 	mail.AC--
 	mail.Flags |= rogue.IsKnow
 	food := &rogue.Object{Type: rogue.Food, Count: 1, Launch: -1}
-	g.pack = []*rogue.Object{mace, bow, arrows, mail, food}
+	sling := rogue.NewWeapon(g.rng, rogue.Sling)
+	sling.Flags |= rogue.IsKnow
+	rocks := rogue.NewWeapon(g.rng, rogue.RockW)
+	rocks.Flags |= rogue.IsKnow
+	g.pack = []*rogue.Object{mace, bow, arrows, sling, rocks, mail, food}
 	g.weapon, g.armor = mace, mail
 }
 

@@ -525,11 +525,9 @@ func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
 	model := itemM.Mul4(spriteTurn(sprite))
 	if !g.tp {
 		// the lib's first-person pass: the player model in the world with
-		// everything but the arms hidden (Better Combat's
-		// FirstPersonConfiguration shows both arms and items), then the
-		// item layer
-		g.modelRend.DrawInWorld(g.tpBody[0], &g.cam, partBox(root, bonePart(arm, initRightArm), -3, -2, -2, 4, 12, 4), sky, blk)
-		g.modelRend.DrawInWorld(g.tpBody[0], &g.cam, partBox(root, bonePart(posed("left_arm", lArm, initLeftArm), initLeftArm), -1, -2, -2, 4, 12, 4), sky, blk)
+		// only the item layer drawn (Better Combat's FirstPersonConfiguration
+		// shows the items but not the arms: isShowingArmsInFirstPerson
+		// defaults to false)
 		g.itemRend.DrawInWorld(sprite, &g.cam, model, sky, blk)
 		return true
 	}
