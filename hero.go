@@ -647,7 +647,7 @@ func (g *game) totalWinner() {
 	}
 	g.winLoot = append(g.winLoot, fmt.Sprintf("   %5d  Gold Pieces", gold))
 	g.closeInv()
-	g.showMap, g.showHelp, g.showDebug = 0, false, false
+	g.showMap, g.showHelp, g.showDebug = 0, false, 0
 	g.capture(false)
 }
 

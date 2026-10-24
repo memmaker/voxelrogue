@@ -58,7 +58,7 @@ var helpLines = [][2]string{
 	{"F1", "this help"},
 	{"F2", "the manual: the rules of the dungeon"},
 	{"F3", "debug: show the monsters' hit boxes"},
-	{"F9", "debug: take any weapon"},
+	{"F8 / F9 / F10", "debug: take any staff / weapon / armor"},
 	{"Esc", "close panel / release mouse / quit"},
 }
 
@@ -223,7 +223,7 @@ func (g *game) setupGUI(jar, hobbit string) error {
 	}
 	g.pg.EquipAt = rogueEquipAt
 	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["ring 1"]))
-	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
+	g.pg.OnOpen = func() { g.showDebug = 0; g.capture(false) }
 	g.pg.OnClose = func() {
 		if g.prompt == 'i' {
 			g.prompt = 0
@@ -394,11 +394,11 @@ func (g *game) drawHUD(fbW, fbH int) {
 		}, center(fbW), at(36*s), max(1, min(s, (fbH-g.hotbarH(fbW)-56*s)/((len(manualLines)+3)*14))), fbW, fbH) // between the message and status lines
 	}
 
-	if g.showDebug {
-		g.debug.show("debug", func() *image.NRGBA {
-			ls := []line{{"Debug: take a weapon  (letter: take   Esc/F9: close)", white}, {"", white}}
-			for i, w := range rogue.Weapons {
-				ls = append(ls, line{fmt.Sprintf("%c) %s", 'a'+i, w.Name), cyan})
+	if g.showDebug != 0 {
+		g.debug.show("debug"+string(g.showDebug), func() *image.NRGBA {
+			ls := []line{{"Debug: take one  (letter: take   Esc/F8/F9/F10: close)", white}, {"", white}}
+			for i, n := range g.debugNames() {
+				ls = append(ls, line{fmt.Sprintf("%c) %s", 'a'+i, n), cyan})
 			}
 			return textImage(ls, panelBG)
 		}, center(fbW), middle(fbH), s, fbW, fbH)

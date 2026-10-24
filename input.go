@@ -18,14 +18,14 @@ import (
 //	armour, F the third pattern, T throw the wielded weapon, R span a
 //	crossbow, 1-9 and the wheel hold a hotbar slot, C search, < climb
 //	(with the Amulet), E/Tab/I inventory, M map (on a panel, over the
-//	view, off), F1 help, F2 manual, F9 debug weapon menu, Esc release
+//	view, off), F1 help, F2 manual, F8/F9/F10 debug staff, weapon and armour menus, Esc release
 //	mouse (again: quit), R new game after death or victory.
 type inputState struct {
 	captured   bool
 	showMap    int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
 	showHelp   bool
 	showManual bool // F2: the rules
-	showDebug  bool // F9: every weapon, to try them out
+	showDebug  rogue.ObjType // F9 Weapon, F10 Armor, F8 Stick: a menu of every kind, to try them out; 0 off
 	sprinting  bool // Shift tapped: sprint until the hero stops walking forward
 	sneaking   bool // Ctrl held: slow and silent
 	prompt     byte // 'i' identify, 'g' genocide: the next key answers it
@@ -57,15 +57,15 @@ func (g *game) setupInput() {
 		if g.pg.Key(int(k), int(a), int(m)) { // the inventory, its keys and the hotbar's
 			return
 		}
-		if g.showDebug && k >= glfw.KeyA && k < glfw.KeyA+glfw.Key(len(rogue.Weapons)) {
-			g.debugWeapon(int(k - glfw.KeyA))
+		if g.showDebug != 0 && k >= glfw.KeyA && k < glfw.KeyA+glfw.Key(len(g.debugNames())) {
+			g.debugTake(int(k - glfw.KeyA))
 			return
 		}
 		switch k {
 		case glfw.KeyEscape:
 			switch {
-			case g.showMap != 0 || g.showHelp || g.showManual || g.showDebug:
-				g.showMap, g.showHelp, g.showManual, g.showDebug, g.detect = 0, false, false, false, 0
+			case g.showMap != 0 || g.showHelp || g.showManual || g.showDebug != 0:
+				g.showMap, g.showHelp, g.showManual, g.showDebug, g.detect = 0, false, false, 0, 0
 			case g.captured:
 				g.capture(false)
 			default:
@@ -82,8 +82,8 @@ func (g *game) setupInput() {
 			g.showManual = !g.showManual
 		case glfw.KeyF3:
 			g.showBoxes = !g.showBoxes
-		case glfw.KeyF9:
-			g.showDebug = !g.showDebug
+		case glfw.KeyF8, glfw.KeyF9, glfw.KeyF10:
+			g.toggleDebug(map[glfw.Key]rogue.ObjType{glfw.KeyF8: rogue.Stick, glfw.KeyF9: rogue.Weapon, glfw.KeyF10: rogue.Armor}[k])
 		case glfw.KeyComma:
 			if m&glfw.ModShift != 0 {
 				g.sprinting = false // the Shift was for <, not a sprint tap
@@ -157,6 +157,52 @@ func (g *game) debugWeapon(which int) {
 	g.addPack(o)
 }
 
+// toggleDebug opens the debug menu of a kind (F8 staffs, F9 weapons,
+// F10 armour), or closes it when it is the one open.
+func (g *game) toggleDebug(kind rogue.ObjType) {
+	if g.showDebug == kind {
+		kind = 0
+	}
+	g.showDebug = kind
+}
+
+// debugNames lists the open debug menu's kinds.
+func (g *game) debugNames() []string {
+	var ns []string
+	switch g.showDebug {
+	case rogue.Weapon:
+		for _, w := range rogue.Weapons {
+			ns = append(ns, w.Name)
+		}
+	case rogue.Armor:
+		for _, a := range rogue.Armors {
+			ns = append(ns, a.Name)
+		}
+	case rogue.Stick:
+		for _, m := range rogue.StickMagic {
+			ns = append(ns, "staff of "+m.Name)
+		}
+	}
+	return ns
+}
+
+// debugTake puts a new, identified thing of the open menu's kind into the pack.
+func (g *game) debugTake(which int) {
+	switch g.showDebug {
+	case rogue.Weapon:
+		g.debugWeapon(which)
+	case rogue.Armor:
+		o := rogue.NewArmor(which)
+		o.Flags |= rogue.IsKnow
+		g.addPack(o)
+	case rogue.Stick:
+		o := &rogue.Object{Type: rogue.Stick, Which: which, Count: 1}
+		g.rg.FixStick(o)
+		g.rg.WKnow[which] = true
+		g.addPack(o)
+	}
+}
+
 // nextWeapon (3, a debug key) wields the next weapon kind, with one of
 // every kind to try: the pack's if it has one, else a fresh one.
 func (g *game) nextWeapon() {
@@ -216,7 +262,7 @@ func (g *game) key(k glfw.Key) bool {
 // moveInput reads the walking keys.
 func (g *game) moveInput() character.Input {
 	in := character.Input{Yaw: g.cam.Yaw, Pitch: g.cam.Pitch}
-	if g.dead || g.won || g.pg.IsOpen() || g.showDebug {
+	if g.dead || g.won || g.pg.IsOpen() || g.showDebug != 0 {
 		return in
 	}
 	if g.key(glfw.KeyW) {
@@ -238,7 +284,7 @@ func (g *game) moveInput() character.Input {
 }
 
 func (g *game) wantAttack(b glfw.MouseButton) bool {
-	return !g.automated && g.captured && !g.won && !g.pg.IsOpen() && !g.showDebug && g.win.GetMouseButton(b) == glfw.Press
+	return !g.automated && g.captured && !g.won && !g.pg.IsOpen() && g.showDebug == 0 && g.win.GetMouseButton(b) == glfw.Press
 }
 
 // wantPattern is the melee attack pattern held down: 0 left button, 1

@@ -305,7 +305,7 @@ func (g *game) newGame(seed int64) {
 	}
 	g.msgs, g.winLoot = nil, nil
 	g.closeInv()
-	g.showMap, g.showHelp, g.showManual, g.showDebug, g.prompt, g.detect = 0, false, false, false, 0, 0
+	g.showMap, g.showHelp, g.showManual, g.showDebug, g.prompt, g.detect = 0, false, false, 0, 0, 0
 	g.initHero()
 	g.enterLevel(1)
 }

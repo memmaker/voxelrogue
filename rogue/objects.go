@@ -311,7 +311,7 @@ func (g *Game) NewThing() *Object {
 		}
 	case 6:
 		o.Type, o.Which = Stick, pickOne(rng, StickMagic)
-		g.fixStick(o)
+		g.FixStick(o)
 	}
 	if o.Flags&IsMany != 0 {
 		g.groupSerial++
@@ -320,9 +320,9 @@ func (g *Game) NewThing() *Object {
 	return o
 }
 
-// fixStick sets a new staff's damage and charges (fix_stick; every
+// FixStick sets a new staff's damage and charges (fix_stick; every
 // stick is a staff, wands are folded in).
-func (g *Game) fixStick(o *Object) {
+func (g *Game) FixStick(o *Object) {
 	o.Damage, o.HurlDmg = "2d3", "1d1"
 	o.Charges = 3 + Rnd(g.Rng, 5)
 	switch o.Which {
