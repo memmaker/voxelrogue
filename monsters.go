@@ -45,6 +45,7 @@ type monster struct {
 	pack       *rogue.Object
 	dying      int        // ticks since the killing blow
 	dead       [4]float64 // where it fell (x, y, z) and its yaw then
+	pin        *pin       // pinned to a wall by the missile that killed it (pin.go)
 	leanX      float64    // offset from the tile centre toward the hero
 	leanZ      float64    // while fighting, so both sides are in reach
 }
@@ -235,7 +236,6 @@ func (g *game) updateDist() {
 func (g *game) tickMonsters() {
 	g.updateDist()
 	l, h := g.level(), g.heroTile()
-	g.tickCorpses()
 	live := g.monsters[:0]
 	for _, m := range g.monsters {
 		if m.dying > 0 { // out of the monster logic, a corpse for good
@@ -296,6 +296,7 @@ func (g *game) tickMonsters() {
 		g.monsterStep(m)
 	}
 	g.monsters = live
+	g.tickCorpses() // after the newly dead joined: a blow's second tick is the fall's second
 }
 
 // wandersOff decides whether a monster moves at random this time
@@ -935,6 +936,9 @@ func (g *game) tickCorpses() {
 // blow, tipping over until it lies flat; nothing about it follows the
 // hero.
 func (g *game) corpsePose(m *monster, alpha float64) render.ItemPose {
+	if m.pin != nil {
+		return g.pinnedPose(m, alpha)
+	}
 	t := 1.0
 	if m.dying < fallTicks {
 		t = (float64(m.dying) + alpha) / fallTicks

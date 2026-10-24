@@ -158,6 +158,9 @@ func (g *game) setupArrows() error {
 		if g.fight(at.m, o, true) && !magic(o) {
 			g.bleed(a.X, a.Y, a.Z)
 		}
+		if !at.m.alive() && a.Bounce == 0 && !magic(o) { // a lethal sharp one
+			g.pinTo(at.m, a, g.terrain.Solid)
+		}
 	}
 	return err
 }
@@ -380,6 +383,7 @@ func (g *game) tickArrows() {
 		}
 	}
 	g.arrows.Tick(g.terrain, targets)
+	g.tickPins()
 	p := g.player
 	for _, a := range g.arrows.Arrows {
 		o := g.arrowObjs[a]

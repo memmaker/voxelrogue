@@ -70,6 +70,7 @@ func main() {
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
 		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
 		mobs    = flag.String("mobs", "", "debug: with -shot, these monsters (letters) stand asleep in the hero's room, the camera on the first")
+		frail   = flag.Bool("frail", false, "debug: with -mobs, the first monster has 1 hit point")
 		landing = flag.Bool("landing", false, "debug: start on the landing of the staircase down from the level above -depth")
 		boxes   = flag.Bool("boxes", false, "debug: show the monsters' hit boxes (F3)")
 		killAt  = flag.Int("kill-at", -1, "debug: with -mobs, kill the first monster this many ticks before the shot")
@@ -211,6 +212,9 @@ func main() {
 	if *mobs != "" {
 		n := len(g.monsters)
 		g.lineUp(*mobs)
+		if *frail && len(g.monsters) > n {
+			g.monsters[n].st.HP = 1
+		}
 		if *killAt >= 0 && len(g.monsters) > n {
 			g.killMob = g.monsters[n]
 			g.killShot = *shotAt - *killAt
