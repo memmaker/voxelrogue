@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/memmaker/voxellib/particles"
 	"math"
 
 	"github.com/memmaker/voxellib/voxel/render"
@@ -539,8 +540,8 @@ var weaponFeel = map[int]struct {
 // lands at its upswing (bettercombat.go).
 func (g *game) heroAttack(pattern int) {
 	cd, reach := 12, 2.4
-	if g.weapon != nil {
-		if f, ok := weaponFeel[g.weapon.Which]; ok {
+	if w := g.meleeItem(); w != nil {
+		if f, ok := weaponFeel[meleeKind(w)]; ok {
 			cd, reach = f.cd, f.reach
 		}
 	}
@@ -548,6 +549,43 @@ func (g *game) heroAttack(pattern int) {
 		g.attackCD = cd
 	}
 }
+
+// meleeItem is what the hero strikes with: a held wand, else the wielded
+// weapon (nil = bare hands).
+func (g *game) meleeItem() *rogue.Object {
+	if g.zapping != nil {
+		return g.zapping
+	}
+	return g.weapon
+}
+
+// meleeKind is the weapon kind an item handles and animates like: a wand
+// as a spear.
+func meleeKind(o *rogue.Object) int {
+	if o.Type == rogue.Stick {
+		return rogue.Spear
+	}
+	return o.Which
+}
+
+// magic reports whether a blow was struck with a magic item (a wand or
+// a bolt), which draws no blood.
+func magic(o *rogue.Object) bool { return o != nil && o.Type == rogue.Stick }
+
+// impact is where a melee blow meets a monster: on the view line, at the
+// near side of its box.
+func (g *game) impact(m *monster) (x, y, z float64) {
+	mx, my, mz := g.monsterPos(m, 0)
+	lk := monsterLooks[m.letter]
+	d := math.Max(0, math.Hypot(mx-g.cam.X, mz-g.cam.Z)-float64(lk.w)/2)
+	cp := math.Cos(g.cam.Pitch)
+	x, y, z = g.cam.X+math.Sin(g.cam.Yaw)*cp*d, g.cam.Y+math.Sin(g.cam.Pitch)*d, g.cam.Z-math.Cos(g.cam.Yaw)*cp*d
+	y = math.Min(math.Max(y, my+float64(lk.hover)), my+float64(lk.hover+lk.h))
+	return
+}
+
+// bleed sprays blood from a point.
+func (g *game) bleed(x, y, z float64) { g.parts.Emit(x, y, z, particles.Blood) }
 
 // monsterInFront finds the nearest living monster within reach (plus its
 // size) in a cone around the view direction.
@@ -590,6 +628,9 @@ func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
 	a := rogue.Attack{}
 	if weap != nil {
 		a = rogue.Attack{Dmg: weap.Damage, HPlus: weap.HPlus, DPlus: weap.DPlus}
+		if weap.Type == rogue.Stick && weap.Damage == "" { // a held wand fights as a spear at 3/5 the damage
+			a = rogue.Attack{Dmg: rogue.WeaponDamage(rogue.Spear), Scale: 0.6}
+		}
 		if thrown {
 			a.Dmg = weap.HurlDmg
 			if weap.Flags&rogue.IsMissile != 0 && g.weapon != nil && rogue.Launches(g.weapon.Which, weap) {

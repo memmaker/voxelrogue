@@ -4,6 +4,7 @@
 package rogue
 
 import (
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -97,6 +98,7 @@ func HitScale(d, atLvl, opArm, wplus int) int {
 type Attack struct {
 	Dmg          string // damage dice; "" = the attacker's Stats.Dmg
 	HPlus, DPlus int
+	Scale        float64 // multiplies the damage when > 0 (a wand: 3/5 of a spear)
 }
 
 // RollEm rolls every attack term of a against def's armour defArm and
@@ -113,6 +115,9 @@ func RollEm(rng *rand.Rand, att *Stats, def *Stats, defArm int, a Attack) (dmg i
 			continue
 		}
 		d := HitScale(max(0, a.DPlus+Roll(rng, nd, ns)+AddDam(att.Str)), att.Lvl, defArm, a.HPlus+StrPlus(att.Str))
+		if a.Scale > 0 {
+			d = int(math.Round(float64(d) * a.Scale))
+		}
 		def.HP -= d
 		dmg += d
 	}

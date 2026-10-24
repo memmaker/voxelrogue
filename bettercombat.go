@@ -178,7 +178,8 @@ const longReach = 3.0
 // pattern (patterns) over length ticks, landing its hit at the upswing
 // on a monster within reach; false if the weapon has no such pattern.
 func (g *game) startAttack(length int, reach float64, pattern int) bool {
-	p := presetFor(g.weapon)
+	w := g.meleeItem()
+	p := presetFor(w)
 	if p == nil { // no Better Combat attacks: Minecraft's swing, hitting at once
 		if pattern > 0 {
 			return false
@@ -192,10 +193,10 @@ func (g *game) startAttack(length int, reach float64, pattern int) bool {
 	}
 	pat := pats[pattern]
 	comboReset := int(math.Round(float64(length) * 3)) // combo_reset_rate
-	if g.comboOf != g.weapon || g.comboPat != pattern || g.sinceAttack > comboReset {
+	if g.comboOf != w || g.comboPat != pattern || g.sinceAttack > comboReset {
 		g.combo = 0
 	}
-	g.comboOf, g.comboPat = g.weapon, pattern
+	g.comboOf, g.comboPat = w, pattern
 	at := pat[g.combo%len(pat)]
 	g.combo++
 	g.attack, g.attackLen, g.sinceAttack = g.anims[at.anim], float32(length), 0
@@ -220,7 +221,9 @@ func (g *game) tickCombat() {
 	if g.hitIn > 0 {
 		if g.hitIn--; g.hitIn == 0 && !g.dead {
 			if m := g.monsterInFront(g.hitReach); m != nil {
-				g.fight(m, g.weapon, false)
+				if w := g.meleeItem(); g.fight(m, w, false) && !magic(w) {
+					g.bleed(g.impact(m))
+				}
 			}
 		}
 	}

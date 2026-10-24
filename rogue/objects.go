@@ -299,6 +299,9 @@ func NewWeapon(rng *rand.Rand, which int) *Object {
 	return o
 }
 
+// WeaponDamage is a weapon kind's wielded damage dice.
+func WeaponDamage(which int) string { return weaponInit[which].dam }
+
 // NewArmor makes armour of a kind with its base class.
 func NewArmor(which int) *Object {
 	return &Object{Type: Armor, Which: which, Count: 1, AC: ArmorClass[which], Launch: -1}

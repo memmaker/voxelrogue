@@ -126,7 +126,7 @@ func (g *game) tickEffects() {
 			g.parts.Emit(x, y+0.3, z, glowFX)
 		}
 	}
-	g.parts.Tick(tickDur.Seconds(), nil)
+	g.parts.Tick(tickDur.Seconds(), g.terrain.Solid) // blood lies on the floor
 }
 
 // drawEffects draws the particles after the world and the models.

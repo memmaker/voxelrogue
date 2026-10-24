@@ -228,8 +228,8 @@ func patterns(p []bcAttack, long bool) [][]bcAttack {
 // presetFor is the wielded weapon's attacks, nil for a weapon the mod
 // leaves to the vanilla swing.
 func presetFor(o *rogue.Object) []bcAttack {
-	if o == nil || o.Type != rogue.Weapon {
+	if o == nil || o.Type != rogue.Weapon && o.Type != rogue.Stick {
 		return nil
 	}
-	return weaponPresets[o.Which]
+	return weaponPresets[meleeKind(o)]
 }

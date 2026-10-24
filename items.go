@@ -230,7 +230,7 @@ func (g *game) useItem(o *rogue.Object) {
 		g.ringOnOff(o)
 	case rogue.Stick:
 		g.zapping = o
-		g.msg("You hold " + lowerFirst(g.rg.Name(o)) + ". Right click zaps it.")
+		g.msg("You hold " + lowerFirst(g.rg.Name(o)) + ". Right click zaps it; it strikes like a spear.")
 	default:
 		g.msg("You can't use that.")
 	}
@@ -894,7 +894,7 @@ func (g *game) drawHand(alpha float64) {
 	if handSprites[name] {
 		name += "_hand"
 	}
-	if g.zapping == nil && g.drawAttack(name, pt, sky, blk) {
+	if g.drawAttack(name, pt, sky, blk) {
 		return // Better Combat's arms and weapon
 	}
 	g.itemRend.DrawHandModel(name, float32(g.cam.Aspect), handModel(name, h), sky, blk)

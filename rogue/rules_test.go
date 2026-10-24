@@ -1,6 +1,10 @@
 package rogue
 
-import "testing"
+import (
+	"math"
+	"math/rand"
+	"testing"
+)
 
 // TestHitScale pins the swing roll's average as a damage scale: level 1
 // against armour 7 with +1 was 9 in 20, a +100 bolt always lands, and a
@@ -10,5 +14,16 @@ func TestHitScale(t *testing.T) {
 		if got := HitScale(c.d, c.lvl, c.arm, c.plus); got != c.want {
 			t.Errorf("HitScale(%d, %d, %d, %d) = %d, want %d", c.d, c.lvl, c.arm, c.plus, got, c.want)
 		}
+	}
+}
+
+// TestAttackScale: Scale multiplies a blow's damage (a wand strikes at
+// 3/5 of a spear's).
+func TestAttackScale(t *testing.T) {
+	att, def := Stats{Lvl: 1, Str: Str{Str: 16}}, Stats{HP: 100}
+	full := RollEm(rand.New(rand.NewSource(1)), &att, &def, 10, Attack{Dmg: "10d1"})
+	scaled := RollEm(rand.New(rand.NewSource(1)), &att, &def, 10, Attack{Dmg: "10d1", Scale: 0.6})
+	if full == 0 || scaled != int(math.Round(float64(full)*0.6)) {
+		t.Errorf("full %d, scaled %d", full, scaled)
 	}
 }

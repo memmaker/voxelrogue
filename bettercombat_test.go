@@ -309,3 +309,35 @@ func TestPatterns(t *testing.T) {
 		}
 	}
 }
+
+// TestWandMelee: a held wand strikes like a spear: its reach, cooldown
+// and attack patterns, at 3/5 the damage.
+func TestWandMelee(t *testing.T) {
+	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
+		t.Fatal(err)
+	}
+	g := &game{}
+	g.anims, g.weapon = loadAnims(t), &rogue.Object{Type: rogue.Weapon, Which: rogue.Dagger}
+	g.stack = newAttackStack()
+	g.zapping = &rogue.Object{Type: rogue.Stick, Which: 2}
+	if fmt.Sprint(presetFor(g.zapping)) != fmt.Sprint(weaponPresets[rogue.Spear]) {
+		t.Errorf("wand presets %v, want the spear's", presetFor(g.zapping))
+	}
+	g.heroAttack(0)
+	if g.hitReach != 3 || g.attackCD != 13 || g.comboOf != g.zapping {
+		t.Errorf("reach %v cd %d combo of %v: the dagger, not the wand, fought", g.hitReach, g.attackCD, g.comboOf)
+	}
+}
+
+// TestBleed: a hit bleeds VoxelLib's blood burst, and only wands count as
+// magic (no blood).
+func TestBleed(t *testing.T) {
+	g := &game{}
+	g.bleed(1, 2, 3)
+	if len(g.parts.P) == 0 {
+		t.Error("bleed emitted nothing")
+	}
+	if !magic(&rogue.Object{Type: rogue.Stick}) || magic(&rogue.Object{Type: rogue.Weapon, Which: rogue.Dagger}) || magic(nil) {
+		t.Error("magic: wands only")
+	}
+}

@@ -141,7 +141,9 @@ func (g *game) setupArrows() error {
 		if !ok || o == nil {
 			return // stuck in another arrow, Robin Hood style
 		}
-		g.fight(at.m, o, true)
+		if g.fight(at.m, o, true) && !magic(o) {
+			g.bleed(a.X, a.Y, a.Z)
+		}
 	}
 	return err
 }
