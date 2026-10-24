@@ -27,18 +27,23 @@ func TestTilesCoverEveryName(t *testing.T) {
 		want = append(want, "m:"+m.Name)
 	}
 	rg := rogue.NewGame(rand.New(rand.NewSource(3)))
-	for t, n := range map[rogue.ObjType]int{rogue.Weapon: rogue.MaxWeapons, rogue.Armor: rogue.MaxArmors, rogue.Scroll: rogue.MaxScrolls,
+	for t, n := range map[rogue.ObjType]int{rogue.Weapon: len(rogue.Weapons), rogue.Armor: len(rogue.Armors), rogue.Scroll: rogue.MaxScrolls,
 		rogue.Potion: rogue.MaxPotions, rogue.Ring: rogue.MaxRings, rogue.Stick: rogue.MaxSticks, rogue.Food: 2, rogue.Gold: 1, rogue.Amulet: 1} {
 		for which := 0; which < n; which++ {
 			want = append(want, spriteFor(rg, &rogue.Object{Type: t, Which: which}))
 		}
 	}
-	for _, w := range []int{rogue.Bow, rogue.Crossbow, rogue.ChainCrossbow} {
-		for i := range 3 {
-			want = append(want, fmt.Sprintf("%s_pulling_%d", weaponSprite(w), i))
+	for k, w := range rogue.Weapons { // the launchers' pictures in use
+		switch w.Action {
+		case "bow", "crossbow":
+			for i := range 3 {
+				want = append(want, fmt.Sprintf("%s_pulling_%d", weaponSprite(k), i))
+			}
+		}
+		if w.Action == "crossbow" {
+			want = append(want, weaponSprite(k)+"_arrow")
 		}
 	}
-	want = append(want, weaponSprite(rogue.Crossbow)+"_arrow", weaponSprite(rogue.ChainCrossbow)+"_arrow", "w:sling_model")
 	for _, n := range want {
 		if !have[n] {
 			t.Errorf("no tile for sprite %q", n)

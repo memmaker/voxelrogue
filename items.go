@@ -8,11 +8,14 @@ package main
 import (
 	"fmt"
 	"image"
+	"log"
 	"math"
-	"slices"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/memmaker/voxellib/audio"
 	"github.com/memmaker/voxellib/voxel/render"
 	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
@@ -64,12 +67,7 @@ func (g *game) setupArt(tileDir string) error {
 	if err := g.loadAnimations("assets/bettercombat"); err != nil {
 		return err
 	}
-	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
-		return err
-	}
-	if err := g.setupSling(imgs[slices.Index(names, "w:sling_model")]); err != nil {
-		return err
-	}
+	g.setupSounds("assets/sounds")
 	return g.setupArrows()
 }
 
@@ -83,7 +81,7 @@ func lowerFirst(s string) string {
 func isMagic(o *rogue.Object) bool {
 	switch o.Type {
 	case rogue.Armor:
-		return o.AC != rogue.ArmorClass[o.Which]
+		return o.AC != rogue.Armors[o.Which].AC
 	case rogue.Weapon:
 		return o.HPlus != 0 || o.DPlus != 0
 	case rogue.Potion, rogue.Scroll, rogue.Stick, rogue.Ring, rogue.Amulet:
@@ -622,7 +620,7 @@ func (g *game) read(o *rogue.Object) {
 			} else {
 				g.weapon.DPlus++
 			}
-			g.msg("Your " + rogue.WeaponNames[g.weapon.Which] + " glows blue for a moment.")
+			g.msg("Your " + rogue.Weapons[g.weapon.Which].Name + " glows blue for a moment.")
 		}
 	case rogue.SCreate:
 		h, l := g.heroTile(), g.level()
@@ -993,16 +991,16 @@ func (g *game) drawHand(alpha float64) {
 		h.charge = chargeTicks(held.Which)
 	}
 	name := spriteFor(g.rg, held)
-	if name == "w:sling" { // Nightfall's model and action
+	if held == g.weapon && rogue.Weapons[held.Which].Action == "sling" { // Nightfall's model and action
 		g.drawSling(h, pt, sky, blk)
 		return
 	}
-	switch {
-	case name == weaponSprite(rogue.Bow) && h.use == useBow: // items/bow: use_duration scaled 0.05
+	switch h.use { // the wielded launcher's pictures in use
+	case useBow: // items/bow: use_duration scaled 0.05
 		name += fmt.Sprintf("_pulling_%d", pullStage(float32(g.drawTicks)*0.05, 0.65, 0.9))
-	case crossbowSprite(name) && h.use == useCrossbowCharge: // crossbow/pull
+	case useCrossbowCharge: // crossbow/pull
 		name += fmt.Sprintf("_pulling_%d", pullStage((h.useT+1-pt)/h.charge, 0.58, 1)) // the ticks held so far over the charge
-	case crossbowSprite(name) && h.use == useCrossbowHold: // charge_type arrow
+	case useCrossbowHold: // charge_type arrow
 		name += "_arrow"
 	}
 	if handSprites[name] {
@@ -1016,12 +1014,6 @@ func (g *game) drawHand(alpha float64) {
 
 // pullStage is a bow's or crossbow's pulling model for its pull: 0, or 1
 // and 2 from the model's range_dispatch thresholds.
-// crossbowSprite reports whether a sprite is a crossbow with pulling and
-// loaded pictures (items/crossbow, weapons_expanded's chain crossbow).
-func crossbowSprite(name string) bool {
-	return name == weaponSprite(rogue.Crossbow) || name == weaponSprite(rogue.ChainCrossbow)
-}
-
 func pullStage(pull, one, two float32) int {
 	switch {
 	case pull >= two:
@@ -1030,4 +1022,28 @@ func pullStage(pull, one, two float32) int {
 		return 1
 	}
 	return 0
+}
+
+// setupSounds opens dir's sound events (VoxelLib's audio: sounds.json and
+// the ogg files it names) if there are any; the weapons' sound fields
+// name them. Without, nothing plays.
+func (g *game) setupSounds(dir string) {
+	if _, err := os.Stat(filepath.Join(dir, "sounds.json")); err != nil {
+		return
+	}
+	mixer, err := audio.New()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	if g.sounds, err = audio.Open(dir, mixer); err != nil {
+		log.Println(err)
+	}
+}
+
+// play plays a sound event at the hero.
+func (g *game) play(event string) {
+	if g.sounds != nil && event != "" {
+		g.sounds.Play(event, audio.Params{Global: true, Volume: 1, Pitch: 1})
+	}
 }

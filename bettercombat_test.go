@@ -150,20 +150,17 @@ func TestHand(t *testing.T) {
 // one-handed weapon's, a two-handed one's, and the kinds with the vanilla
 // swing (launchers, missiles).
 func TestPresets(t *testing.T) {
-	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
-		t.Fatal(err)
-	}
-	want := map[int][]bcAttack{
-		rogue.Axe:           {{"one_handed_slash_horizontal_right", 0.3}, {"one_handed_slash_horizontal_left", 0.3}, {"one_handed_slam", 0.5}},
-		rogue.BattleAxe:     {{"two_handed_slash_horizontal_right", 0.5}, {"two_handed_spin", 0.5}, {"two_handed_slash_vertical_right", 0.5}, {"two_handed_slash_vertical_left", 0.5}},
-		rogue.Spear:         {{"one_handed_stab", 0.5}},
-		rogue.Bow:           nil,
-		rogue.ChainCrossbow: nil,
-		rogue.Dart:          nil,
+	want := map[string]string{
+		"axe":            "[{one_handed_slash_horizontal_right 0.3} {one_handed_slash_horizontal_left 0.3} {one_handed_slam 0.5}]",
+		"battle axe":     "[{two_handed_slash_horizontal_right 0.5} {two_handed_spin 0.5} {two_handed_slash_vertical_right 0.5} {two_handed_slash_vertical_left 0.5}]",
+		"spear":          "[{one_handed_stab 0.5}]",
+		"long bow":       "[]",
+		"chain crossbow": "[]",
+		"dart":           "[]",
 	}
 	for k, w := range want {
-		if got := weaponPresets[k]; fmt.Sprint(got) != fmt.Sprint(w) {
-			t.Errorf("%s: %v, want %v", rogue.WeaponNames[k], got, w)
+		if got := rogue.Weapons[rogue.WeaponID(k)].Attacks; fmt.Sprint(got) != w {
+			t.Errorf("%s: %v, want %v", k, got, w)
 		}
 	}
 }
@@ -218,7 +215,7 @@ func TestSling(t *testing.T) {
 	// the least charge (17) and launches on the release state's second
 	// frame, then 3 ticks frozen and 7 returning.
 	g := &game{}
-	g.weapon = &rogue.Object{Type: rogue.Weapon, Which: rogue.Sling}
+	g.weapon = &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("sling")}
 	g.sling = slingAction{frame: 1}
 	at := map[int]slingAction{8: {1, 1, 0, false}, 24: {2, 1, 17, true}, 25: {2, 2, 17, true}, 28: {3, 1, 17, true}, 31: {4, 1, 17, true}, 38: {}}
 	for tick := 1; tick <= 38; tick++ {
@@ -235,13 +232,13 @@ func TestSling(t *testing.T) {
 // chambers the next at once, and an empty crossbow shoots nothing.
 func TestCrossbowReload(t *testing.T) {
 	g := &game{}
-	g.weapon = &rogue.Object{Type: rogue.Weapon, Which: rogue.ChainCrossbow}
+	g.weapon = &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("chain crossbow")}
 	g.arrowObjs = map[*projectile.Arrow]*rogue.Object{}
 	g.player = &character.Character{}
 	g.resetInv()
 	g.give(g.weapon) // into the held slot
 	for range 9 {
-		b := rogue.NewWeapon(rand.New(rand.NewSource(1)), rogue.Bolt)
+		b := rogue.NewWeapon(rand.New(rand.NewSource(1)), rogue.WeaponID("crossbow bolt"))
 		b.Count = 1
 		g.give(b)
 	}
@@ -254,7 +251,7 @@ func TestCrossbowReload(t *testing.T) {
 		if use, ut := g.handUse(0.5); use != useCrossbowCharge || ut != -0.5 || !g.spanning {
 			t.Fatalf("spanning: use %v at %v", use, ut)
 		}
-		for range reloadTicks(rogue.ChainCrossbow) {
+		for range reloadTicks(rogue.WeaponID("chain crossbow")) {
 			g.tickDraw()
 		}
 		if len(g.chambers) != i || g.spanning {
@@ -267,10 +264,10 @@ func TestCrossbowReload(t *testing.T) {
 	}
 	g.startDraw()
 	g.startDraw() // on the cooldown
-	if len(g.chambers) != 2 || g.cooldown != chainCooldown || len(g.arrowObjs) != 1 {
+	if len(g.chambers) != 2 || g.cooldown != rogue.Weapons[g.weapon.Which].Cooldown || len(g.arrowObjs) != 1 {
 		t.Fatalf("shot: %d chambers, cooldown %d, %d bolts", len(g.chambers), g.cooldown, len(g.arrowObjs))
 	}
-	for range chainCooldown {
+	for range rogue.Weapons[g.weapon.Which].Cooldown {
 		g.tickDraw()
 	}
 	g.startDraw()
@@ -284,27 +281,24 @@ func TestCrossbowReload(t *testing.T) {
 // button, the right button and F, in the weapon list's order: swing,
 // overhead, stab; the horizontal slashes of a swing alternate.
 func TestPatterns(t *testing.T) {
-	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
-		t.Fatal(err)
-	}
-	want := map[int]string{
-		rogue.Dagger:    "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_stab]]",
-		rogue.LongSword: "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_slam] [one_handed_stab]]",
-		rogue.Halberd:   "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slash_vertical_right] [two_handed_stab_right]]",
-		rogue.Maul:      "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slam_heavy]]",
-		rogue.Spear:     "[[one_handed_stab]]",
+	want := map[string]string{
+		"dagger":     "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_stab]]",
+		"long sword": "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_slam] [one_handed_stab]]",
+		"halberd":    "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slash_vertical_right] [two_handed_stab_right]]",
+		"maul":       "[[two_handed_slash_horizontal_right two_handed_slash_horizontal_left] [two_handed_slam_heavy]]",
+		"spear":      "[[one_handed_stab]]",
 	}
 	for k, w := range want {
 		var got [][]string
-		for _, pat := range patterns(weaponPresets[k]) {
+		for _, pat := range patterns(rogue.Weapons[rogue.WeaponID(k)].Attacks) {
 			var names []string
 			for _, a := range pat {
-				names = append(names, a.anim)
+				names = append(names, a.Anim)
 			}
 			got = append(got, names)
 		}
 		if fmt.Sprint(got) != w {
-			t.Errorf("%s: %v, want %v", rogue.WeaponNames[k], got, w)
+			t.Errorf("%s: %v, want %v", k, got, w)
 		}
 	}
 }
@@ -312,18 +306,15 @@ func TestPatterns(t *testing.T) {
 // TestWandMelee: a held wand strikes like a spear: its reach, cooldown
 // and attack patterns, at 3/5 the damage.
 func TestWandMelee(t *testing.T) {
-	if err := loadWeaponAttributes("assets/weapon_attributes"); err != nil {
-		t.Fatal(err)
-	}
 	g := &game{}
-	g.anims, g.weapon = loadAnims(t), &rogue.Object{Type: rogue.Weapon, Which: rogue.Dagger}
+	g.anims, g.weapon = loadAnims(t), &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("dagger")}
 	g.stack = newAttackStack()
 	g.zapping = &rogue.Object{Type: rogue.Stick, Which: 2}
-	if fmt.Sprint(presetFor(g.zapping)) != fmt.Sprint(weaponPresets[rogue.Spear]) {
+	if fmt.Sprint(presetFor(g.zapping)) != fmt.Sprint(rogue.Weapons[rogue.WeaponID("spear")].Attacks) {
 		t.Errorf("wand presets %v, want the spear's", presetFor(g.zapping))
 	}
 	g.heroAttack(0)
-	if g.hitReach != weaponFeel[rogue.Spear].reach || g.attackCD != 13 || g.comboOf != g.zapping {
+	if spear := rogue.Weapons[rogue.WeaponID("spear")]; g.hitReach != spear.Reach || g.attackCD != spear.Swing || g.comboOf != g.zapping {
 		t.Errorf("reach %v cd %d combo of %v: the dagger, not the wand, fought", g.hitReach, g.attackCD, g.comboOf)
 	}
 }
@@ -336,7 +327,7 @@ func TestBleed(t *testing.T) {
 	if len(g.parts.P) == 0 {
 		t.Error("bleed emitted nothing")
 	}
-	if !magic(&rogue.Object{Type: rogue.Stick}) || magic(&rogue.Object{Type: rogue.Weapon, Which: rogue.Dagger}) || magic(nil) {
+	if !magic(&rogue.Object{Type: rogue.Stick}) || magic(&rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("dagger")}) || magic(nil) {
 		t.Error("magic: wands only")
 	}
 }

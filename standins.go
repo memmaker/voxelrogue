@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/model"
@@ -77,17 +78,19 @@ func boxModel(name string, w, h float32, tex image.Image) *model.Model {
 }
 
 // spriteNames lists every sprite the game uses, loaded from itemDir.
-// weaponSprites are the weapons drawn with a picture of their own ("w:" +
-// its id in weapons.rec: the sling, whose model needs its own); "" draws
-// the weapon's own name from gear.rec or items.rec.
-var weaponSprites = [rogue.MaxWeapons]string{rogue.Sling: "w:sling"}
+// weaponSprite is the sprite a weapon kind is drawn with: "w:" and its
+// id in weapons.rec.
+func weaponSprite(which int) string { return "w:" + rogue.Weapons[which].ID }
 
-// weaponSprite is the sprite a weapon kind is drawn with.
-func weaponSprite(which int) string {
-	if s := weaponSprites[which]; s != "" {
-		return s
+// weaponKind is the weapon a sprite belongs to ("w:" + id, or that and a
+// suffix: the pulling and loaded pictures), nil for other sprites.
+func weaponKind(sprite string) *rogue.WeaponKind {
+	for k := range rogue.Weapons {
+		if w := weaponSprite(k); sprite == w || strings.HasPrefix(sprite, w+"_") {
+			return &rogue.Weapons[k]
+		}
 	}
-	return rogue.WeaponNames[which]
+	return nil
 }
 
 // handSprites are the sprites with a separate in-hand picture
@@ -102,7 +105,7 @@ func spriteFor(g *rogue.Game, o *rogue.Object) string {
 	case rogue.Weapon:
 		return weaponSprite(o.Which)
 	case rogue.Armor:
-		return rogue.ArmorNames[o.Which]
+		return rogue.Armors[o.Which].ID
 	case rogue.Scroll:
 		return fmt.Sprintf("scroll %d", g.SLook[o.Which]%15+1)
 	case rogue.Potion:

@@ -8,7 +8,6 @@ package main
 
 import (
 	"math"
-	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxelrogue/rogue"
@@ -25,24 +24,12 @@ type display struct{ rot, trans, scale mgl32.Vec3 }
 // first person.
 var handheld = display{mgl32.Vec3{0, -90, 25}, mgl32.Vec3{1.13, 3.2, 1.13}, mgl32.Vec3{0.68, 0.68, 0.68}}
 
-// modDisplay holds the mods' own firstperson_righthand transforms, by
-// sprite; the rest of their weapons inherit item/handheld.
-var modDisplay = map[string]display{
-	// weapons_expanded *_in_hand models
-	// additionalweapon
-}
-
-// crossbowDisplay is minecraft:item/crossbow's (its pulling and loaded
-// pictures and weapons_expanded's chain crossbow inherit it).
-var crossbowDisplay = display{mgl32.Vec3{-90, 0, -55}, mgl32.Vec3{1.13, 3.2, 1.13}, mgl32.Vec3{0.68, 0.68, 0.68}}
-
 // displayFor is a sprite's first-person display transform.
+// displayFor is a sprite's first-person display transform: its weapon's
+// hand field (and its pulling and loaded pictures), else item/handheld.
 func displayFor(sprite string) display {
-	if d, ok := modDisplay[sprite]; ok {
-		return d
-	}
-	if strings.HasPrefix(sprite, weaponSprite(rogue.Crossbow)) || strings.HasPrefix(sprite, weaponSprite(rogue.ChainCrossbow)) {
-		return crossbowDisplay // and its pulling and loaded pictures
+	if w := weaponKind(sprite); w != nil && w.Hand != nil {
+		return display{w.Hand.Rot, w.Hand.Pos, w.Hand.Scale}
 	}
 	return handheld
 }
@@ -90,7 +77,7 @@ func drawPower(t, full float32) float32 {
 }
 
 // fullDraw is how many ticks a bow takes to draw fully.
-func fullDraw(which int) float32 { return 20 }
+func fullDraw(which int) float32 { return float32(rogue.Weapons[which].Draw) }
 
 // bowZoom is the field of view factor after t ticks of drawing
 // (AbstractClientPlayer.getFieldOfViewModifier; the longbow's mixin zooms

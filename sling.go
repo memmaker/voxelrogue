@@ -12,11 +12,9 @@ package main
 // action runs), the rock a ThrownRockEntity.
 
 import (
-	"image"
 	"math"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/memmaker/voxellib/model"
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
@@ -27,10 +25,9 @@ import (
 var slingDur = [5]int{8, 10 + 9 + 8 + 7, 4, 3, 7}
 
 const (
-	slingCharge   = 1
-	slingVelocity = 3.1  // the rock's speed at full charge, blocks per tick
-	rockGravity   = 0.04 // ItemProjectileEntity.getGravity
-	rockBounce    = 0.3  // speed a stone or blunt thrown weapon keeps rebounding off a wall or the floor: a pebble, not a ball
+	slingCharge = 1
+	rockGravity = 0.04 // ItemProjectileEntity.getGravity
+	rockBounce  = 0.3  // speed a stone or blunt thrown weapon keeps rebounding off a wall or the floor: a pebble, not a ball
 )
 
 // slingAction is Nightfall's ActionTracker for the sling: the state and
@@ -49,7 +46,7 @@ func (g *game) startSling() {
 	if s.frame != 0 && !(s.state == len(slingDur)-1 && s.frame >= slingDur[s.state]-3) {
 		return
 	}
-	if a := g.findAmmo(); a == nil || !rogue.Launches(rogue.Sling, a) {
+	if a := g.findAmmo(); a == nil || !rogue.Launches(g.weapon.Which, a) {
 		g.msg("You have nothing to shoot.")
 		return
 	}
@@ -65,7 +62,7 @@ func (g *game) tickSling() {
 	if s.frame == 0 {
 		return
 	}
-	if g.weapon == nil || g.weapon.Which != rogue.Sling {
+	if g.weapon == nil || rogue.Weapons[g.weapon.Which].Action != "sling" {
 		*s = slingAction{}
 		return
 	}
@@ -80,8 +77,8 @@ func (g *game) tickSling() {
 		s.move()
 	}
 	if s.state == slingCharge+1 && s.frame == 2 {
-		if a := g.findAmmo(); a != nil && rogue.Launches(rogue.Sling, a) {
-			g.shoot(g.takeAmmo(), min(float64(s.charge)/float64(slingDur[slingCharge]), 1)*slingVelocity).Gravity = rockGravity
+		if a := g.findAmmo(); a != nil && rogue.Launches(g.weapon.Which, a) {
+			g.shoot(g.takeAmmo(), min(float64(s.charge)/float64(slingDur[slingCharge]), 1)*rogue.Weapons[g.weapon.Which].Speed).Gravity = rockGravity
 		}
 	}
 }
@@ -254,87 +251,9 @@ func (g *game) drawSling(h handPose, pt float32, sky, blk uint8) {
 	s := g.sling
 	active := s.frame != 0
 	t, r := slingPose(active, s.state, s.frame, pt)
-	m := g.slingModels[0]
+	m := g.kindModels[g.weapon.Which][0] // weapons.rec: its rest and whirl meshes
 	if active {
-		m = g.slingModels[1]
+		m = g.kindModels[g.weapon.Which][1]
 	}
 	g.modelRend.DrawHand(m, float32(g.cam.Aspect), slingView(h, t, r), sky, blk)
-}
-
-// --- the models ---
-
-// cuboid is a block model element: its corners in 1/16 blocks and its
-// faces' texture rectangles (north, south, east, west, up, down; u1, v1,
-// u2, v2 in texels).
-type cuboid struct {
-	from, to mgl32.Vec3
-	uv       [6][4]float32
-}
-
-var (
-	cordUV  = [6][4]float32{{0, 0, 1, 2}, {0, 0, 1, 2}, {0, 0, 1, 2}, {0, 0, 1, 2}, {1, 0, 2, 1}, {2, 0, 3, 1}}
-	longUV  = [6][4]float32{{0, 0, 1, 14}, {0, 0, 1, 14}, {0, 0, 1, 14}, {0, 0, 1, 14}, {1, 0, 2, 1}, {2, 0, 3, 1}}
-	pouchUV = [6][4]float32{{1, 1, 3, 2}, {6, 1, 8, 2}, {3, 1, 6, 2}, {8, 1, 11, 2}, {1, 2, 3, 5}, {3, 2, 5, 5}}
-	gripUV  = [6][4]float32{{2, 6, 6, 10}, {8, 6, 12, 10}, {6, 6, 8, 10}, {12, 6, 14, 10}, {2, 10, 6, 12}, {6, 10, 10, 12}}
-
-	// template_sling: two cords, the pouch and the grip
-	slingRest = []cuboid{
-		{mgl32.Vec3{6, 4, 7.5}, mgl32.Vec3{7, 6, 8.5}, cordUV},
-		{mgl32.Vec3{9, 4, 7.5}, mgl32.Vec3{10, 6, 8.5}, cordUV},
-		{mgl32.Vec3{7, 5, 6.5}, mgl32.Vec3{9, 6, 9.5}, pouchUV},
-		{mgl32.Vec3{6, 0.02, 7}, mgl32.Vec3{10, 4, 9}, gripUV},
-	}
-	// template_sling_swinging: the cords at full length, the pouch at
-	// their end
-	slingSwinging = []cuboid{
-		{mgl32.Vec3{6, 7, 7.5}, mgl32.Vec3{7, 21, 8.5}, longUV},
-		{mgl32.Vec3{9, 7, 7.5}, mgl32.Vec3{10, 21, 8.5}, longUV},
-		{mgl32.Vec3{7, 20, 6.5}, mgl32.Vec3{9, 21, 9.5}, pouchUV},
-	}
-)
-
-// cuboidModel builds a block model from its elements, on 0..1 blocks,
-// with Minecraft's face texturing: a face's (u1, v1) at its top left
-// seen from outside (north's at +X, east's at +Z, up's at -Z, down's at +Z).
-func cuboidModel(name string, els []cuboid, tex image.Image) *model.Model {
-	m := &model.Model{Name: name, Textures: []image.Image{tex}, Clips: map[string]*model.Clip{}, Tags: map[string]bool{},
-		Bones: []model.Bone{{Name: "root", Parent: -1, R: mgl32.QuatIdent(), S: mgl32.Vec3{1, 1, 1}, InvBind: mgl32.Ident4()}}}
-	var me model.Mesh
-	for _, e := range els {
-		lo, hi := e.from.Mul(1.0/16), e.to.Mul(1.0/16)
-		w, h, d := hi.Sub(lo)[0], hi.Sub(lo)[1], hi.Sub(lo)[2]
-		faces := [6]struct{ n, o, u, v mgl32.Vec3 }{ // normal, (u1, v1) corner, u and v directions
-			{mgl32.Vec3{0, 0, -1}, mgl32.Vec3{hi[0], hi[1], lo[2]}, mgl32.Vec3{-w, 0, 0}, mgl32.Vec3{0, -h, 0}},
-			{mgl32.Vec3{0, 0, 1}, mgl32.Vec3{lo[0], hi[1], hi[2]}, mgl32.Vec3{w, 0, 0}, mgl32.Vec3{0, -h, 0}},
-			{mgl32.Vec3{1, 0, 0}, mgl32.Vec3{hi[0], hi[1], hi[2]}, mgl32.Vec3{0, 0, -d}, mgl32.Vec3{0, -h, 0}},
-			{mgl32.Vec3{-1, 0, 0}, mgl32.Vec3{lo[0], hi[1], lo[2]}, mgl32.Vec3{0, 0, d}, mgl32.Vec3{0, -h, 0}},
-			{mgl32.Vec3{0, 1, 0}, mgl32.Vec3{lo[0], hi[1], lo[2]}, mgl32.Vec3{w, 0, 0}, mgl32.Vec3{0, 0, d}},
-			{mgl32.Vec3{0, -1, 0}, mgl32.Vec3{lo[0], lo[1], hi[2]}, mgl32.Vec3{w, 0, 0}, mgl32.Vec3{0, 0, -d}},
-		}
-		for i, f := range faces {
-			uv := e.uv[i]
-			base := uint32(len(me.Verts))
-			for _, c := range [4][2]float32{{0, 0}, {0, 1}, {1, 1}, {1, 0}} { // counter-clockwise from outside
-				p := f.o.Add(f.u.Mul(c[0])).Add(f.v.Mul(c[1]))
-				u := (uv[0] + (uv[2]-uv[0])*c[0]) / 16
-				v := (uv[1] + (uv[3]-uv[1])*c[1]) / 16
-				me.Verts = append(me.Verts, model.Vertex{Pos: p, Normal: f.n, UV: mgl32.Vec2{u, v}, Weights: [4]float32{1}})
-			}
-			me.Indices = append(me.Indices, base, base+1, base+2, base, base+2, base+3)
-		}
-	}
-	m.Meshes = []model.Mesh{me}
-	return m
-}
-
-// setupSling builds the sling's two models from its texture.
-func (g *game) setupSling(tex image.Image) error {
-	for i, els := range [][]cuboid{slingRest, slingSwinging} {
-		h, err := g.modelRend.Add(cuboidModel("sling", els, tex))
-		if err != nil {
-			return err
-		}
-		g.slingModels[i] = h
-	}
-	return nil
 }

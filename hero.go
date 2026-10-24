@@ -81,19 +81,19 @@ func (g *game) initHero() {
 	}
 	g.maxStr = g.stats.Str
 	g.foodLeft = hungerTime
-	mace := rogue.NewWeapon(g.rng, rogue.Mace)
+	mace := rogue.NewWeapon(g.rng, rogue.WeaponID("mace"))
 	mace.HPlus, mace.DPlus, mace.Flags = 1, 1, mace.Flags|rogue.IsKnow
-	bow := rogue.NewWeapon(g.rng, rogue.Bow)
+	bow := rogue.NewWeapon(g.rng, rogue.WeaponID("long bow"))
 	bow.HPlus, bow.Flags = 1, bow.Flags|rogue.IsKnow
-	arrows := rogue.NewWeapon(g.rng, rogue.Arrow)
+	arrows := rogue.NewWeapon(g.rng, rogue.WeaponID("arrow"))
 	arrows.Count, arrows.Flags, arrows.Group = 25+rogue.Rnd(g.rng, 15), arrows.Flags|rogue.IsKnow, -1
-	mail := rogue.NewArmor(rogue.RingMail)
+	mail := rogue.NewArmor(rogue.ArmorID("ring mail"))
 	mail.AC--
 	mail.Flags |= rogue.IsKnow
 	food := &rogue.Object{Type: rogue.Food, Count: 1, Launch: -1}
-	sling := rogue.NewWeapon(g.rng, rogue.Sling)
+	sling := rogue.NewWeapon(g.rng, rogue.WeaponID("sling"))
 	sling.Flags |= rogue.IsKnow
-	rocks := rogue.NewWeapon(g.rng, rogue.RockW)
+	rocks := rogue.NewWeapon(g.rng, rogue.WeaponID("rock"))
 	rocks.Flags |= rogue.IsKnow
 	g.weapon, g.armor = mace, mail // before the slots, which then wield and wear nothing new
 	g.resetInv()
@@ -559,7 +559,7 @@ func (g *game) checkTrap() {
 				g.die("an arrow")
 			}
 		} else {
-			arrow := rogue.NewWeapon(g.rng, rogue.Arrow)
+			arrow := rogue.NewWeapon(g.rng, rogue.WeaponID("arrow"))
 			arrow.Count = 1
 			g.dropMissile(arrow, g.heroTile())
 			g.msg("An arrow shoots past you.")

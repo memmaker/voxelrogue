@@ -46,93 +46,6 @@ type Object struct {
 	GoldVal      int
 }
 
-// Weapons (weapons.c), in table order; after Spear come the game's
-// own additions: the axes, the halberd, the maul and the chain crossbow.
-const (
-	Mace = iota
-	LongSword
-	Bow
-	Arrow
-	Dagger
-	RockW
-	TwoSword
-	Sling
-	Dart
-	Crossbow
-	Bolt
-	Spear
-	Axe
-	Halberd
-	Maul
-	BattleAxe
-	ChainCrossbow
-	MaxWeapons
-)
-
-var WeaponNames = [MaxWeapons]string{"mace", "long sword", "long bow", "arrow", "dagger", "rock",
-	"two handed sword", "sling", "dart", "crossbow", "crossbow bolt", "spear",
-	"axe", "halberd", "maul", "battle axe", "chain crossbow"}
-
-var weaponInit = [MaxWeapons]struct {
-	dam, hrl string
-	launch   int
-	flags    int
-}{
-	{"2d4", "1d3", -1, 0},
-	{"1d10", "1d2", -1, 0},
-	{"1d1", "1d1", -1, 0},
-	{"1d1", "1d6", Bow, IsMany | IsMissile},
-	{"1d6", "1d4", -1, IsMissile},
-	{"1d2", "1d4", Sling, IsMany | IsMissile},
-	{"3d6", "1d2", -1, 0},
-	{"0d0", "0d0", -1, 0},
-	{"1d1", "1d3", -1, IsMany | IsMissile},
-	{"1d1", "1d1", -1, 0},
-	{"1d2", "1d10", Crossbow, IsMany | IsMissile},
-	{"1d8", "1d6", -1, IsMissile},
-	{"1d6", "1d4", -1, IsMissile}, // axe
-	{"2d6", "1d3", -1, 0},         // halberd
-	{"2d8", "1d2", -1, 0},         // maul
-	{"3d5", "1d2", -1, 0},         // battle axe
-	{"1d1", "1d1", -1, 0},         // chain crossbow
-}
-
-// IsAmmo reports whether a weapon kind is ammunition (comes in bundles),
-// not something to wield.
-func IsAmmo(which int) bool { return weaponInit[which].flags&IsMany != 0 }
-
-// launchesAs maps a launcher to the one whose ammo it fires.
-var launchesAs = map[int]int{ChainCrossbow: Crossbow}
-
-// Launches reports whether launcher fires ammo.
-func Launches(launcher int, ammo *Object) bool {
-	if l, ok := launchesAs[launcher]; ok {
-		launcher = l
-	}
-	return ammo.Launch >= 0 && ammo.Launch == launcher
-}
-
-// LaunchDamage is ammo's damage fired from launcher.
-func LaunchDamage(launcher int, ammo *Object) string { return ammo.HurlDmg }
-
-// Armour (init.c), in table order.
-const (
-	Leather = iota
-	RingMail
-	StuddedLeather
-	ScaleMail
-	ChainMail
-	SplintMail
-	BandedMail
-	PlateMail
-	MaxArmors
-)
-
-var ArmorNames = [MaxArmors]string{"leather armor", "ring mail", "studded leather armor", "scale mail",
-	"chain mail", "splint mail", "banded mail", "plate mail"}
-var ArmorClass = [MaxArmors]int{8, 7, 7, 6, 5, 4, 4, 3}
-var armorChances = [MaxArmors]int{20, 35, 50, 63, 75, 85, 95, 100}
-
 // MagicItem is struct magic_item: a name and a pick probability.
 type MagicItem struct {
 	Name  string
@@ -236,20 +149,24 @@ func pickOne(rng *rand.Rand, magic []MagicItem) int {
 
 // NewWeapon makes a weapon with its initial damage (init_weapon).
 func NewWeapon(rng *rand.Rand, which int) *Object {
-	w := weaponInit[which]
-	o := &Object{Type: Weapon, Which: which, Count: 1, Damage: w.dam, HurlDmg: w.hrl, Launch: w.launch, Flags: w.flags, AC: 11}
-	if o.Flags&IsMany != 0 {
+	w := Weapons[which]
+	o := &Object{Type: Weapon, Which: which, Count: 1, Damage: w.Damage, HurlDmg: w.Thrown, Launch: -1, AC: 11}
+	if w.Missile {
+		o.Flags |= IsMissile
+	}
+	if w.Kind == "projectile" {
+		o.Flags |= IsMany
 		o.Count = Rnd(rng, 8) + 8
+	}
+	if len(w.Launchers) > 0 {
+		o.Launch = WeaponID(w.Launchers[0])
 	}
 	return o
 }
 
-// WeaponDamage is a weapon kind's wielded damage dice.
-func WeaponDamage(which int) string { return weaponInit[which].dam }
-
 // NewArmor makes armour of a kind with its base class.
 func NewArmor(which int) *Object {
-	return &Object{Type: Armor, Which: which, Count: 1, AC: ArmorClass[which], Launch: -1}
+	return &Object{Type: Armor, Which: which, Count: 1, AC: Armors[which].AC, Launch: -1}
 }
 
 // Game is the per-game state objects need: the random names and what the
@@ -369,7 +286,7 @@ func (g *Game) NewThing() *Object {
 			o.Which = 1
 		}
 	case 3:
-		o = NewWeapon(rng, Rnd(rng, MaxWeapons))
+		o = NewWeapon(rng, Rnd(rng, len(Weapons)))
 		if k := Rnd(rng, 100); k < 10 {
 			o.Flags |= IsCursed
 			o.HPlus -= Rnd(rng, 3) + 1
@@ -378,7 +295,7 @@ func (g *Game) NewThing() *Object {
 		}
 	case 4:
 		k, j := Rnd(rng, 100), 0
-		for j < MaxArmors-1 && k >= armorChances[j] {
+		for sum := Armors[0].Prob; j < len(Armors)-1 && k >= sum; sum += Armors[j].Prob {
 			j++
 		}
 		o = NewArmor(j)
@@ -425,11 +342,6 @@ func (g *Game) fixStick(o *Object) {
 	}
 }
 
-// weaponWorth is what total_winner pays for each weapon; the mods'
-// weapons are worth nothing to Rogue's fighters guild.
-var weaponWorth = [MaxWeapons]int{8, 15, 75, 1, 2, 1, 30, 1, 1, 15, 1, 2}
-var armorWorth = [MaxArmors]int{5, 30, 15, 3, 75, 80, 90, 400}
-
 // Worth is what an object sells for when the hero escapes
 // (total_winner); it also identifies the object, as there.
 func (g *Game) Worth(o *Object) int {
@@ -438,10 +350,10 @@ func (g *Game) Worth(o *Object) int {
 	case Food:
 		w = 2 * o.Count
 	case Weapon:
-		w = weaponWorth[o.Which] * (1 + 10*o.HPlus + 10*o.DPlus) * o.Count
+		w = Weapons[o.Which].Worth * (1 + 10*o.HPlus + 10*o.DPlus) * o.Count
 		o.Flags |= IsKnow
 	case Armor:
-		w = armorWorth[o.Which] * (1 + 10*(ArmorClass[o.Which]-o.AC))
+		w = Armors[o.Which].Worth * (1 + 10*(Armors[o.Which].AC-o.AC))
 		o.Flags |= IsKnow
 	case Scroll:
 		g.SKnow[o.Which] = true
@@ -531,16 +443,16 @@ func (g *Game) Name(o *Object) string {
 		if o.Flags&IsKnow != 0 {
 			s += signed(o.HPlus) + "," + signed(o.DPlus) + " "
 		}
-		s += WeaponNames[o.Which]
+		s += Weapons[o.Which].Name
 		if o.Count > 1 {
 			s += "s"
 		}
 		return s
 	case Armor:
 		if o.Flags&IsKnow != 0 {
-			return signed(ArmorClass[o.Which]-o.AC) + " " + ArmorNames[o.Which]
+			return signed(Armors[o.Which].AC-o.AC) + " " + Armors[o.Which].Name
 		}
-		return ArmorNames[o.Which]
+		return Armors[o.Which].Name
 	case Amulet:
 		return "The Amulet of Yendor"
 	case Stick:

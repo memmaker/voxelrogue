@@ -14,7 +14,7 @@ import (
 // TestLaunchers spans (crossbows), holds and lets go of every launcher,
 // given its ammunition as the debug keys do, and expects a shot.
 func TestLaunchers(t *testing.T) {
-	for _, which := range []int{rogue.Bow, rogue.Crossbow, rogue.ChainCrossbow, rogue.Sling} {
+	for _, which := range []int{rogue.WeaponID("long bow"), rogue.WeaponID("crossbow"), rogue.WeaponID("chain crossbow"), rogue.WeaponID("sling")} {
 		g := &game{rng: rand.New(rand.NewSource(1))}
 		g.arrowObjs, g.player, g.rg = map[*projectile.Arrow]*rogue.Object{}, &character.Character{}, rogue.NewGame(g.rng)
 		g.weapon = rogue.NewWeapon(g.rng, which)
@@ -47,10 +47,10 @@ func TestLaunchers(t *testing.T) {
 func TestThrowWeapon(t *testing.T) {
 	g := &game{rng: rand.New(rand.NewSource(1))}
 	g.arrowObjs, g.player, g.rg = map[*projectile.Arrow]*rogue.Object{}, &character.Character{}, rogue.NewGame(g.rng)
-	darts := rogue.NewWeapon(g.rng, rogue.Dart)
+	darts := rogue.NewWeapon(g.rng, rogue.WeaponID("dart"))
 	darts.Count = 3
-	dagger := rogue.NewWeapon(g.rng, rogue.Dagger)
-	mace := rogue.NewWeapon(g.rng, rogue.Mace)
+	dagger := rogue.NewWeapon(g.rng, rogue.WeaponID("dagger"))
+	mace := rogue.NewWeapon(g.rng, rogue.WeaponID("mace"))
 	g.resetInv()
 	g.give(darts, dagger, mace)
 	g.weapon = darts
@@ -71,8 +71,8 @@ func TestThrowWeapon(t *testing.T) {
 	g.weapon = mace
 	g.throwItem()
 	for a, o := range g.arrowObjs {
-		if (a.Bounce > 0) != blunt[o.Which] {
-			t.Errorf("%s: bounce %.1f; sharp weapons stick, blunt ones drop", rogue.WeaponNames[o.Which], a.Bounce)
+		if (a.Bounce > 0) != rogue.Weapons[o.Which].Blunt {
+			t.Errorf("%s: bounce %.1f; sharp weapons stick, blunt ones drop", rogue.Weapons[o.Which].Name, a.Bounce)
 		}
 	}
 	if len(g.arrowObjs) != 3 {

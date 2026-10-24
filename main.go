@@ -88,6 +88,9 @@ func main() {
 		animAt  = flag.Float64("anim-at", 0, "debug: with -anim, the animation tick to show")
 	)
 	flag.Parse()
+	if err := rogue.LoadKinds(*tileDir); err != nil {
+		log.Fatal(err)
+	}
 	if render.Backend != "wgpu" {
 		log.Fatal("voxelrogue uses the WebGPU backend: build with -tags wgpu (see build_n_run.sh)")
 	}

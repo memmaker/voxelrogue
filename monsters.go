@@ -98,7 +98,7 @@ func (g *game) initMonster(m *monster, letter byte) {
 		t := mimicLooks[rogue.Rnd(g.rng, n)]
 		m.disguise = &rogue.Object{Type: t, Count: 1, Launch: -1, GoldVal: 1}
 		if t == rogue.Armor {
-			m.disguise.Which = rogue.Rnd(g.rng, rogue.MaxArmors)
+			m.disguise.Which = rogue.Rnd(g.rng, len(rogue.Armors))
 		}
 	}
 }
@@ -134,8 +134,8 @@ func (g *game) wanderer() {
 // a dagger's five times. (Rogue itself gives no bonus: its +4 to hit on a
 // sleeper has no meaning without the to-hit roll.)
 func sleepScale(weap *rogue.Object) float64 {
-	if weap != nil && weap.Type == rogue.Weapon && weap.Which == rogue.Dagger {
-		return 5
+	if weap != nil && weap.Type == rogue.Weapon && rogue.Weapons[weap.Which].Backstab > 0 {
+		return rogue.Weapons[weap.Which].Backstab
 	}
 	return 2
 }
@@ -585,47 +585,31 @@ func (g *game) removeMonster(m *monster) {
 	}
 }
 
-// weaponFeel is how a weapon handles in real time: ticks between swings
-// and reach in blocks (plus the target's size). Missing = 12, 2.4: the
-// one-handed weapons; the dagger is short and fast, the two-handed
-// weapons slow and long, the pole arms twice as long.
-var weaponFeel = map[int]struct {
-	cd    int
-	reach float64
-}{
-	rogue.Dagger:    {8, 2.0},
-	rogue.Spear:     {13, 4.8},
-	rogue.TwoSword:  {18, 3.2},
-	rogue.Halberd:   {18, 5.0},
-	rogue.Maul:      {18, 3.2},
-	rogue.BattleAxe: {18, 3.2},
+// sweeps reports whether a blow strikes every monster in its path: a
+// sweeping weapon's (an axe's) sideways swing (pattern 0).
+func sweeps(w *rogue.Object, pattern int) bool {
+	return w != nil && pattern == 0 && rogue.Weapons[meleeKind(w)].Sweeps
 }
 
-// sweeps reports whether a blow strikes every monster in its path: an
-// axe's sideways swing (pattern 0).
-func sweeps(w *rogue.Object, pattern int) bool {
-	if w == nil || pattern != 0 {
-		return false
-	}
-	switch meleeKind(w) {
-	case rogue.Axe, rogue.BattleAxe:
-		return true
-	}
-	return false
-}
+// bareSwing and bareReach are the bare hands' ticks between blows and
+// reach in blocks (plus the target's size).
+const bareSwing, bareReach = 12, 2.4
 
 // heroAttack swings the wielded weapon in one of its attack patterns
 // (0 left button, 1 right button, 2 F): a Better Combat attack whose hit
 // lands at its upswing (bettercombat.go).
 func (g *game) heroAttack(pattern int) {
-	cd, reach := 12, 2.4
-	if w := g.meleeItem(); w != nil {
-		if f, ok := weaponFeel[meleeKind(w)]; ok {
-			cd, reach = f.cd, f.reach
-		}
+	cd, reach := bareSwing, bareReach
+	w := g.meleeItem()
+	if w != nil {
+		k := rogue.Weapons[meleeKind(w)]
+		cd, reach = k.Swing, k.Reach
 	}
 	if g.startAttack(cd, reach, pattern) {
 		g.attackCD = cd
+		if w != nil {
+			g.play(rogue.Weapons[meleeKind(w)].Sound)
+		}
 	}
 }
 
@@ -642,7 +626,7 @@ func (g *game) meleeItem() *rogue.Object {
 // as a spear.
 func meleeKind(o *rogue.Object) int {
 	if o.Type == rogue.Stick {
-		return rogue.Spear
+		return rogue.WeaponID("spear")
 	}
 	return o.Which
 }
@@ -719,12 +703,11 @@ func (g *game) fight(m *monster, weap *rogue.Object, thrown bool) bool {
 	if weap != nil {
 		a = rogue.Attack{Dmg: weap.Damage, HPlus: weap.HPlus, DPlus: weap.DPlus}
 		if weap.Type == rogue.Stick && weap.Damage == "" { // a held wand fights as a spear at 3/5 the damage
-			a = rogue.Attack{Dmg: rogue.WeaponDamage(rogue.Spear), Scale: 0.6}
+			a = rogue.Attack{Dmg: rogue.Weapons[rogue.WeaponID("spear")].Damage, Scale: 0.6}
 		}
 		if thrown {
 			a.Dmg = weap.HurlDmg
-			if weap.Flags&rogue.IsMissile != 0 && g.weapon != nil && rogue.Launches(g.weapon.Which, weap) {
-				a.Dmg = rogue.LaunchDamage(g.weapon.Which, weap)
+			if weap.Flags&rogue.IsMissile != 0 && g.weapon != nil && rogue.Launches(g.weapon.Which, weap) { // shot from its launcher
 				a.HPlus += g.weapon.HPlus
 				a.DPlus += g.weapon.DPlus
 			} else if weap.Launch >= 0 { // ammo thrown by hand

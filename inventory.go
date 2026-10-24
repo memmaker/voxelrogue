@@ -153,7 +153,7 @@ func (g *game) itemStack(s *inventory.Stack) ui.ItemStack {
 		}
 		tip = append(tip, d)
 	case rogue.Armor:
-		ac := rogue.ArmorClass[o.Which] // the plain kind's class until the enchantment is known
+		ac := rogue.Armors[o.Which].AC // the plain kind's class until the enchantment is known
 		if o.Flags&rogue.IsKnow != 0 {
 			ac = o.AC
 		}

@@ -132,7 +132,7 @@ func TestSweep(t *testing.T) {
 	if ms := g.monstersInFront(tileD + 1); len(ms) != 2 || ms[0] != near {
 		t.Fatalf("in front: %d monsters, the nearest first %v", len(ms), len(ms) > 0 && ms[0] == near)
 	}
-	axe, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.Axe}, &rogue.Object{Type: rogue.Weapon, Which: rogue.Mace}
+	axe, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("axe")}, &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("mace")}
 	if !sweeps(axe, 0) || sweeps(axe, 1) || sweeps(mace, 0) || sweeps(nil, 0) {
 		t.Fatal("only an axe's sideways swing sweeps")
 	}
@@ -141,7 +141,7 @@ func TestSweep(t *testing.T) {
 // TestSleepers: a blow on a sleeper counts double, a dagger's five times;
 // a noise wakes the sleepers within its reach and no others.
 func TestSleepers(t *testing.T) {
-	dagger, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.Dagger}, &rogue.Object{Type: rogue.Weapon, Which: rogue.Mace}
+	dagger, mace := &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("dagger")}, &rogue.Object{Type: rogue.Weapon, Which: rogue.WeaponID("mace")}
 	if sleepScale(dagger) != 5 || sleepScale(mace) != 2 || sleepScale(nil) != 2 {
 		t.Fatal("sleeping blows: dagger 5x, the rest 2x")
 	}

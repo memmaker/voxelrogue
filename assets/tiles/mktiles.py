@@ -4,23 +4,26 @@ rec files that say which cell each game id uses. The sheets hold only
 what the game draws; ids are the game's own names (a potion by its
 colour, a ring by its stone, a wall by where it stands):
 
-  tiles8.png   items.rec     %rec: item    weapons, armour, potions, scrolls, rings, food, wands, gold, the Amulet
-  tiles16.png  gear.rec      %rec: gear    the armour and the weapons with a 16px picture (assets/hobbit: LOTR mod and vanilla sprites)
+  tiles8.png   items.rec     %rec: item    potions, scrolls, rings, food, wands, gold, the Amulet (written whole)
+  tiles16.png  gear.rec      %rec: gear    the armour: hand-written records, each naming its picture
+               weapons.rec   %rec: weapon  the weapons and their pictures in use (%rec: frame): hand-written, each naming its picture
                textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
                monsters.rec  %rec: monster the 26 monsters (DynaHack, shadows stripped)
-               weapons.rec   %rec: weapon  the sling's pictures (Nightfall's), held and its model texture
 
-A rerun keeps the recs' icons (the remapper's edits); after adding or cutting a look,
-run it with --fresh, since the cells behind the kept icons have moved.
+gear.rec and weapons.rec are the game's data (every field of an armour or a weapon); this
+script only cuts each record's picture: (relative to the rec, an animation strip's first
+16px frame) onto the sheet and fills its icon: in, touching no other line. A rerun keeps
+the recs' icons (the remapper's edits); after adding or cutting a look, run it with --fresh,
+since the cells behind the kept icons have moved.
 The game reads only the recs and sheets (tiles.go); the remapper edits
 the recs (remap_*.sh). The first look of everything comes from the art
 the game used before: VoxelLib's CC0 item sprites and RPG16 pack, the
-mods' weapon textures (assets/weapons), assets/monsters/dynahack.txt.
+mods' weapon textures (assets/hobbit, assets/weapons), assets/monsters/dynahack.txt.
 
 Run: python3 assets/tiles/mktiles.py [VoxelLib checkout]   (default ../VoxelLib)
 Re-running rebuilds the sheets and keeps the icon of every id already
 in a rec file, so remapped ids stay remapped."""
-import glob, os, re, sys
+import os, re, sys
 from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -37,24 +40,18 @@ def golist(src, name):
     return re.findall(r'"([^"]*)"', s[:s.index('}')])
 
 
-MESH_FIELDS = ('helmet', 'chest', 'leggings', 'boots')
-
-
 def existing(rec):
-    """id -> icon of a rec file already there (the remapper's edits), and
-    id -> its mesh field lines (gear.rec's armour meshes, meshes.rec)."""
-    icons, meshes, rid = {}, {}, None
+    """id -> icon of a rec file already there (the remapper's edits)."""
+    icons, rid = {}, None
     if not os.path.exists(rec):
-        return icons, meshes
+        return icons
     for line in open(rec):
         m = re.match(r'(\w+):\s*(.*)', line)
         if m and m.group(1) == 'id':
             rid = m.group(2).strip()
         elif m and m.group(1) == 'icon' and rid:
             icons[rid] = int(m.group(2))
-        elif m and m.group(1) in MESH_FIELDS and rid:
-            meshes.setdefault(rid, []).append(line.rstrip())
-    return icons, meshes
+    return icons
 
 
 class Sheet:
@@ -78,25 +75,37 @@ class Sheet:
 
     def rec(self, path, doc, cat, records):
         """records: (id, name, icon[, w, h]); a remapped id keeps its icon."""
-        keep, meshes = existing(path)
-        if FRESH:
-            keep = {}
+        keep = {} if FRESH else existing(path)
         out = [f'# {os.path.basename(path)}: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper',
                f'# (remap_{os.path.basename(path)[:-4]}.sh). icon: cell of {self.name}; -1: unassigned.',
                '', '%rec: Tileset', f'id: {self.name[:-4]}', f'name: VoxelRogue {self.size}px tiles',
                f'file: {self.name}', f'tile_w: {self.size}', f'tile_h: {self.size}',
                'off_x: 0', 'off_y: 0', 'gap_x: 0', 'gap_y: 0']
-        if cat == 'gear':
-            out[1] += ' helmet/chest/leggings/boots: the\n# meshes.rec pieces the inventory hero wears (the Epic Knights models).'
-            out.append('meshes: meshes.rec')  # tools/convertarmor.py writes it
         out += ['', f'%rec: {cat}', f'%doc: {doc}']
         for r in records:
             rid, name, icon = r[0], r[1], keep.get(r[0], r[2])
-            out += ['', f'id: {rid}', f'name: {name}', f'icon: {icon}'] + meshes.get(rid, [])
+            out += ['', f'id: {rid}', f'name: {name}', f'icon: {icon}']
             if len(r) > 3:
                 out += [f'w: {r[3]}', f'h: {r[4]}']
         open(path, 'w').write('\n'.join(out) + '\n')
         print(f'{os.path.basename(path)}: {len(records)} {cat} records')
+
+    def patch(self, path):
+        """Cuts the picture: of every record of a hand-written rec onto the sheet and fills
+        its icon: in (kept if assigned, unless --fresh); every other line stays as it is."""
+        lines, out, n = open(path).read().split('\n'), [], 0
+        for i, line in enumerate(lines):
+            m = re.match(r'icon:\s*(-?\d+)', line)
+            if m:  # every picture is cut, so kept icons keep their cells
+                rec = lines[max(j for j in range(i, -1, -1) if lines[j].strip() == '' or lines[j].startswith('%')) + 1:i]
+                pic = next(l.split(':', 1)[1].strip() for l in rec if l.startswith('picture:'))
+                src = os.path.normpath(os.path.join(os.path.dirname(path), pic))
+                cell = self.add(src, rgba(src).crop((0, 0, self.size, self.size)))
+                if FRESH or int(m.group(1)) < 0:
+                    line, n = f'icon: {cell}', n + 1
+            out.append(line)
+        open(path, 'w').write('\n'.join(out))
+        print(f'{os.path.basename(path)}: {n} icons assigned')
 
 
 def rgba(path):
@@ -104,15 +113,12 @@ def rgba(path):
 
 
 rules = open(os.path.join(ROOT, 'rogue', 'objects.go')).read()
-standins = open(os.path.join(ROOT, 'standins.go')).read()
 
 # ---- tiles8: the items, named as Rogue names them; first looks are VoxelLib's sprites ----
 t8 = Sheet('tiles8.png', 8, 16)
 def item(rid, sprite, name=None):
     return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
 items = []
-# the weapons with no 16px picture in assets/hobbit (the Better Combat exotics) keep VoxelLib's 8px sprites
-items.append(item('two handed sword', 'sword_25'))
 for j, c in enumerate(golist(rules, 'rainbow')):  # a potion looks like its colour
     items.append(item(c + ' potion', f'potion_{j % 24 * 3 + 1:02d}'))
 for i in range(1, 16):  # a scroll's title is random each game; it has one of 15 looks
@@ -124,25 +130,10 @@ items += [item('food ration', 'misc_01'), item('slime-mold', 'misc_21'), item('s
 t8.save()
 t8.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
 
-# ---- tiles16: the armour and weapons (assets/hobbit), the block textures (world.go's blocks), the monsters, the kept mod weapons ----
+# ---- tiles16: the armour and weapons (their recs' pictures), the block textures (world.go's blocks), the monsters ----
 t16 = Sheet('tiles16.png', 16, 16)
-HOB = os.path.join(ROOT, 'assets', 'hobbit')
-def gear(rid, src, name=None):
-    im = rgba(os.path.join(HOB, src + '.png')).crop((0, 0, 16, 16))  # an animation strip's first frame; a stray 17th row
-    return (rid, name or rid, t16.add('h:' + src, im))
-gears = [gear(n, src) for n, src in zip(golist(rules, 'ArmorNames'),
-         ['bodyDunlending', 'bodyRanger', 'bodyCorsair', 'bodyNearHarad', 'chainmail_chestplate', 'bodyDale', 'bodyRohan', 'iron_chestplate'])]
-for rid, src in [('mace', 'maceBlackNumenorean'), ('long sword', 'swordGondor'), ('long bow', 'bow_standby'), ('arrow', 'arrow'),
-                 ('dagger', 'daggerGondor'), ('rock', 'flint'), ('dart', 'tauredainDart'), ('crossbow', 'ironCrossbow'),
-                 ('crossbow bolt', 'crossbowBolt'), ('spear', 'spearGondor'), ('axe', 'axeDwarven'), ('halberd', 'halberdMithril'),
-                 ('maul', 'hammerDwarven'), ('battle axe', 'battleaxeDwarven'), ('chain crossbow', 'urukCrossbow')]:
-    gears.append(gear(rid, src))
-for i in range(3):  # the frames items.go shows while a bow is drawn or a crossbow spanned
-    gears.append(gear(f'long bow_pulling_{i}', f'bow_pulling_{i}', f'long bow (pulling {i})'))
-    gears.append(gear(f'crossbow_pulling_{i}', f'ironCrossbow_pull_{i}', f'crossbow (pulling {i})'))
-    gears.append(gear(f'chain crossbow_pulling_{i}', f'urukCrossbow_pull_{i}', f'chain crossbow (pulling {i})'))
-gears.append(gear('crossbow_arrow', 'ironCrossbow_pull_2', 'crossbow (loaded)'))
-gears.append(gear('chain crossbow_arrow', 'urukCrossbow_pull_2', 'chain crossbow (loaded)'))
+t16.patch(os.path.join(HERE, 'gear.rec'))
+t16.patch(os.path.join(HERE, 'weapons.rec'))
 def block(rid, tex):
     return (rid, rid, t16.add('b:' + tex, rgba(os.path.join(BLOCKS, tex + '.png'))))
 blocks = [block('room floor', 'oak_planks'), block('room wall', 'stone_bricks'), block('room ceiling', 'stone'),
@@ -162,21 +153,6 @@ for m in re.finditer(r'^# tile \d+ \((.*?)\).*\n\{\n((?:  .{16}\n){16})\}', txt,
             if c != 'M':
                 im.putpixel((x, y), pal[c] + (255,))
     monsters.append((m.group(1), m.group(1), t16.add('m:' + m.group(1), im)))
-
-# the weapons standins.go draws with a picture of their own ("w:" + id: the sling and its model texture)
-refs = set(re.findall(r'"w:(\w+)"', standins)) | {'sling_model'}
-weapons = []
-for p in sorted(glob.glob(os.path.join(ROOT, 'assets', 'weapons', '*.png'))):
-    n = os.path.basename(p)[:-4]
-    base, kind = re.fullmatch(r'(.*?)(?:_(hand|arrow|pulling_\d))?', n).groups()
-    if base not in refs:
-        continue
-    name = base.replace('_', ' ') + {None: '', 'hand': ' (in hand)', 'arrow': ' (loaded)'}.get(kind, f' ({kind.replace("_", " ")})' if kind else '')
-    if n == 'sling_model':
-        name = 'sling (model texture)'
-    weapons.append((n, name, t16.add('w:' + n, rgba(p))))
 t16.save()
-t16.rec(os.path.join(HERE, 'gear.rec'), 'Armour and weapons (16px)', 'gear', gears)
 t16.rec(os.path.join(HERE, 'textures.rec'), 'Block textures', 'block', blocks)
 t16.rec(os.path.join(HERE, 'monsters.rec'), 'Monsters', 'monster', monsters)
-t16.rec(os.path.join(HERE, 'weapons.rec'), 'Weapons (mod pictures, 16px)', 'weapon', weapons)

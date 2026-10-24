@@ -18,18 +18,8 @@ import (
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
-// bcAttack is a preset's attack: an animation and its upswing.
-type bcAttack struct {
-	anim    string
-	upswing float32
-}
-
-// thirdPerson holds the thirdperson_righthand display transforms, by the
-// drawn sprite; the rest are item/handheld's.
-var thirdPerson = map[string]display{
-	"halberd": {mgl32.Vec3{5, 270, -40}, mgl32.Vec3{0, 2, 2}, mgl32.Vec3{1.7, 1.7, 0.85}},
-}
-
+// handheld3 is item/handheld's thirdperson_righthand display; a weapon's
+// hand3 field (weapons.rec) replaces it.
 var handheld3 = display{mgl32.Vec3{0, -90, 55}, mgl32.Vec3{0, 4, 0.5}, mgl32.Vec3{0.85, 0.85, 0.85}}
 
 type combatState struct {
@@ -164,9 +154,6 @@ func (s *attackStack) transform(b *animBone) { s.c.transform(b) }
 
 // --- The attack itself ---
 
-// longReach is the reach from which a thrown weapon flies like a spear.
-const longReach = 3.0
-
 // startAttack plays the next attack of the combo of the weapon's attack
 // pattern (patterns) over length ticks, landing its hit at the upswing
 // on a monster within reach; false if the weapon has no such pattern.
@@ -192,9 +179,9 @@ func (g *game) startAttack(length int, reach float64, pattern int) bool {
 	g.comboOf, g.comboPat = w, pattern
 	at := pat[g.combo%len(pat)]
 	g.combo++
-	g.attack, g.attackLen, g.sinceAttack = g.anims[at.anim], float32(length), 0
-	g.hitIn, g.hitReach = max(1, int(math.Round(float64(g.attackLen*at.upswing)))), reach
-	g.stack.play(g.attack, false, g.attackLen, at.upswing)
+	g.attack, g.attackLen, g.sinceAttack = g.anims[at.Anim], float32(length), 0
+	g.hitIn, g.hitReach = max(1, int(math.Round(float64(g.attackLen*at.Upswing)))), reach
+	g.stack.play(g.attack, false, g.attackLen, at.Upswing)
 	return true
 }
 
@@ -543,9 +530,9 @@ func (g *game) drawAttack(sprite string, pt float32, sky, blk uint8) bool {
 	g.stack.transform(body)
 	g.stack.transform(item)
 	arm := posed("right_arm", rArm, initRightArm)
-	d, ok := thirdPerson[sprite]
-	if !ok {
-		d = handheld3
+	d := handheld3
+	if w := weaponKind(sprite); w != nil && w.Hand3 != nil {
+		d = display{w.Hand3.Rot, w.Hand3.Pos, w.Hand3.Scale}
 	}
 	root, _, itemM := bcChain(body.v, arm.v, item.v, bodyRot, wrapDegrees(g.yRotMC()-bodyRot), follow, d)
 	model := itemM.Mul4(spriteTurn(sprite))

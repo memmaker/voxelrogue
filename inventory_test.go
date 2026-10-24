@@ -13,7 +13,7 @@ import (
 func TestInventorySlots(t *testing.T) {
 	g := &game{rng: rand.New(rand.NewSource(1))}
 	g.rg = rogue.NewGame(g.rng)
-	mace, mail := rogue.NewWeapon(g.rng, rogue.Mace), &rogue.Object{Type: rogue.Armor, Which: rogue.RingMail, Count: 1}
+	mace, mail := rogue.NewWeapon(g.rng, rogue.WeaponID("mace")), &rogue.Object{Type: rogue.Armor, Which: rogue.ArmorID("ring mail"), Count: 1}
 	ring := &rogue.Object{Type: rogue.Ring, Which: rogue.RProtect, Count: 1}
 	g.weapon, g.armor = mace, mail
 	g.resetInv()

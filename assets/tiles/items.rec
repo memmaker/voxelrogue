@@ -15,266 +15,262 @@ gap_y: 0
 %rec: item
 %doc: Items
 
-id: two handed sword
-name: two handed sword
-icon: 0
-
 id: red potion
 name: red potion
-icon: 1
+icon: 0
 
 id: blue potion
 name: blue potion
-icon: 2
+icon: 1
 
 id: green potion
 name: green potion
-icon: 3
+icon: 2
 
 id: yellow potion
 name: yellow potion
-icon: 4
+icon: 3
 
 id: black potion
 name: black potion
-icon: 5
+icon: 4
 
 id: brown potion
 name: brown potion
-icon: 6
+icon: 5
 
 id: orange potion
 name: orange potion
-icon: 7
+icon: 6
 
 id: pink potion
 name: pink potion
-icon: 8
+icon: 7
 
 id: purple potion
 name: purple potion
-icon: 9
+icon: 8
 
 id: grey potion
 name: grey potion
-icon: 10
+icon: 9
 
 id: white potion
 name: white potion
-icon: 11
+icon: 10
 
 id: silver potion
 name: silver potion
-icon: 12
+icon: 11
 
 id: gold potion
 name: gold potion
-icon: 13
+icon: 12
 
 id: violet potion
 name: violet potion
-icon: 14
+icon: 13
 
 id: clear potion
 name: clear potion
-icon: 15
+icon: 14
 
 id: vermilion potion
 name: vermilion potion
-icon: 16
+icon: 15
 
 id: ecru potion
 name: ecru potion
-icon: 17
+icon: 16
 
 id: turquoise potion
 name: turquoise potion
-icon: 18
+icon: 17
 
 id: magenta potion
 name: magenta potion
-icon: 19
+icon: 18
 
 id: amber potion
 name: amber potion
-icon: 20
+icon: 19
 
 id: topaz potion
 name: topaz potion
-icon: 21
+icon: 20
 
 id: plaid potion
 name: plaid potion
-icon: 22
+icon: 21
 
 id: tan potion
 name: tan potion
-icon: 23
+icon: 22
 
 id: tangerine potion
 name: tangerine potion
-icon: 24
+icon: 23
 
 id: scroll 1
 name: scroll (look 1)
-icon: 25
+icon: 24
 
 id: scroll 2
 name: scroll (look 2)
-icon: 26
+icon: 25
 
 id: scroll 3
 name: scroll (look 3)
-icon: 27
+icon: 26
 
 id: scroll 4
 name: scroll (look 4)
-icon: 28
+icon: 27
 
 id: scroll 5
 name: scroll (look 5)
-icon: 29
+icon: 28
 
 id: scroll 6
 name: scroll (look 6)
-icon: 30
+icon: 29
 
 id: scroll 7
 name: scroll (look 7)
-icon: 31
+icon: 30
 
 id: scroll 8
 name: scroll (look 8)
-icon: 32
+icon: 31
 
 id: scroll 9
 name: scroll (look 9)
-icon: 33
+icon: 32
 
 id: scroll 10
 name: scroll (look 10)
-icon: 34
+icon: 33
 
 id: scroll 11
 name: scroll (look 11)
-icon: 35
+icon: 34
 
 id: scroll 12
 name: scroll (look 12)
-icon: 36
+icon: 35
 
 id: scroll 13
 name: scroll (look 13)
-icon: 37
+icon: 36
 
 id: scroll 14
 name: scroll (look 14)
-icon: 38
+icon: 37
 
 id: scroll 15
 name: scroll (look 15)
-icon: 39
+icon: 38
 
 id: agate ring
 name: agate ring
-icon: 40
+icon: 39
 
 id: alexandrite ring
 name: alexandrite ring
-icon: 41
+icon: 40
 
 id: amethyst ring
 name: amethyst ring
-icon: 42
+icon: 41
 
 id: carnelian ring
 name: carnelian ring
-icon: 43
+icon: 42
 
 id: diamond ring
 name: diamond ring
-icon: 44
+icon: 43
 
 id: emerald ring
 name: emerald ring
-icon: 45
+icon: 44
 
 id: granite ring
 name: granite ring
-icon: 46
+icon: 45
 
 id: jade ring
 name: jade ring
-icon: 47
+icon: 46
 
 id: kryptonite ring
 name: kryptonite ring
-icon: 48
+icon: 47
 
 id: lapus lazuli ring
 name: lapus lazuli ring
-icon: 49
+icon: 48
 
 id: moonstone ring
 name: moonstone ring
-icon: 50
+icon: 49
 
 id: obsidian ring
 name: obsidian ring
-icon: 51
+icon: 50
 
 id: onyx ring
 name: onyx ring
-icon: 52
+icon: 51
 
 id: opal ring
 name: opal ring
-icon: 53
+icon: 52
 
 id: pearl ring
 name: pearl ring
-icon: 54
+icon: 53
 
 id: ruby ring
 name: ruby ring
-icon: 55
+icon: 54
 
 id: saphire ring
 name: saphire ring
-icon: 56
+icon: 55
 
 id: tiger eye ring
 name: tiger eye ring
-icon: 57
+icon: 56
 
 id: topaz ring
 name: topaz ring
-icon: 40
+icon: 39
 
 id: turquoise ring
 name: turquoise ring
-icon: 41
+icon: 40
 
 id: food ration
 name: food ration
-icon: 58
+icon: 57
 
 id: slime-mold
 name: slime-mold
-icon: 59
+icon: 58
 
 id: staff
 name: staff
-icon: 60
+icon: 59
 
 id: wand
 name: wand
-icon: 61
+icon: 60
 
 id: gold
 name: gold
-icon: 62
+icon: 61
 
 id: amulet of yendor
 name: the Amulet of Yendor
-icon: 63
+icon: 62

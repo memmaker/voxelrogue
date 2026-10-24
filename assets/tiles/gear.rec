@@ -1,6 +1,11 @@
-# gear.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
-# (remap_gear.sh). icon: cell of tiles16.png; -1: unassigned. helmet/chest/leggings/boots: the
-# meshes.rec pieces the inventory hero wears (the Epic Knights models).
+# gear.rec: the armour, every kind a record here and nowhere else (rogue/kinds.go reads it);
+# a new record is a new armour. mktiles.py cuts the pictures onto tiles16.png and fills in
+# the icons, the remapper (remap_gear.sh) re-maps them; every other field is yours.
+# icon: cell of tiles16.png; -1: unassigned. picture: the source picture.
+#
+#   ac        armour class (lower is better)       prob: the chance of a found armour being this kind, of 100
+#   worth     what the fighters guild pays          skin: the hobbit armour layer set (assets/hobbit/armor/<skin>_1 and _2)
+#   helmet, chest, leggings, boots: the meshes.rec pieces the inventory hero wears (the Epic Knights models)
 
 %rec: Tileset
 id: tiles16
@@ -15,18 +20,28 @@ gap_y: 0
 meshes: meshes.rec
 
 %rec: gear
-%doc: Armour and weapons (16px)
+%doc: Armour
 
 id: leather armor
 name: leather armor
+picture: ../hobbit/bodyDunlending.png
 icon: 0
+ac: 8
+prob: 20
+worth: 5
+skin: dunlending
 chest: gambeson_chestplate
 leggings: pantyhose
 boots: gambeson_boots
 
 id: ring mail
 name: ring mail
+picture: ../hobbit/bodyRanger.png
 icon: 1
+ac: 7
+prob: 15
+worth: 30
+skin: ranger
 helmet: norman_helmet
 chest: chainmail_chestplate
 leggings: chainmail_leggings
@@ -34,7 +49,12 @@ boots: chainmail_boots
 
 id: studded leather armor
 name: studded leather armor
+picture: ../hobbit/bodyCorsair.png
 icon: 2
+ac: 7
+prob: 15
+worth: 15
+skin: corsair
 helmet: kettlehat
 chest: brigandine_chestplate
 leggings: pantyhose
@@ -42,7 +62,12 @@ boots: gambeson_boots
 
 id: scale mail
 name: scale mail
+picture: ../hobbit/bodyNearHarad.png
 icon: 3
+ac: 6
+prob: 13
+worth: 3
+skin: near_harad
 helmet: face_helmet
 chest: lamellar_chestplate
 leggings: chainmail_leggings
@@ -50,7 +75,12 @@ boots: lamellar_boots
 
 id: chain mail
 name: chain mail
+picture: ../hobbit/chainmail_chestplate.png
 icon: 4
+ac: 5
+prob: 12
+worth: 75
+skin: chainmail
 helmet: chainmail_helmet
 chest: chainmail_chestplate
 leggings: chainmail_leggings
@@ -58,7 +88,12 @@ boots: chainmail_boots
 
 id: splint mail
 name: splint mail
+picture: ../hobbit/bodyDale.png
 icon: 5
+ac: 4
+prob: 10
+worth: 80
+skin: dale
 helmet: greathelm
 chest: crusader_chestplate
 leggings: crusader_leggings
@@ -66,7 +101,12 @@ boots: crusader_boots
 
 id: banded mail
 name: banded mail
+picture: ../hobbit/bodyRohan.png
 icon: 6
+ac: 4
+prob: 10
+worth: 90
+skin: rohan
 helmet: bascinet
 chest: kastenbrust_chestplate
 leggings: kastenbrust_leggings
@@ -74,112 +114,13 @@ boots: kastenbrust_boots
 
 id: plate mail
 name: plate mail
+picture: ../hobbit/iron_chestplate.png
 icon: 7
+ac: 3
+prob: 5
+worth: 400
+skin: iron
 helmet: armet
 chest: knight_chestplate
 leggings: knight_leggings
 boots: knight_boots
-
-id: mace
-name: mace
-icon: 8
-
-id: long sword
-name: long sword
-icon: 9
-
-id: long bow
-name: long bow
-icon: 10
-
-id: arrow
-name: arrow
-icon: 11
-
-id: dagger
-name: dagger
-icon: 12
-
-id: rock
-name: rock
-icon: 13
-
-id: dart
-name: dart
-icon: 14
-
-id: crossbow
-name: crossbow
-icon: 15
-
-id: crossbow bolt
-name: crossbow bolt
-icon: 16
-
-id: spear
-name: spear
-icon: 17
-
-id: axe
-name: axe
-icon: 18
-
-id: halberd
-name: halberd
-icon: 19
-
-id: maul
-name: maul
-icon: 20
-
-id: battle axe
-name: battle axe
-icon: 21
-
-id: chain crossbow
-name: chain crossbow
-icon: 22
-
-id: long bow_pulling_0
-name: long bow (pulling 0)
-icon: 23
-
-id: crossbow_pulling_0
-name: crossbow (pulling 0)
-icon: 24
-
-id: chain crossbow_pulling_0
-name: chain crossbow (pulling 0)
-icon: 25
-
-id: long bow_pulling_1
-name: long bow (pulling 1)
-icon: 26
-
-id: crossbow_pulling_1
-name: crossbow (pulling 1)
-icon: 27
-
-id: chain crossbow_pulling_1
-name: chain crossbow (pulling 1)
-icon: 28
-
-id: long bow_pulling_2
-name: long bow (pulling 2)
-icon: 29
-
-id: crossbow_pulling_2
-name: crossbow (pulling 2)
-icon: 30
-
-id: chain crossbow_pulling_2
-name: chain crossbow (pulling 2)
-icon: 31
-
-id: crossbow_arrow
-name: crossbow (loaded)
-icon: 30
-
-id: chain crossbow_arrow
-name: chain crossbow (loaded)
-icon: 31

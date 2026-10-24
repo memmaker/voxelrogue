@@ -57,7 +57,7 @@ func (g *game) setupInput() {
 		if g.pg.Key(int(k), int(a), int(m)) { // the inventory, its keys and the hotbar's
 			return
 		}
-		if g.showDebug && k >= glfw.KeyA && k < glfw.KeyA+rogue.MaxWeapons {
+		if g.showDebug && k >= glfw.KeyA && k < glfw.KeyA+glfw.Key(len(rogue.Weapons)) {
 			g.debugWeapon(int(k - glfw.KeyA))
 			return
 		}
@@ -164,7 +164,7 @@ func (g *game) nextWeapon() {
 	if g.weapon != nil {
 		which = g.weapon.Which
 	}
-	for which = (which + 1) % rogue.MaxWeapons; rogue.IsAmmo(which); which = (which + 1) % rogue.MaxWeapons { // ammo
+	for which = (which + 1) % len(rogue.Weapons); rogue.IsAmmo(which); which = (which + 1) % len(rogue.Weapons) { // ammo
 	}
 	o := rogue.NewWeapon(g.rng, which)
 	o.Flags |= rogue.IsKnow
@@ -184,14 +184,12 @@ func (g *game) nextWeapon() {
 	g.giveAmmo()
 }
 
-// launcherAmmo is what each launcher shoots.
-var launcherAmmo = map[int]int{rogue.Bow: rogue.Arrow, rogue.Crossbow: rogue.Bolt, rogue.ChainCrossbow: rogue.Bolt, rogue.Sling: rogue.RockW}
-
-// giveAmmo (debug) puts a bundle of the wielded launcher's ammunition in
-// the pack if it has none, so every launcher can be tried.
+// giveAmmo (debug) puts a bundle of the wielded launcher's ammunition
+// (the first projectile kind it launches) in the pack if it has none, so
+// every launcher can be tried.
 func (g *game) giveAmmo() {
-	a, ok := launcherAmmo[g.weapon.Which]
-	if f := g.findAmmo(); ok && (f == nil || !rogue.Launches(g.weapon.Which, f)) {
+	a := slices.IndexFunc(rogue.Weapons, func(w rogue.WeaponKind) bool { return slices.Contains(w.Launchers, rogue.Weapons[g.weapon.Which].ID) })
+	if f := g.findAmmo(); a >= 0 && (f == nil || !rogue.Launches(g.weapon.Which, f)) {
 		g.debugWeapon(a)
 	}
 }

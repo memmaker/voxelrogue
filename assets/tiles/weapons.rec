@@ -1,5 +1,30 @@
-# weapons.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
-# (remap_weapons.sh). icon: cell of tiles16.png; -1: unassigned.
+# weapons.rec: the weapons, every one of them a record here and nowhere else (rogue/kinds.go
+# reads it); a new record is a new weapon. mktiles.py cuts the pictures onto tiles16.png
+# and fills in the icons, the remapper (remap_weapons.sh) re-maps them; every other field
+# is yours. icon: cell of tiles16.png; -1: unassigned. picture: the source picture (an
+# animation strip's first 16px frame). Dice are Rogue's.
+#
+#   kind      melee, launcher or projectile
+#   hands     1 or 2
+#   edge      sharp (thrown or shot, it sticks) or blunt (it bounces and drops)
+#   reach     melee: blocks, plus the target's size      swing: ticks between blows
+#   damage    dice wielded                                thrown: dice thrown, or shot from its launcher
+#   missile   yes: flies well thrown (Rogue's ISMISSL)
+#   launcher  a projectile's launcher (one line each)
+#   action    a launcher's: bow (held to draw), crossbow (spanned with R), sling (whirled)
+#   speed     a launcher's blocks per tick at full power; draw: a bow's ticks to a full draw;
+#             charge: a crossbow's ticks to span a chamber; magazine: its chambers; cooldown: ticks between shots
+#   fly       how it flies thrown or shot: tumble (end over end, the default), spear (tip first, rolling),
+#             tip (its mesh, the tip at the point), cube (its mesh, resting flat)
+#   mesh      a glb file (assets/meshes, tools/mkmeshes made them): a projectile's model, the sling's rest and whirl
+#   sweeps    yes: the sideways swing strikes every monster in its arc
+#   backstab  the damage multiplier on a sleeping monster (2 without)
+#   worth     what the fighters guild pays
+#   sound     the sound event of a blow or a shot (assets/sounds/sounds.json)
+#   attack    a melee attack: a Better Combat animation (assets/bettercombat) and the fraction of it where the blow
+#             lands, one line each in the order of the attack patterns (sideways swing, overhead strike, stab:
+#             left button, right button, F); horizontal slashes alternate as a combo
+#   hand      first-person display: rotation, translation, scale (item/handheld without); hand3: third person's
 
 %rec: Tileset
 id: tiles16
@@ -13,12 +38,353 @@ gap_x: 0
 gap_y: 0
 
 %rec: weapon
-%doc: Weapons (mod pictures, 16px)
+%doc: Weapons
+
+id: mace
+name: mace
+picture: ../hobbit/maceBlackNumenorean.png
+icon: 8
+kind: melee
+hands: 1
+edge: blunt
+reach: 2.4
+swing: 12
+damage: 2d4
+thrown: 1d3
+worth: 8
+sound: weapon.swing.blunt
+attack: one_handed_slash_horizontal_right 0.5
+attack: one_handed_slash_horizontal_left 0.5
+attack: one_handed_slam 0.5
+
+id: long sword
+name: long sword
+picture: ../hobbit/swordGondor.png
+icon: 9
+kind: melee
+hands: 1
+edge: sharp
+reach: 2.4
+swing: 12
+damage: 1d10
+thrown: 1d2
+worth: 15
+sound: weapon.swing.blade
+attack: one_handed_slash_horizontal_right 0.5
+attack: one_handed_slash_horizontal_left 0.5
+attack: one_handed_slam 0.5
+attack: one_handed_stab 0.5
+
+id: long bow
+name: long bow
+picture: ../hobbit/bow_standby.png
+icon: 10
+kind: launcher
+hands: 2
+edge: blunt
+damage: 1d1
+thrown: 1d1
+action: bow
+speed: 3.0
+draw: 20
+worth: 75
+sound: weapon.shoot.bow
+
+id: arrow
+name: arrow
+picture: ../hobbit/arrow.png
+icon: 11
+kind: projectile
+hands: 1
+edge: sharp
+damage: 1d1
+thrown: 1d6
+missile: yes
+launcher: long bow
+fly: tip
+mesh: ../meshes/arrow.glb
+worth: 1
+
+id: dagger
+name: dagger
+picture: ../hobbit/daggerGondor.png
+icon: 12
+kind: melee
+hands: 1
+edge: sharp
+reach: 2.0
+swing: 8
+damage: 1d6
+thrown: 1d4
+missile: yes
+backstab: 5
+worth: 2
+sound: weapon.swing.blade
+attack: one_handed_slash_horizontal_right 0.5
+attack: one_handed_slash_horizontal_left 0.5
+attack: one_handed_stab 0.5
+
+id: rock
+name: rock
+picture: ../hobbit/flint.png
+icon: 13
+kind: projectile
+hands: 1
+edge: blunt
+damage: 1d2
+thrown: 1d4
+missile: yes
+launcher: sling
+fly: cube
+mesh: ../meshes/stone.glb
+worth: 1
+
+id: two handed sword
+name: two handed sword
+picture: ../hobbit/swordDolAmroth.png
+icon: 14
+kind: melee
+hands: 2
+edge: sharp
+reach: 3.2
+swing: 18
+damage: 3d6
+thrown: 1d2
+worth: 30
+sound: weapon.swing.blade
+attack: two_handed_slash_horizontal_right 0.5
+attack: two_handed_slash_horizontal_left 0.5
+attack: two_handed_slash_vertical_right 0.5
+attack: two_handed_slash_vertical_left 0.5
+attack: two_handed_stab_left 0.5
 
 id: sling
 name: sling
-icon: 67
+picture: ../weapons/sling.png
+icon: 15
+kind: launcher
+hands: 1
+edge: blunt
+damage: 0d0
+thrown: 0d0
+action: sling
+speed: 3.1
+mesh: ../meshes/sling_rest.glb
+mesh: ../meshes/sling_swinging.glb
+worth: 1
+sound: weapon.shoot.sling
 
-id: sling_model
-name: sling (model texture)
-icon: 68
+id: dart
+name: dart
+picture: ../hobbit/tauredainDart.png
+icon: 16
+kind: projectile
+hands: 1
+edge: sharp
+damage: 1d1
+thrown: 1d3
+missile: yes
+fly: tip
+mesh: ../meshes/arrow.glb
+worth: 1
+
+id: crossbow
+name: crossbow
+picture: ../hobbit/ironCrossbow.png
+icon: 17
+kind: launcher
+hands: 2
+edge: blunt
+damage: 1d1
+thrown: 1d1
+action: crossbow
+speed: 3.15
+charge: 25
+magazine: 1
+worth: 15
+sound: weapon.shoot.crossbow
+hand: -90 0 -55 1.13 3.2 1.13 0.68 0.68 0.68
+
+id: crossbow bolt
+name: crossbow bolt
+picture: ../hobbit/crossbowBolt.png
+icon: 18
+kind: projectile
+hands: 1
+edge: sharp
+damage: 1d2
+thrown: 1d10
+missile: yes
+launcher: crossbow
+launcher: chain crossbow
+fly: tip
+mesh: ../meshes/arrow.glb
+worth: 1
+
+id: spear
+name: spear
+picture: ../hobbit/spearGondor.png
+icon: 19
+kind: melee
+hands: 1
+edge: sharp
+reach: 4.8
+swing: 13
+damage: 1d8
+thrown: 1d6
+missile: yes
+fly: spear
+worth: 2
+sound: weapon.swing.blade
+attack: one_handed_stab 0.5
+
+id: axe
+name: axe
+picture: ../hobbit/axeDwarven.png
+icon: 20
+kind: melee
+hands: 1
+edge: sharp
+reach: 2.4
+swing: 12
+damage: 1d6
+thrown: 1d4
+missile: yes
+sweeps: yes
+worth: 8
+sound: weapon.swing.blade
+attack: one_handed_slash_horizontal_right 0.3
+attack: one_handed_slash_horizontal_left 0.3
+attack: one_handed_slam 0.5
+
+id: halberd
+name: halberd
+picture: ../hobbit/halberdMithril.png
+icon: 21
+kind: melee
+hands: 2
+edge: sharp
+reach: 5.0
+swing: 18
+damage: 2d6
+thrown: 1d3
+fly: spear
+worth: 20
+sound: weapon.swing.blade
+attack: two_handed_slash_horizontal_right 0.5
+attack: two_handed_slash_horizontal_left 0.5
+attack: two_handed_slash_vertical_right 0.5
+attack: two_handed_stab_right 0.5
+hand3: 5 270 -40 0 2 2 1.7 1.7 0.85
+
+id: maul
+name: maul
+picture: ../hobbit/hammerDwarven.png
+icon: 22
+kind: melee
+hands: 2
+edge: blunt
+reach: 3.2
+swing: 18
+damage: 2d8
+thrown: 1d2
+worth: 20
+sound: weapon.swing.blunt
+attack: two_handed_slash_horizontal_right 0.5
+attack: two_handed_slash_horizontal_left 0.5
+attack: two_handed_slam_heavy 0.5
+
+id: battle axe
+name: battle axe
+picture: ../hobbit/battleaxeDwarven.png
+icon: 23
+kind: melee
+hands: 2
+edge: sharp
+reach: 3.2
+swing: 18
+damage: 3d5
+thrown: 1d2
+sweeps: yes
+worth: 25
+sound: weapon.swing.blade
+attack: two_handed_slash_horizontal_right 0.5
+attack: two_handed_spin 0.5
+attack: two_handed_slash_vertical_right 0.5
+attack: two_handed_slash_vertical_left 0.5
+
+id: chain crossbow
+name: chain crossbow
+picture: ../hobbit/urukCrossbow.png
+icon: 24
+kind: launcher
+hands: 2
+edge: blunt
+damage: 1d1
+thrown: 1d1
+action: crossbow
+speed: 3.15
+charge: 38
+magazine: 3
+cooldown: 8
+worth: 40
+sound: weapon.shoot.crossbow
+hand: -90 0 -55 1.13 3.2 1.13 0.68 0.68 0.68
+
+%rec: frame
+%doc: Weapon pictures in use (<weapon>_pulling_0..2 while a bow is drawn or a crossbow spanned, <weapon>_arrow a spanned crossbow)
+
+id: long bow_pulling_0
+name: long bow (pulling 0)
+picture: ../hobbit/bow_pulling_0.png
+icon: 25
+
+id: long bow_pulling_1
+name: long bow (pulling 1)
+picture: ../hobbit/bow_pulling_1.png
+icon: 26
+
+id: long bow_pulling_2
+name: long bow (pulling 2)
+picture: ../hobbit/bow_pulling_2.png
+icon: 27
+
+id: crossbow_pulling_0
+name: crossbow (pulling 0)
+picture: ../hobbit/ironCrossbow_pull_0.png
+icon: 28
+
+id: crossbow_pulling_1
+name: crossbow (pulling 1)
+picture: ../hobbit/ironCrossbow_pull_1.png
+icon: 29
+
+id: crossbow_pulling_2
+name: crossbow (pulling 2)
+picture: ../hobbit/ironCrossbow_pull_2.png
+icon: 30
+
+id: crossbow_arrow
+name: crossbow (loaded)
+picture: ../hobbit/ironCrossbow_pull_2.png
+icon: 30
+
+id: chain crossbow_pulling_0
+name: chain crossbow (pulling 0)
+picture: ../hobbit/urukCrossbow_pull_0.png
+icon: 31
+
+id: chain crossbow_pulling_1
+name: chain crossbow (pulling 1)
+picture: ../hobbit/urukCrossbow_pull_1.png
+icon: 32
+
+id: chain crossbow_pulling_2
+name: chain crossbow (pulling 2)
+picture: ../hobbit/urukCrossbow_pull_2.png
+icon: 33
+
+id: chain crossbow_arrow
+name: chain crossbow (loaded)
+picture: ../hobbit/urukCrossbow_pull_2.png
+icon: 33

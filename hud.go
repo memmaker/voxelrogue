@@ -142,11 +142,6 @@ func (g *game) tickHUD() {
 	}
 }
 
-// armorSets are the VoxelHobbit armour textures (hobbit/armor/<set>_1.png
-// the chest and boots, _2.png the leggings) the inventory's hero wears
-// for each armour kind: the sets of gear.rec's armour icons.
-var armorSets = [rogue.MaxArmors]string{"dunlending", "ranger", "corsair", "near_harad", "chainmail", "dale", "rohan", "iron"}
-
 // loadNRGBA reads a png.
 func loadNRGBA(path string) (*image.NRGBA, error) {
 	f, err := os.Open(path)
@@ -171,8 +166,8 @@ func (g *game) armorLayers() []guientity.Armor {
 	if g.armor == nil {
 		return nil
 	}
-	name := rogue.ArmorNames[g.armor.Which]
-	l1, l2 := g.layers[armorSets[g.armor.Which]+"_1"], g.layers[armorSets[g.armor.Which]+"_2"]
+	kind := rogue.Armors[g.armor.Which] // its skin: hobbit/armor/<skin>_1.png the chest and boots, _2.png the leggings
+	name, l1, l2 := kind.ID, g.layers[kind.Skin+"_1"], g.layers[kind.Skin+"_2"]
 	layers := [4]*image.NRGBA{nil, l1, l2, l1}
 	var out []guientity.Armor
 	for piece, id := range g.worn[name] {
@@ -212,8 +207,8 @@ func (g *game) setupGUI(jar, hobbit string) error {
 		return err
 	}
 	g.layers = map[string]*image.NRGBA{}
-	for _, set := range armorSets {
-		for _, l := range []string{set + "_1", set + "_2"} {
+	for _, a := range rogue.Armors {
+		for _, l := range []string{a.Skin + "_1", a.Skin + "_2"} {
 			if g.layers[l], err = loadNRGBA(filepath.Join(hobbit, "armor", l+".png")); err != nil {
 				return err
 			}
@@ -402,8 +397,8 @@ func (g *game) drawHUD(fbW, fbH int) {
 	if g.showDebug {
 		g.debug.show("debug", func() *image.NRGBA {
 			ls := []line{{"Debug: take a weapon  (letter: take   Esc/F9: close)", white}, {"", white}}
-			for i := 0; i < rogue.MaxWeapons; i++ {
-				ls = append(ls, line{fmt.Sprintf("%c) %s", 'a'+i, rogue.WeaponNames[i]), cyan})
+			for i, w := range rogue.Weapons {
+				ls = append(ls, line{fmt.Sprintf("%c) %s", 'a'+i, w.Name), cyan})
 			}
 			return textImage(ls, panelBG)
 		}, center(fbW), middle(fbH), s, fbW, fbH)

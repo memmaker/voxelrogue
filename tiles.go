@@ -10,8 +10,6 @@ import (
 	"slices"
 
 	"fmt"
-	geo "github.com/memmaker/voxellib/importer/cuboid"
-	"github.com/memmaker/voxellib/ui/guientity"
 	"image"
 	"image/draw"
 	"image/png"
@@ -20,6 +18,10 @@ import (
 	"strconv"
 	"strings"
 
+	geo "github.com/memmaker/voxellib/importer/cuboid"
+	"github.com/memmaker/voxellib/ui/guientity"
+	"github.com/memmaker/voxelrogue/rogue"
+
 	"github.com/memmaker/voxellib/voxel/respack"
 )
 
@@ -27,7 +29,7 @@ import (
 // records) and cuts every assigned id's tile out of the sheet; a record's
 // w and h crop a sprite smaller than the cell.
 func loadTiles(recPath string) (map[string]image.Image, error) {
-	recs, err := readRecs(recPath)
+	recs, err := rogue.ReadRecs(recPath)
 	if err != nil {
 		return nil, err
 	}
@@ -73,38 +75,6 @@ func loadTiles(recPath string) (map[string]image.Image, error) {
 	return tiles, nil
 }
 
-// readRecs reads a rec file's records (field: value lines, blank lines
-// between records, "%rec" the record's type).
-func readRecs(recPath string) ([]map[string]string, error) {
-	data, err := os.ReadFile(recPath)
-	if err != nil {
-		return nil, err
-	}
-	var recs []map[string]string
-	rec := map[string]string{}
-	flush := func() {
-		if len(rec) > 0 {
-			recs, rec = append(recs, rec), map[string]string{}
-		}
-	}
-	for _, line := range strings.Split(string(data), "\n") {
-		switch {
-		case strings.HasPrefix(line, "%rec:"):
-			flush()
-			rec["%rec"] = strings.TrimSpace(line[5:])
-		case strings.TrimSpace(line) == "":
-			flush()
-		case line[0] == '%' || line[0] == '#':
-		default:
-			if k, v, ok := strings.Cut(line, ":"); ok {
-				rec[k] = strings.TrimSpace(v)
-			}
-		}
-	}
-	flush()
-	return recs, nil
-}
-
 // meshSlots are gear.rec's armour mesh fields, in guientity piece order.
 var meshSlots = [4]string{"helmet", "chest", "leggings", "boots"}
 
@@ -113,11 +83,11 @@ var meshSlots = [4]string{"helmet", "chest", "leggings", "boots"}
 // Epic Knights models): the armour meshes by id, and each armour's
 // mesh ids by slot.
 func loadMeshes(dir string) (map[string]guientity.Armor, map[string][4]string, error) {
-	gear, err := readRecs(filepath.Join(dir, "gear.rec"))
+	gear, err := rogue.ReadRecs(filepath.Join(dir, "gear.rec"))
 	if err != nil || len(gear) == 0 || gear[0]["meshes"] == "" {
 		return nil, nil, err
 	}
-	recs, err := readRecs(filepath.Join(dir, gear[0]["meshes"]))
+	recs, err := rogue.ReadRecs(filepath.Join(dir, gear[0]["meshes"]))
 	if err != nil {
 		return nil, nil, err
 	}
