@@ -135,7 +135,26 @@ func (g *game) itemStack(s *inventory.Stack) ui.ItemStack {
 	if o == nil {
 		return ui.ItemStack{}
 	}
-	return ui.ItemStack{Icon: g.icon(spriteFor(g.rg, o)), Count: o.Count, Tooltip: []string{g.rg.Name(o)}}
+	tip := []string{g.rg.Name(o)}
+	switch o.Type { // the lore lines: a weapon's damage dice, an armour's class (lower is better)
+	case rogue.Weapon:
+		d := "Damage " + o.Damage
+		if o.HurlDmg != o.Damage {
+			if o.Launch >= 0 {
+				d += ", fired " + o.HurlDmg
+			} else {
+				d += ", thrown " + o.HurlDmg
+			}
+		}
+		tip = append(tip, d)
+	case rogue.Armor:
+		ac := rogue.ArmorClass[o.Which] // the plain kind's class until the enchantment is known
+		if o.Flags&rogue.IsKnow != 0 {
+			ac = o.AC
+		}
+		tip = append(tip, fmt.Sprintf("Armor class %d", ac))
+	}
+	return ui.ItemStack{Icon: g.icon(spriteFor(g.rg, o)), Count: o.Count, Tooltip: tip}
 }
 
 // slotIcon is an empty slot's icon: the sprite's shape in the colour of
