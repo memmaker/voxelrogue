@@ -155,19 +155,18 @@ func (s *attackStack) transform(b *animBone) { s.c.transform(b) }
 // --- The attack itself ---
 
 // startAttack plays the next attack of the combo of the weapon's attack
-// pattern (patterns) over length ticks, landing its hit at the upswing
+// pattern (presetFor) over length ticks, landing its hit at the upswing
 // on a monster within reach; false if the weapon has no such pattern.
 func (g *game) startAttack(length int, reach float64, pattern int) bool {
 	w := g.meleeItem()
-	p := presetFor(w)
-	if p == nil { // no Better Combat attacks: Minecraft's swing, hitting at once
+	pats := presetFor(w)
+	if pats == nil { // no Better Combat attacks: Minecraft's swing, hitting at once
 		if pattern > 0 {
 			return false
 		}
 		g.swing, g.hitIn, g.hitReach = swingTicks, 1, reach
 		return true
 	}
-	pats := patterns(p)
 	if pattern >= len(pats) {
 		return false
 	}

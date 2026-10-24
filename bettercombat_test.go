@@ -146,14 +146,14 @@ func TestHand(t *testing.T) {
 	}
 }
 
-// TestPresets checks the weapon kinds' attacks against their files: a
-// one-handed weapon's, a two-handed one's, and the kinds with the vanilla
-// swing (launchers, missiles).
+// TestPresets checks the weapon kinds' attacks against weapons.rec, the
+// upswings from its animation records: a one-handed weapon's, a two-handed
+// one's, and the kinds with the vanilla swing (launchers, missiles).
 func TestPresets(t *testing.T) {
 	want := map[string]string{
-		"axe":            "[{one_handed_slash_horizontal_right 0.3} {one_handed_slash_horizontal_left 0.3} {one_handed_slam 0.5}]",
-		"battle axe":     "[{two_handed_slash_horizontal_right 0.5} {two_handed_spin 0.5} {two_handed_slash_vertical_right 0.5} {two_handed_slash_vertical_left 0.5}]",
-		"spear":          "[{one_handed_stab 0.5}]",
+		"axe":            "[[{one_handed_slash_horizontal_right 0.5} {one_handed_slash_horizontal_left 0.5}] [{one_handed_slam 0.5}]]",
+		"battle axe":     "[[{two_handed_slash_horizontal_right 0.5} {two_handed_spin 0.5}] [{two_handed_slash_vertical_right 0.5} {two_handed_slash_vertical_left 0.5}]]",
+		"spear":          "[[{one_handed_stab 0.5}]]",
 		"long bow":       "[]",
 		"chain crossbow": "[]",
 		"dart":           "[]",
@@ -277,9 +277,8 @@ func TestCrossbowReload(t *testing.T) {
 	}
 }
 
-// TestPatterns splits the attacks into the patterns bound to the left
-// button, the right button and F, in the weapon list's order: swing,
-// overhead, stab; the horizontal slashes of a swing alternate.
+// TestPatterns reads the patterns bound to the left button, the right
+// button and F (attack_1..3): the horizontal slashes of a swing alternate.
 func TestPatterns(t *testing.T) {
 	want := map[string]string{
 		"dagger":     "[[one_handed_slash_horizontal_right one_handed_slash_horizontal_left] [one_handed_stab]]",
@@ -290,7 +289,7 @@ func TestPatterns(t *testing.T) {
 	}
 	for k, w := range want {
 		var got [][]string
-		for _, pat := range patterns(rogue.Weapons[rogue.WeaponID(k)].Attacks) {
+		for _, pat := range rogue.Weapons[rogue.WeaponID(k)].Attacks {
 			var names []string
 			for _, a := range pat {
 				names = append(names, a.Anim)

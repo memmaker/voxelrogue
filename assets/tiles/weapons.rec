@@ -21,9 +21,9 @@
 #   backstab  the damage multiplier on a sleeping monster (2 without)
 #   worth     what the fighters guild pays
 #   sound     the sound event of a blow or a shot (assets/sounds/sounds.json)
-#   attack    a melee attack: a Better Combat animation (assets/bettercombat) and the fraction of it where the blow
-#             lands, one line each in the order of the attack patterns (sideways swing, overhead strike, stab:
-#             left button, right button, F); horizontal slashes alternate as a combo
+#   attack_1  a melee attack on the left button: a Better Combat animation (assets/bettercombat; animations.rec
+#             gives its upswing); several lines are a combo, played in turn
+#   attack_2  the same on the right button;  attack_3: on F
 #   hand      first-person display: rotation, translation, scale (item/handheld without); hand3: third person's
 
 %rec: Tileset
@@ -43,7 +43,7 @@ gap_y: 0
 id: mace
 name: mace
 picture: ../hobbit/maceBlackNumenorean.png
-icon: 8
+icon: 23
 kind: melee
 hands: 1
 edge: blunt
@@ -53,9 +53,9 @@ damage: 2d4
 thrown: 1d3
 worth: 8
 sound: weapon.swing.blunt
-attack: one_handed_slash_horizontal_right 0.5
-attack: one_handed_slash_horizontal_left 0.5
-attack: one_handed_slam 0.5
+attack_1: one_handed_slash_horizontal_right
+attack_1: one_handed_slash_horizontal_left
+attack_2: one_handed_slam
 
 id: long sword
 name: long sword
@@ -70,10 +70,10 @@ damage: 1d10
 thrown: 1d2
 worth: 15
 sound: weapon.swing.blade
-attack: one_handed_slash_horizontal_right 0.5
-attack: one_handed_slash_horizontal_left 0.5
-attack: one_handed_slam 0.5
-attack: one_handed_stab 0.5
+attack_1: one_handed_slash_horizontal_right
+attack_1: one_handed_slash_horizontal_left
+attack_2: one_handed_slam
+attack_3: one_handed_stab
 
 id: long bow
 name: long bow
@@ -120,9 +120,9 @@ missile: yes
 backstab: 5
 worth: 2
 sound: weapon.swing.blade
-attack: one_handed_slash_horizontal_right 0.5
-attack: one_handed_slash_horizontal_left 0.5
-attack: one_handed_stab 0.5
+attack_1: one_handed_slash_horizontal_right
+attack_1: one_handed_slash_horizontal_left
+attack_2: one_handed_stab
 
 id: rock
 name: rock
@@ -152,11 +152,11 @@ damage: 3d6
 thrown: 1d2
 worth: 30
 sound: weapon.swing.blade
-attack: two_handed_slash_horizontal_right 0.5
-attack: two_handed_slash_horizontal_left 0.5
-attack: two_handed_slash_vertical_right 0.5
-attack: two_handed_slash_vertical_left 0.5
-attack: two_handed_stab_left 0.5
+attack_1: two_handed_slash_horizontal_right
+attack_1: two_handed_slash_horizontal_left
+attack_2: two_handed_slash_vertical_right
+attack_2: two_handed_slash_vertical_left
+attack_3: two_handed_stab_left
 
 id: sling
 name: sling
@@ -236,7 +236,7 @@ missile: yes
 fly: spear
 worth: 2
 sound: weapon.swing.blade
-attack: one_handed_stab 0.5
+attack_1: one_handed_stab
 
 id: axe
 name: axe
@@ -253,9 +253,9 @@ missile: yes
 sweeps: yes
 worth: 8
 sound: weapon.swing.blade
-attack: one_handed_slash_horizontal_right 0.3
-attack: one_handed_slash_horizontal_left 0.3
-attack: one_handed_slam 0.5
+attack_1: one_handed_slash_horizontal_right
+attack_1: one_handed_slash_horizontal_left
+attack_2: one_handed_slam
 
 id: halberd
 name: halberd
@@ -271,10 +271,10 @@ thrown: 1d3
 fly: spear
 worth: 20
 sound: weapon.swing.blade
-attack: two_handed_slash_horizontal_right 0.5
-attack: two_handed_slash_horizontal_left 0.5
-attack: two_handed_slash_vertical_right 0.5
-attack: two_handed_stab_right 0.5
+attack_1: two_handed_slash_horizontal_right
+attack_1: two_handed_slash_horizontal_left
+attack_2: two_handed_slash_vertical_right
+attack_3: two_handed_stab_right
 hand3: 5 270 -40 0 2 2 1.7 1.7 0.85
 
 id: maul
@@ -290,14 +290,14 @@ damage: 2d8
 thrown: 1d2
 worth: 20
 sound: weapon.swing.blunt
-attack: two_handed_slash_horizontal_right 0.5
-attack: two_handed_slash_horizontal_left 0.5
-attack: two_handed_slam_heavy 0.5
+attack_1: two_handed_slash_horizontal_right
+attack_1: two_handed_slash_horizontal_left
+attack_2: two_handed_slam_heavy
 
 id: battle axe
 name: battle axe
 picture: ../hobbit/battleaxeDwarven.png
-icon: 23
+icon: 8
 kind: melee
 hands: 2
 edge: sharp
@@ -308,10 +308,10 @@ thrown: 1d2
 sweeps: yes
 worth: 25
 sound: weapon.swing.blade
-attack: two_handed_slash_horizontal_right 0.5
-attack: two_handed_spin 0.5
-attack: two_handed_slash_vertical_right 0.5
-attack: two_handed_slash_vertical_left 0.5
+attack_1: two_handed_slash_horizontal_right
+attack_1: two_handed_spin
+attack_2: two_handed_slash_vertical_right
+attack_2: two_handed_slash_vertical_left
 
 id: chain crossbow
 name: chain crossbow

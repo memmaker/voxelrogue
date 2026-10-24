@@ -16,11 +16,16 @@ import (
 )
 
 // Move is one attack of a melee weapon's pattern: a Better Combat
-// animation and the point of it where the blow lands.
+// animation and the point of it where the blow lands (the animation's
+// upswing, animations.rec).
 type Move struct {
 	Anim    string
 	Upswing float32
 }
+
+// MaxPatterns is how many attack patterns a weapon binds: attack_1 the
+// left button, attack_2 the right button, attack_3 F.
+const MaxPatterns = 3
 
 // Display is a Minecraft item display transform: rotation (degrees),
 // translation and scale.
@@ -50,7 +55,7 @@ type WeaponKind struct {
 	Backstab  float64  // the damage multiplier on a sleeping monster (2 without)
 	Worth     int      // what the fighters guild pays
 	Sound     string   // the sound event of a blow or a shot
-	Attacks   []Move
+	Attacks   [][]Move // the attack patterns in button order, each a combo; empty: the vanilla swing
 	Hand      *Display // first-person display (item/handheld without)
 	Hand3     *Display // Better Combat's third-person display
 }
@@ -67,11 +72,22 @@ var (
 	Armors  []ArmorKind
 )
 
-// LoadKinds reads dir's weapons.rec and gear.rec.
+// LoadKinds reads dir's weapons.rec (with animations.rec, its attacks'
+// upswings) and gear.rec.
 func LoadKinds(dir string) error {
 	recs, err := ReadRecs(filepath.Join(dir, "weapons.rec"))
 	if err != nil {
 		return err
+	}
+	anims, err := ReadRecs(filepath.Join(dir, "animations.rec"))
+	if err != nil {
+		return err
+	}
+	upswing := map[string]float64{}
+	for _, r := range anims {
+		if r["%rec"] == "animation" && r["id"] != "" {
+			upswing[r["id"]] = atof(r["upswing"])
+		}
 	}
 	Weapons = nil
 	for _, r := range recs {
@@ -89,9 +105,19 @@ func LoadKinds(dir string) error {
 		for _, m := range lines(r["mesh"]) {
 			w.Meshes = append(w.Meshes, filepath.Join(dir, m))
 		}
-		for _, a := range lines(r["attack"]) {
-			anim, up, _ := strings.Cut(a, " ")
-			w.Attacks = append(w.Attacks, Move{anim, float32(atof(up))})
+		for i := 1; i <= MaxPatterns; i++ {
+			var pat []Move
+			for _, anim := range lines(r[fmt.Sprintf("attack_%d", i)]) {
+				up, ok := upswing[anim]
+				if !ok {
+					return fmt.Errorf("weapons.rec: %s: attack_%d: no animation record %s", w.ID, i, anim)
+				}
+				pat = append(pat, Move{anim, float32(up)})
+			}
+			if pat == nil {
+				break // the patterns are bound in order
+			}
+			w.Attacks = append(w.Attacks, pat)
 		}
 		if w.Kind == "" || w.Name == "" || w.Damage == "" || w.Thrown == "" {
 			return fmt.Errorf("weapons.rec: %s: kind, name, damage and thrown are required", w.ID)

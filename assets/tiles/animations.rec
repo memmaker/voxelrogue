@@ -1,0 +1,43 @@
+# animations.rec: the Better Combat attack animations (assets/bettercombat) weapons.rec's attack_1..3 lines
+# name (rogue/kinds.go reads it); not a tile mapping, the remapper never opens it.
+#
+#   upswing   the fraction of the animation where the blow lands
+
+%rec: animation
+%doc: Attack animations (assets/bettercombat): upswing is the fraction of the animation where the blow lands
+
+id: one_handed_slam
+upswing: 0.5
+
+id: one_handed_slash_horizontal_left
+upswing: 0.5
+
+id: one_handed_slash_horizontal_right
+upswing: 0.5
+
+id: one_handed_stab
+upswing: 0.5
+
+id: two_handed_slam_heavy
+upswing: 0.5
+
+id: two_handed_slash_horizontal_left
+upswing: 0.5
+
+id: two_handed_slash_horizontal_right
+upswing: 0.5
+
+id: two_handed_slash_vertical_left
+upswing: 0.5
+
+id: two_handed_slash_vertical_right
+upswing: 0.5
+
+id: two_handed_spin
+upswing: 0.5
+
+id: two_handed_stab_left
+upswing: 0.5
+
+id: two_handed_stab_right
+upswing: 0.5
