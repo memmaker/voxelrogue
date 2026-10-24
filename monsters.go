@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/particles"
+	"image"
 	"math"
 	"slices"
 
@@ -51,6 +52,7 @@ type monsterState struct {
 	monsters  []*monster
 	modelRend *render.ModelRenderer
 	monSprite map[byte]monSprite
+	boxes     map[byte]monsterBox
 	dist      [dungeon.Lines][dungeon.Cols]int
 	distFrom  dungeon.Coord
 	distTick  int
@@ -265,7 +267,7 @@ func (g *game) tickMonsters() {
 		adjacent := abs(m.tile.X-h.X) <= 1 && abs(m.tile.Y-h.Y) <= 1 && m.tile != h && stepOK(l, m.tile, h)
 		if adjacent {
 			mx, _, mz := g.monsterPos(m, 0)
-			adjacent = math.Hypot(mx-g.player.X, mz-g.player.Z) <= monsterReach+float64(monsterLooks[m.letter].w)/2
+			adjacent = math.Hypot(mx-g.player.X, mz-g.player.Z) <= monsterReach+float64(g.box(m.letter).r)
 		}
 		if adjacent && m.attackCD > 0 {
 			continue
@@ -366,7 +368,7 @@ func (g *game) lean(m *monster, h dungeon.Coord) {
 	var tx, tz float64
 	if m.running && m.moveT == 0 && abs(m.tile.X-h.X) <= 1 && abs(m.tile.Y-h.Y) <= 1 && m.held == 0 {
 		cx, _, cz := tileCenter(g.slot(), m.tile)
-		half := float64(monsterLooks[m.letter].w) / 2
+		half := float64(g.box(m.letter).r)
 		ex, ez := math.Max(0, tileW/2.0-half-0.05), math.Max(0, tileD/2.0-half-0.05)
 		tx = math.Max(-ex, math.Min(ex, g.player.X-cx))
 		tz = math.Max(-ez, math.Min(ez, g.player.Z-cz))
@@ -578,8 +580,8 @@ func magic(o *rogue.Object) bool { return o != nil && o.Type == rogue.Stick }
 // near side of its box.
 func (g *game) impact(m *monster) (x, y, z float64) {
 	mx, my, mz := g.monsterPos(m, 0)
-	lk := monsterLooks[m.letter]
-	d := math.Max(0, math.Hypot(mx-g.cam.X, mz-g.cam.Z)-float64(lk.w)/2)
+	lk := g.box(m.letter)
+	d := math.Max(0, math.Hypot(mx-g.cam.X, mz-g.cam.Z)-float64(lk.r))
 	cp := math.Cos(g.cam.Pitch)
 	x, y, z = g.cam.X+math.Sin(g.cam.Yaw)*cp*d, g.cam.Y+math.Sin(g.cam.Pitch)*d, g.cam.Z-math.Cos(g.cam.Yaw)*cp*d
 	y = math.Min(math.Max(y, my+float64(lk.hover)), my+float64(lk.hover+lk.h))
@@ -603,7 +605,7 @@ func (g *game) monsterInFront(reach float64) *monster {
 		mx, _, mz := g.monsterPos(m, 0)
 		dx, dz := mx-p.X, mz-p.Z
 		d := math.Hypot(dx, dz)
-		if d > reach+float64(monsterLooks[m.letter].w)/2 || d < 1e-6 {
+		if d > reach+float64(g.box(m.letter).r) || d < 1e-6 {
 			continue
 		}
 		if (dx*fx+dz*fz)/d < 0.6 && d > 1 {
@@ -719,7 +721,7 @@ func (g *game) pushOutOfMonsters() {
 			continue
 		}
 		mx, _, mz := g.monsterPos(m, 0)
-		r := float64(monsterLooks[m.letter].w)/2 + p.Width/2 + 0.05
+		r := float64(g.box(m.letter).r) + p.Width/2 + 0.05
 		dx, dz := p.X-mx, p.Z-mz
 		if d := math.Hypot(dx, dz); d < r {
 			if m.disguise != nil { // walked into a mimic
@@ -742,6 +744,43 @@ func (g *game) pushOutOfMonsters() {
 // rows and their centre row, so the creature (not the cell) stands h high.
 type monSprite struct{ rows, cy float32 }
 
+// monsterScale makes the looks blocks, alike for all so they keep their
+// sizes relative to each other: the tallest, the dragon (2.8), fills a
+// room's headroom. Passages are lower; a giant's head goes into their
+// ceiling.
+const monsterScale = (roomHeight - 0.2) / 2.8
+
+// monsterBox is a monster's hit box from its sprite's opaque outline: h
+// high above hover, and r the half width the outline sweeps as the slab
+// turns to the hero, so the box covers it from every side.
+type monsterBox struct{ r, h, hover float32 }
+
+// outlineBox is the box of a 16px sprite whose opaque bounds are bb,
+// drawn with its opaque rows h high, turning about the cell's centre
+// column.
+func outlineBox(bb image.Rectangle, h, hover float32) monsterBox {
+	px := h / float32(max(bb.Dy(), 1))
+	return monsterBox{r: float32(max(8-bb.Min.X, bb.Max.X-8)) * px, h: h, hover: hover}
+}
+
+// box is a monster's hit box; a letter without a sprite gets the whole cell.
+func (g *game) box(letter byte) monsterBox {
+	if b, ok := g.boxes[letter]; ok {
+		return b
+	}
+	bb := image.Rect(0, 0, 16, 16)
+	if img := g.sprite["m:"+rogue.Monsters[letter-'A'].Name]; img != nil {
+		bb = bbox(img)
+	}
+	lk := monsterLooks[letter]
+	b := outlineBox(bb, lk.h*monsterScale, lk.hover)
+	if g.boxes == nil {
+		g.boxes = map[byte]monsterBox{}
+	}
+	g.boxes[letter] = b
+	return b
+}
+
 // drawMonsters draws every visible monster as its extruded sprite, a
 // billboard turned to the hero, its creature as tall as its look.
 func (g *game) drawMonsters(alpha float64) {
@@ -751,7 +790,7 @@ func (g *game) drawMonsters(alpha float64) {
 		if m.flags&rogue.IsInvis != 0 && !seeInvis || m.disguise != nil {
 			continue
 		}
-		lk := monsterLooks[m.letter]
+		lk := g.box(m.letter)
 		x, y, z := g.monsterPos(m, alpha)
 		y += float64(lk.hover)
 		if lk.hover > 0 {

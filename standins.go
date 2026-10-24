@@ -12,39 +12,40 @@ import (
 	"github.com/memmaker/voxelrogue/rogue"
 )
 
-// monsterLook is the stand-in shape of a monster.
+// monsterLook is a monster's size, relative to the others (monsterScale
+// makes it blocks); the width comes from its sprite (monsterBox).
 type monsterLook struct {
-	w, h  float32 // hit box in blocks; the sprite is drawn h high
+	h     float32 // the sprite's creature is drawn h * monsterScale high
 	hover float32 // floats this high above the floor
 }
 
 var monsterLooks = map[byte]monsterLook{
-	'A': {0.9, 0.6, 0},
-	'B': {0.6, 0.4, 1.4},
-	'C': {1.0, 2.2, 0},
-	'D': {2.0, 2.8, 0},
-	'E': {0.7, 0.7, 0.9},
-	'F': {0.9, 1.0, 0},
-	'G': {0.6, 1.0, 0},
-	'H': {0.8, 1.6, 0},
-	'I': {0.8, 1.9, 0},
-	'J': {0.7, 0.8, 0},
-	'K': {0.6, 1.1, 0},
-	'L': {0.5, 0.9, 0},
-	'M': {1.0, 1.0, 0},
-	'N': {0.6, 1.7, 0},
-	'O': {0.9, 1.8, 0},
-	'P': {1.6, 2.4, 0},
-	'Q': {0.6, 1.0, 0.5},
-	'R': {1.0, 1.0, 0},
-	'S': {0.9, 0.4, 0},
-	'T': {1.3, 2.6, 0},
-	'U': {1.4, 2.4, 0},
-	'V': {0.8, 1.9, 0},
-	'W': {0.8, 1.9, 0.2},
-	'X': {1.2, 1.2, 0},
-	'Y': {1.3, 2.4, 0},
-	'Z': {0.8, 1.8, 0},
+	'A': {0.6, 0},
+	'B': {0.4, 1.4},
+	'C': {2.2, 0},
+	'D': {2.8, 0},
+	'E': {0.7, 0.9},
+	'F': {1.0, 0},
+	'G': {1.0, 0},
+	'H': {1.6, 0},
+	'I': {1.9, 0},
+	'J': {0.8, 0},
+	'K': {1.1, 0},
+	'L': {0.9, 0},
+	'M': {1.0, 0},
+	'N': {1.7, 0},
+	'O': {1.8, 0},
+	'P': {2.4, 0},
+	'Q': {1.0, 0.5},
+	'R': {1.0, 0},
+	'S': {0.4, 0},
+	'T': {2.6, 0},
+	'U': {2.4, 0},
+	'V': {1.9, 0},
+	'W': {1.9, 0.2},
+	'X': {1.2, 0},
+	'Y': {2.4, 0},
+	'Z': {1.8, 0},
 }
 
 // boxModel is an axis-aligned box w wide, h high, standing on the origin,

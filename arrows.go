@@ -115,14 +115,14 @@ type arrowTarget struct {
 
 func (t arrowTarget) Frame() (x, y, z, yaw float64) {
 	x, y, z = t.g.monsterPos(t.m, 0)
-	return x, y + float64(monsterLooks[t.m.letter].hover), z, 0
+	return x, y + float64(t.g.box(t.m.letter).hover), z, 0
 }
 
 func (t arrowTarget) Box() collide.AABB {
 	x, y, z, _ := t.Frame()
-	lk := monsterLooks[t.m.letter]
-	r := float64(lk.w) / 2
-	return collide.AABB{MinX: x - r, MinY: y, MinZ: z - r, MaxX: x + r, MaxY: y + float64(lk.h), MaxZ: z + r}
+	b := t.g.box(t.m.letter)
+	r := float64(b.r)
+	return collide.AABB{MinX: x - r, MinY: y, MinZ: z - r, MaxX: x + r, MaxY: y + float64(b.h), MaxZ: z + r}
 }
 
 func (g *game) setupArrows() error {
