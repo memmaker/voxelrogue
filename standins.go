@@ -1,93 +1,50 @@
 package main
 
-// Stand-in art until the real monster models arrive: each monster is a
-// box with its Rogue letter on every side, sized roughly like the
-// creature. Objects use the CC0 RPG item sprites shipped with voxellib;
-// the mod weapons use their mods' MIT textures from assets/weapons.
+// Each monster's size and sprite name; objects' sprite names. The
+// pictures themselves come from the tile sheets (tiles.go).
 
 import (
 	"fmt"
 	"image"
-	"image/color"
-	"image/draw"
-	"image/png"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/model"
 	"github.com/memmaker/voxelrogue/rogue"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
 )
 
 // monsterLook is the stand-in shape of a monster.
 type monsterLook struct {
-	w, h  float32 // box size in blocks
+	w, h  float32 // hit box in blocks; the sprite is drawn h high
 	hover float32 // floats this high above the floor
-	col   color.NRGBA
 }
 
 var monsterLooks = map[byte]monsterLook{
-	'A': {0.9, 0.6, 0, color.NRGBA{120, 30, 20, 255}},
-	'B': {0.6, 0.4, 1.4, color.NRGBA{60, 50, 60, 255}},
-	'C': {1.0, 2.2, 0, color.NRGBA{150, 110, 60, 255}},
-	'D': {2.0, 2.8, 0, color.NRGBA{170, 30, 30, 255}},
-	'E': {0.7, 0.7, 0.9, color.NRGBA{230, 230, 240, 255}},
-	'F': {0.9, 1.0, 0, color.NRGBA{140, 60, 170, 255}},
-	'G': {0.6, 1.0, 0, color.NRGBA{90, 130, 60, 255}},
-	'H': {0.8, 1.6, 0, color.NRGBA{170, 90, 40, 255}},
-	'I': {0.8, 1.9, 0, color.NRGBA{200, 220, 255, 255}},
-	'J': {0.7, 0.8, 0, color.NRGBA{170, 140, 90, 255}},
-	'K': {0.6, 1.1, 0, color.NRGBA{110, 90, 70, 255}},
-	'L': {0.5, 0.9, 0, color.NRGBA{40, 150, 50, 255}},
-	'M': {1.0, 1.0, 0, color.NRGBA{140, 100, 50, 255}},
-	'N': {0.6, 1.7, 0, color.NRGBA{230, 160, 190, 255}},
-	'O': {0.9, 1.8, 0, color.NRGBA{80, 120, 50, 255}},
-	'P': {1.6, 2.4, 0, color.NRGBA{110, 40, 140, 255}},
-	'Q': {0.6, 1.0, 0.5, color.NRGBA{170, 50, 50, 255}},
-	'R': {1.0, 1.0, 0, color.NRGBA{170, 90, 30, 255}},
-	'S': {0.9, 0.4, 0, color.NRGBA{50, 140, 60, 255}},
-	'T': {1.3, 2.6, 0, color.NRGBA{70, 100, 60, 255}},
-	'U': {1.4, 2.4, 0, color.NRGBA{120, 80, 40, 255}},
-	'V': {0.8, 1.9, 0, color.NRGBA{60, 20, 40, 255}},
-	'W': {0.8, 1.9, 0.2, color.NRGBA{90, 90, 110, 255}},
-	'X': {1.2, 1.2, 0, color.NRGBA{100, 100, 100, 255}},
-	'Y': {1.3, 2.4, 0, color.NRGBA{235, 235, 245, 255}},
-	'Z': {0.8, 1.8, 0, color.NRGBA{100, 120, 90, 255}},
-}
-
-// letterTexture is a 32x32 face: the monster's colour with its letter.
-func letterTexture(letter byte, bg color.NRGBA) image.Image {
-	small := image.NewNRGBA(image.Rect(0, 0, 16, 16))
-	d := &font.Drawer{Dst: small, Src: image.NewUniform(color.NRGBA{255, 255, 255, 255}), Face: basicfont.Face7x13, Dot: fixed.P(4, 13)}
-	d.DrawString(string(letter))
-	img := image.NewNRGBA(image.Rect(0, 0, 32, 32))
-	draw.Draw(img, img.Bounds(), image.NewUniform(bg), image.Point{}, draw.Src)
-	edge := color.NRGBA{bg.R / 2, bg.G / 2, bg.B / 2, 255}
-	for i := 0; i < 32; i++ {
-		img.Set(i, 0, edge)
-		img.Set(i, 31, edge)
-		img.Set(0, i, edge)
-		img.Set(31, i, edge)
-	}
-	ink := color.NRGBA{20, 20, 20, 255}
-	if int(bg.R)+int(bg.G)+int(bg.B) < 380 {
-		ink = color.NRGBA{250, 240, 200, 255}
-	}
-	for y := 0; y < 16; y++ {
-		for x := 0; x < 16; x++ {
-			if _, _, _, a := small.At(x, y).RGBA(); a > 0 {
-				img.Set(x*2, y*2, ink)
-				img.Set(x*2+1, y*2, ink)
-				img.Set(x*2, y*2+1, ink)
-				img.Set(x*2+1, y*2+1, ink)
-			}
-		}
-	}
-	return img
+	'A': {0.9, 0.6, 0},
+	'B': {0.6, 0.4, 1.4},
+	'C': {1.0, 2.2, 0},
+	'D': {2.0, 2.8, 0},
+	'E': {0.7, 0.7, 0.9},
+	'F': {0.9, 1.0, 0},
+	'G': {0.6, 1.0, 0},
+	'H': {0.8, 1.6, 0},
+	'I': {0.8, 1.9, 0},
+	'J': {0.7, 0.8, 0},
+	'K': {0.6, 1.1, 0},
+	'L': {0.5, 0.9, 0},
+	'M': {1.0, 1.0, 0},
+	'N': {0.6, 1.7, 0},
+	'O': {0.9, 1.8, 0},
+	'P': {1.6, 2.4, 0},
+	'Q': {0.6, 1.0, 0.5},
+	'R': {1.0, 1.0, 0},
+	'S': {0.9, 0.4, 0},
+	'T': {1.3, 2.6, 0},
+	'U': {1.4, 2.4, 0},
+	'V': {0.8, 1.9, 0},
+	'W': {0.8, 1.9, 0.2},
+	'X': {1.2, 1.2, 0},
+	'Y': {1.3, 2.4, 0},
+	'Z': {0.8, 1.8, 0},
 }
 
 // boxModel is an axis-aligned box w wide, h high, standing on the origin,
@@ -119,26 +76,6 @@ func boxModel(name string, w, h float32, tex image.Image) *model.Model {
 }
 
 // spriteNames lists every sprite the game uses, loaded from itemDir.
-func spriteNames() []string {
-	names := []string{"misc_01", "misc_21", "misc_10", "valuable_02", "valuable_09", "amulet_01", "staff_01", "staff_10",
-		"sword_01", "sword_25", "sword_49", "mace_01", "spear_02", "bow_29", "bow_31", "bow_35",
-		"axe_29", "axe_35", "mace_05", "mace_04", "staff_26", "spear_09", "spear_05", "sword_44", "sword_18", "sword_30",
-		"sword_57", "mace_06", "gloves_04"}
-	for i := 1; i <= rogue.MaxArmors; i++ {
-		names = append(names, fmt.Sprintf("armor_%02d", i*3))
-	}
-	for i := 1; i <= 15; i++ {
-		names = append(names, fmt.Sprintf("scroll_%02d", i))
-	}
-	for i := 0; i < 24; i++ {
-		names = append(names, fmt.Sprintf("potion_%02d", i*3+1))
-	}
-	for i := 1; i <= 18; i++ {
-		names = append(names, fmt.Sprintf("ring_%02d", i))
-	}
-	return names
-}
-
 // weaponSprites by kind; the crossbow has no sprite of its own (in the
 // hand it is VoxelStealth's model), the missiles use the arrow sprites.
 var weaponSprites = [rogue.MaxWeapons]string{"mace_01", "sword_01", "w:bow", "bow_29", "sword_49", "valuable_02",
@@ -180,38 +117,4 @@ func spriteFor(g *rogue.Game, o *rogue.Object) string {
 		return "valuable_09"
 	}
 	return "amulet_01"
-}
-
-// loadSprites loads spriteNames from dir and every PNG of modDir as
-// "w:"+its base name.
-func loadSprites(dir, modDir string) ([]string, []image.Image, error) {
-	names := spriteNames()
-	paths := make([]string, len(names))
-	for i, n := range names {
-		paths[i] = filepath.Join(dir, n+".png")
-	}
-	mods, err := filepath.Glob(filepath.Join(modDir, "*.png"))
-	if err != nil || len(mods) == 0 {
-		return nil, nil, fmt.Errorf("no weapon sprites in %s", modDir)
-	}
-	for _, p := range mods {
-		n := "w:" + strings.TrimSuffix(filepath.Base(p), ".png")
-		names, paths = append(names, n), append(paths, p)
-		if base, ok := strings.CutSuffix(n, "_hand"); ok {
-			handSprites[base] = true
-		}
-	}
-	imgs := make([]image.Image, len(names))
-	for i, n := range names {
-		f, err := os.Open(paths[i])
-		if err != nil {
-			return nil, nil, err
-		}
-		imgs[i], err = png.Decode(f)
-		f.Close()
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: %w", n, err)
-		}
-	}
-	return names, imgs, nil
 }

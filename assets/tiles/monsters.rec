@@ -1,0 +1,120 @@
+# monsters.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
+# (remap_monsters.sh). icon: cell of tiles16.png; -1: unassigned.
+
+%rec: Tileset
+id: tiles16
+name: VoxelRogue 16px tiles
+file: tiles16.png
+tile_w: 16
+tile_h: 16
+off_x: 0
+off_y: 0
+gap_x: 0
+gap_y: 0
+
+%rec: monster
+%doc: Monsters
+
+id: giant ant
+name: giant ant
+icon: 116
+
+id: bat
+name: bat
+icon: 117
+
+id: centaur
+name: centaur
+icon: 118
+
+id: dragon
+name: dragon
+icon: 119
+
+id: floating eye
+name: floating eye
+icon: 120
+
+id: violet fungi
+name: violet fungi
+icon: 121
+
+id: gnome
+name: gnome
+icon: 122
+
+id: hobgoblin
+name: hobgoblin
+icon: 123
+
+id: invisible stalker
+name: invisible stalker
+icon: 124
+
+id: jackal
+name: jackal
+icon: 125
+
+id: kobold
+name: kobold
+icon: 126
+
+id: leprechaun
+name: leprechaun
+icon: 127
+
+id: mimic
+name: mimic
+icon: 128
+
+id: nymph
+name: nymph
+icon: 129
+
+id: orc
+name: orc
+icon: 130
+
+id: purple worm
+name: purple worm
+icon: 131
+
+id: quasit
+name: quasit
+icon: 132
+
+id: rust monster
+name: rust monster
+icon: 133
+
+id: snake
+name: snake
+icon: 134
+
+id: troll
+name: troll
+icon: 135
+
+id: umber hulk
+name: umber hulk
+icon: 136
+
+id: vampire
+name: vampire
+icon: 137
+
+id: wraith
+name: wraith
+icon: 138
+
+id: xorn
+name: xorn
+icon: 139
+
+id: yeti
+name: yeti
+icon: 140
+
+id: zombie
+name: zombie
+icon: 141

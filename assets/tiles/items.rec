@@ -1,0 +1,392 @@
+# items.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
+# (remap_items.sh). icon: cell of tiles8.png; -1: unassigned.
+
+%rec: Tileset
+id: tiles8
+name: VoxelRogue 8px tiles
+file: tiles8.png
+tile_w: 8
+tile_h: 8
+off_x: 0
+off_y: 0
+gap_x: 0
+gap_y: 0
+
+%rec: item
+%doc: Items
+
+id: misc_01
+name: misc 01
+icon: 329
+
+id: misc_21
+name: misc 21
+icon: 349
+
+id: misc_10
+name: misc 10
+icon: 338
+
+id: valuable_02
+name: valuable 02
+icon: 749
+
+id: valuable_09
+name: valuable 09
+icon: 756
+
+id: amulet_01
+name: amulet 01
+icon: 0
+
+id: staff_01
+name: staff 01
+icon: 658
+
+id: staff_10
+name: staff 10
+icon: 667
+
+id: sword_01
+name: sword 01
+icon: 688
+
+id: sword_25
+name: sword 25
+icon: 712
+
+id: sword_49
+name: sword 49
+icon: 736
+
+id: mace_01
+name: mace 01
+icon: 305
+
+id: spear_02
+name: spear 02
+icon: 639
+
+id: bow_29
+name: bow 29
+icon: 136
+
+id: bow_31
+name: bow 31
+icon: 138
+
+id: bow_35
+name: bow 35
+icon: 142
+
+id: axe_29
+name: axe 29
+icon: 83
+
+id: axe_35
+name: axe 35
+icon: 89
+
+id: mace_05
+name: mace 05
+icon: 309
+
+id: mace_04
+name: mace 04
+icon: 308
+
+id: staff_26
+name: staff 26
+icon: 683
+
+id: spear_09
+name: spear 09
+icon: 646
+
+id: spear_05
+name: spear 05
+icon: 642
+
+id: sword_44
+name: sword 44
+icon: 731
+
+id: sword_18
+name: sword 18
+icon: 705
+
+id: sword_30
+name: sword 30
+icon: 717
+
+id: sword_57
+name: sword 57
+icon: 744
+
+id: mace_06
+name: mace 06
+icon: 310
+
+id: gloves_04
+name: gloves 04
+icon: 176
+
+id: armor_03
+name: armor 03
+icon: 26
+
+id: armor_06
+name: armor 06
+icon: 29
+
+id: armor_09
+name: armor 09
+icon: 32
+
+id: armor_12
+name: armor 12
+icon: 35
+
+id: armor_15
+name: armor 15
+icon: 38
+
+id: armor_18
+name: armor 18
+icon: 41
+
+id: armor_21
+name: armor 21
+icon: 44
+
+id: armor_24
+name: armor 24
+icon: 47
+
+id: scroll_01
+name: scroll 01
+icon: 502
+
+id: scroll_02
+name: scroll 02
+icon: 503
+
+id: scroll_03
+name: scroll 03
+icon: 504
+
+id: scroll_04
+name: scroll 04
+icon: 505
+
+id: scroll_05
+name: scroll 05
+icon: 506
+
+id: scroll_06
+name: scroll 06
+icon: 507
+
+id: scroll_07
+name: scroll 07
+icon: 508
+
+id: scroll_08
+name: scroll 08
+icon: 509
+
+id: scroll_09
+name: scroll 09
+icon: 510
+
+id: scroll_10
+name: scroll 10
+icon: 511
+
+id: scroll_11
+name: scroll 11
+icon: 512
+
+id: scroll_12
+name: scroll 12
+icon: 513
+
+id: scroll_13
+name: scroll 13
+icon: 514
+
+id: scroll_14
+name: scroll 14
+icon: 515
+
+id: scroll_15
+name: scroll 15
+icon: 516
+
+id: potion_01
+name: potion 01
+icon: 379
+
+id: potion_04
+name: potion 04
+icon: 382
+
+id: potion_07
+name: potion 07
+icon: 385
+
+id: potion_10
+name: potion 10
+icon: 388
+
+id: potion_13
+name: potion 13
+icon: 391
+
+id: potion_16
+name: potion 16
+icon: 394
+
+id: potion_19
+name: potion 19
+icon: 397
+
+id: potion_22
+name: potion 22
+icon: 400
+
+id: potion_25
+name: potion 25
+icon: 403
+
+id: potion_28
+name: potion 28
+icon: 406
+
+id: potion_31
+name: potion 31
+icon: 409
+
+id: potion_34
+name: potion 34
+icon: 412
+
+id: potion_37
+name: potion 37
+icon: 415
+
+id: potion_40
+name: potion 40
+icon: 418
+
+id: potion_43
+name: potion 43
+icon: 421
+
+id: potion_46
+name: potion 46
+icon: 424
+
+id: potion_49
+name: potion 49
+icon: 427
+
+id: potion_52
+name: potion 52
+icon: 430
+
+id: potion_55
+name: potion 55
+icon: 433
+
+id: potion_58
+name: potion 58
+icon: 436
+
+id: potion_61
+name: potion 61
+icon: 439
+
+id: potion_64
+name: potion 64
+icon: 442
+
+id: potion_67
+name: potion 67
+icon: 445
+
+id: potion_70
+name: potion 70
+icon: 448
+
+id: ring_01
+name: ring 01
+icon: 454
+
+id: ring_02
+name: ring 02
+icon: 455
+
+id: ring_03
+name: ring 03
+icon: 456
+
+id: ring_04
+name: ring 04
+icon: 457
+
+id: ring_05
+name: ring 05
+icon: 458
+
+id: ring_06
+name: ring 06
+icon: 459
+
+id: ring_07
+name: ring 07
+icon: 460
+
+id: ring_08
+name: ring 08
+icon: 461
+
+id: ring_09
+name: ring 09
+icon: 462
+
+id: ring_10
+name: ring 10
+icon: 463
+
+id: ring_11
+name: ring 11
+icon: 464
+
+id: ring_12
+name: ring 12
+icon: 465
+
+id: ring_13
+name: ring 13
+icon: 466
+
+id: ring_14
+name: ring 14
+icon: 467
+
+id: ring_15
+name: ring 15
+icon: 468
+
+id: ring_16
+name: ring 16
+icon: 469
+
+id: ring_17
+name: ring 17
+icon: 470
+
+id: ring_18
+name: ring 18
+icon: 471

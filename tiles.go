@@ -1,0 +1,154 @@
+package main
+
+// Every 2D picture the game shows comes from the tile sheets in
+// assets/tiles, one per tile size, mapped by the remapper's rec files
+// (assets/tiles/mktiles.py builds them, remap_*.sh edits them): block
+// textures, item and weapon sprites, monster sprites.
+
+import (
+	"fmt"
+	"image"
+	"image/draw"
+	"image/png"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/memmaker/voxellib/voxel/respack"
+)
+
+// loadTiles reads a typed rec file (a Tileset record, then id/icon
+// records) and cuts every assigned id's tile out of the sheet; a record's
+// w and h crop a sprite smaller than the cell.
+func loadTiles(recPath string) (map[string]image.Image, error) {
+	data, err := os.ReadFile(recPath)
+	if err != nil {
+		return nil, err
+	}
+	var recs []map[string]string
+	rec := map[string]string{}
+	flush := func() {
+		if len(rec) > 0 {
+			recs, rec = append(recs, rec), map[string]string{}
+		}
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		switch {
+		case strings.HasPrefix(line, "%rec:"):
+			flush()
+			rec["%rec"] = strings.TrimSpace(line[5:])
+		case strings.TrimSpace(line) == "":
+			flush()
+		case line[0] == '%' || line[0] == '#':
+		default:
+			if k, v, ok := strings.Cut(line, ":"); ok {
+				rec[k] = strings.TrimSpace(v)
+			}
+		}
+	}
+	flush()
+	if len(recs) == 0 || recs[0]["%rec"] != "Tileset" {
+		return nil, fmt.Errorf("%s: no %%rec: Tileset record first", recPath)
+	}
+	ts := recs[0]
+	num := func(k string, def int) int {
+		if n, err := strconv.Atoi(ts[k]); err == nil {
+			return n
+		}
+		return def
+	}
+	f, err := os.Open(filepath.Join(filepath.Dir(recPath), ts["file"]))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	sheet, err := png.Decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", ts["file"], err)
+	}
+	tw, th, ox, oy, gx, gy := num("tile_w", 16), num("tile_h", 16), num("off_x", 0), num("off_y", 0), num("gap_x", 0), num("gap_y", 0)
+	cols := (sheet.Bounds().Dx() - ox + gx) / (tw + gx)
+	tiles := map[string]image.Image{}
+	for _, r := range recs[1:] {
+		icon, err := strconv.Atoi(r["icon"])
+		if r["id"] == "" || err != nil || icon < 0 {
+			continue
+		}
+		w, h := tw, th
+		if n, err := strconv.Atoi(r["w"]); err == nil {
+			w = n
+		}
+		if n, err := strconv.Atoi(r["h"]); err == nil {
+			h = n
+		}
+		x, y := ox+icon%cols*(tw+gx), oy+icon/cols*(th+gy)
+		img := image.NewNRGBA(image.Rect(0, 0, w, h))
+		draw.Draw(img, img.Bounds(), sheet, sheet.Bounds().Min.Add(image.Pt(x, y)), draw.Src)
+		tiles[r["id"]] = img
+	}
+	return tiles, nil
+}
+
+// sheetTextures serves the block textures of textures.rec and leaves
+// the rest (animated strips, anything unassigned) to the resource pack,
+// which also still supplies the block models.
+type sheetTextures struct {
+	pack  *respack.Pack
+	tiles map[string]image.Image
+}
+
+func (s *sheetTextures) tile(name string) image.Image {
+	if _, rel, ok := strings.Cut(name, ":"); ok { // minecraft:block/stone
+		name = rel
+	}
+	return s.tiles[name]
+}
+
+func (s *sheetTextures) Texture(name string) (image.Image, error) {
+	if img := s.tile(name); img != nil {
+		return img, nil
+	}
+	return s.pack.Texture(name)
+}
+
+func (s *sheetTextures) TextureFrames(name string) ([]image.Image, int, error) {
+	if img := s.tile(name); img != nil {
+		return []image.Image{img}, 0, nil
+	}
+	return s.pack.TextureFrames(name)
+}
+
+// loadSprites loads the item, weapon ("w:" + id) and monster ("m:" + id)
+// sprites of the tile directory's rec files.
+func loadSprites(dir string) ([]string, []image.Image, error) {
+	var names []string
+	var imgs []image.Image
+	for _, f := range []struct{ rec, prefix string }{{"items.rec", ""}, {"weapons.rec", "w:"}, {"weapons32.rec", "w:"}, {"monsters.rec", "m:"}} {
+		tiles, err := loadTiles(filepath.Join(dir, f.rec))
+		if err != nil {
+			return nil, nil, err
+		}
+		for id, img := range tiles {
+			n := f.prefix + id
+			names, imgs = append(names, n), append(imgs, img)
+			if base, ok := strings.CutSuffix(n, "_hand"); ok {
+				handSprites[base] = true
+			}
+		}
+	}
+	return names, imgs, nil
+}
+
+// bbox is the rows and columns an image's opaque pixels span.
+func bbox(img image.Image) image.Rectangle {
+	b, r := img.Bounds(), image.Rectangle{}
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if _, _, _, a := img.At(x, y).RGBA(); a > 0 {
+				r = r.Union(image.Rect(x, y, x+1, y+1))
+			}
+		}
+	}
+	return r
+}

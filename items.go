@@ -34,10 +34,10 @@ type itemState struct {
 	zapping    *rogue.Object
 }
 
-// setupArt loads the item sprites (voxellib's and the mod weapons'), the
-// crossbow model, the attack animations and the monster stand-ins.
-func (g *game) setupArt(spriteDir, weaponDir string) error {
-	names, imgs, err := loadSprites(spriteDir, weaponDir)
+// setupArt loads the item, weapon and monster sprites from the tile
+// sheets, the crossbow model and the attack animations.
+func (g *game) setupArt(tileDir string) error {
+	names, imgs, err := loadSprites(tileDir)
 	if err != nil {
 		return err
 	}
@@ -51,8 +51,15 @@ func (g *game) setupArt(spriteDir, weaponDir string) error {
 	if g.partRend, err = render.NewParticleRenderer(g.eng.Renderer); err != nil {
 		return err
 	}
-	if err := g.setupMonsterModels(); err != nil {
+	if g.modelRend, err = render.NewModelRenderer(g.eng.Renderer); err != nil {
 		return err
+	}
+	g.monSprite = map[byte]monSprite{}
+	for _, mk := range rogue.Monsters {
+		if img := g.sprite["m:"+mk.Name]; img != nil {
+			bb := bbox(img)
+			g.monSprite[mk.Letter] = monSprite{rows: float32(bb.Dy()), cy: float32(bb.Min.Y+bb.Max.Y) / 2}
+		}
 	}
 	if err := g.loadAnimations("assets/bettercombat"); err != nil {
 		return err

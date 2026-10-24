@@ -8,8 +8,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/particles"
 	"math"
+	"slices"
 
 	"github.com/memmaker/voxellib/voxel/render"
 	"github.com/memmaker/voxelrogue/dungeon"
@@ -48,11 +50,11 @@ type monster struct {
 type monsterState struct {
 	monsters  []*monster
 	modelRend *render.ModelRenderer
-	models    [26]int
+	monSprite map[byte]monSprite
 	dist      [dungeon.Lines][dungeon.Cols]int
 	distFrom  dungeon.Coord
 	distTick  int
-	insts     []render.ModelInstance
+	insts     []render.ItemPose
 }
 
 func (m *monster) kind() *rogue.MonsterKind { return &rogue.Monsters[m.letter-'A'] }
@@ -736,24 +738,12 @@ func (g *game) pushOutOfMonsters() {
 	}
 }
 
-// setupMonsterModels uploads a stand-in model per letter.
-func (g *game) setupMonsterModels() error {
-	var err error
-	if g.modelRend, err = render.NewModelRenderer(g.eng.Renderer); err != nil {
-		return err
-	}
-	for i := range g.models {
-		letter := byte('A' + i)
-		lk := monsterLooks[letter]
-		h, err := g.modelRend.Add(boxModel(fmt.Sprintf("monster_%c", letter), lk.w, lk.h, letterTexture(letter, lk.col)))
-		if err != nil {
-			return err
-		}
-		g.models[i] = h
-	}
-	return nil
-}
+// monSprite is how a monster's 16px sprite fills its look: the opaque
+// rows and their centre row, so the creature (not the cell) stands h high.
+type monSprite struct{ rows, cy float32 }
 
+// drawMonsters draws every visible monster as its extruded sprite, a
+// billboard turned to the hero, its creature as tall as its look.
 func (g *game) drawMonsters(alpha float64) {
 	g.insts = g.insts[:0]
 	seeInvis := g.seeInvis > 0 || g.wearing(rogue.RSeeInvis)
@@ -777,14 +767,46 @@ func (g *game) drawMonsters(alpha float64) {
 		if m.hurt > 0 {
 			x += 0.06 * math.Sin(float64(m.hurt)*2.5)
 		}
-		in := render.ModelInstance{Model: g.models[m.letter-'A'], X: x, Y: y, Z: z, Yaw: yaw}
-		if m.dying > 0 {
-			in.Tilt = math.Min(1, float64(m.dying)/10) * math.Pi / 2
-			in.TiltYaw = yaw + math.Pi
-			in.Fade = float32(math.Max(0, float64(m.dying-10)/14))
+		sp := g.monSprite[m.letter]
+		s := lk.h * 16 / max(sp.rows, 1)
+		tilt := float32(0)
+		if m.dying > 0 { // ponytail: tips over at the feet; the old dither fade needs a renderer fade
+			tilt = float32(math.Min(1, float64(m.dying)/10) * math.Pi / 2)
 		}
+		// the slab pivots at the feet; its centre sits where the creature's centre is h/2 up
+		mat := mgl32.HomogRotate3DY(float32(-yaw)).Mul4(mgl32.HomogRotate3DX(tilt)).
+			Mul4(mgl32.Translate3D(0, lk.h/2-s*(0.5-sp.cy/16), 0)).Mul4(mgl32.Scale3D(s, s, s))
+		in := render.ItemPose{Item: "m:" + rogue.Monsters[m.letter-'A'].Name, X: x, Y: y, Z: z, M: mat}
 		in.Sky, in.Block = g.light(x, y+float64(lk.h)/2, z)
 		g.insts = append(g.insts, in)
 	}
-	g.modelRend.Draw(&g.cam, g.insts)
+	g.itemRend.DrawPosed(&g.cam, g.insts)
+}
+
+// lineUp (debug, -mobs) stands one monster per letter on the hero's
+// room's nearest free tiles two or more away, asleep, and turns the
+// camera to the first.
+func (g *game) lineUp(letters string) {
+	l, h := g.level(), g.heroTile()
+	rm := l.RoomAt(h)
+	var free []dungeon.Coord
+	for y := rm.Pos.Y; y < rm.Pos.Y+rm.Max.Y; y++ {
+		for x := rm.Pos.X; x < rm.Pos.X+rm.Max.X; x++ {
+			c := dungeon.Coord{X: x, Y: y}
+			if d := max(abs(c.X-h.X), abs(c.Y-h.Y)); d >= 2 && l.At(c).Walkable() && g.monsterAt(c) == nil {
+				free = append(free, c)
+			}
+		}
+	}
+	slices.SortFunc(free, func(a, b dungeon.Coord) int {
+		return (a.X-h.X)*(a.X-h.X) + (a.Y-h.Y)*(a.Y-h.Y) - (b.X-h.X)*(b.X-h.X) - (b.Y-h.Y)*(b.Y-h.Y)
+	})
+	for i := 0; i < len(letters) && i < len(free); i++ {
+		m := g.newMonster(letters[i], free[i])
+		m.held = 1 << 30
+		if i == 0 {
+			x, _, z := tileCenter(g.depth, free[i])
+			g.cam.Yaw = math.Atan2(x-g.player.X, -(z - g.player.Z))
+		}
+	}
 }

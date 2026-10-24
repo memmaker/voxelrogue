@@ -1,0 +1,132 @@
+# weapons.rec: VoxelRogue tile mapping, built by mktiles.py, edited with the remapper
+# (remap_weapons.sh). icon: cell of tiles16.png; -1: unassigned.
+
+%rec: Tileset
+id: tiles16
+name: VoxelRogue 16px tiles
+file: tiles16.png
+tile_w: 16
+tile_h: 16
+off_x: 0
+off_y: 0
+gap_x: 0
+gap_y: 0
+
+%rec: weapon
+%doc: Weapons (mod sprites, 16px)
+
+id: bow
+name: bow
+icon: 142
+
+id: bow_pulling_0
+name: bow pulling 0
+icon: 143
+
+id: bow_pulling_1
+name: bow pulling 1
+icon: 144
+
+id: bow_pulling_2
+name: bow pulling 2
+icon: 145
+
+id: broadsword
+name: broadsword
+icon: 146
+
+id: chain_crossbow
+name: chain crossbow
+icon: 147
+
+id: chain_crossbow_arrow
+name: chain crossbow arrow
+icon: 148
+
+id: chain_crossbow_pulling_0
+name: chain crossbow pulling 0
+icon: 149
+
+id: chain_crossbow_pulling_1
+name: chain crossbow pulling 1
+icon: 150
+
+id: chain_crossbow_pulling_2
+name: chain crossbow pulling 2
+icon: 151
+
+id: crossbow
+name: crossbow
+icon: 152
+
+id: crossbow_arrow
+name: crossbow arrow
+icon: 153
+
+id: crossbow_pulling_0
+name: crossbow pulling 0
+icon: 154
+
+id: crossbow_pulling_1
+name: crossbow pulling 1
+icon: 155
+
+id: crossbow_pulling_2
+name: crossbow pulling 2
+icon: 156
+
+id: glaive
+name: glaive
+icon: 157
+
+id: great_bow
+name: great bow
+icon: 158
+
+id: great_bow_pulling_0
+name: great bow pulling 0
+icon: 159
+
+id: great_bow_pulling_1
+name: great bow pulling 1
+icon: 160
+
+id: great_bow_pulling_2
+name: great bow pulling 2
+icon: 161
+
+id: greatsword
+name: greatsword
+icon: 162
+
+id: halberd
+name: halberd
+icon: 163
+
+id: hatchet
+name: hatchet
+icon: 164
+
+id: rapier
+name: rapier
+icon: 165
+
+id: scythe
+name: scythe
+icon: 166
+
+id: sickle
+name: sickle
+icon: 167
+
+id: sling
+name: sling
+icon: 168
+
+id: sling_model
+name: sling model
+icon: 169
+
+id: war_spear
+name: war spear
+icon: 170
