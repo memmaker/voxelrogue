@@ -195,6 +195,10 @@ func (g *game) placeHero(c dungeon.Coord) {
 	g.clearLantern()
 }
 
+// sprintSpeed is the ground acceleration that makes a sprint twice the
+// walk once the character package's own 30% sprint factor is applied.
+const sprintSpeed = 0.1 * 2.05 / 1.3 // the 5% covers the drag model rounding the ratio to just under 2
+
 // tickHero moves the hero and runs the per-tick and per-turn rules.
 func (g *game) tickHero() {
 	p := g.player
@@ -233,6 +237,10 @@ func (g *game) tickHero() {
 		g.sprinting = false
 	}
 	in.Sprint = g.hasted > 0 || g.sprinting
+	p.MoveSpeed = 0 // walking: the player's 0.1 per tick
+	if in.Sprint {  // VoxelLib's sprint adds Minecraft's 30%; a Rogue sprint doubles the walk
+		p.MoveSpeed = sprintSpeed
+	}
 	if g.drawing || g.spanning { // Minecraft slows the hero while a bow is drawn; spanning a crossbow is a crawl too
 		in.Forward *= 0.2
 		in.Strafe *= 0.2
