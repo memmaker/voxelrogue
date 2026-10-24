@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/memmaker/voxellib/voxel/collide"
 	"image"
 	"math"
 	"testing"
@@ -152,5 +153,43 @@ func TestSleepers(t *testing.T) {
 	g.noise(x+1, z, 3)
 	if !near.running || far.running {
 		t.Fatalf("after a noise 3 blocks around: near awake %v, far awake %v", near.running, far.running)
+	}
+}
+
+// wallFrom is a world solid from block column z on.
+type wallFrom int
+
+func (w wallFrom) Solid(x, y, z int) bool { return z >= int(w) }
+
+// TestPushIntoWall: a monster's box pushes the hero back only as far as
+// the wall behind him lets his body go, never into it.
+func TestPushIntoWall(t *testing.T) {
+	names, imgs, err := loadSprites("assets/tiles")
+	if err != nil {
+		t.Skip(err)
+	}
+	g := &game{}
+	g.sprite = map[string]image.Image{}
+	for i, n := range names {
+		g.sprite[n] = imgs[i]
+	}
+	m := &monster{letter: 'E', st: rogue.Stats{HP: 1}}
+	g.monsters = []*monster{m}
+	g.player = character.New(0, 0, 0)
+	p := g.player
+	x, y, z := g.monsterPos(m, 0)
+	p.X, p.Y = x, y // in front of it, on its level
+	face := z + float64(g.box('E').d)
+	wall := int(math.Ceil(face + 1))
+	p.Z = float64(wall) - p.Width/2 - 0.05 // 0.05 short of the wall
+	m.leanZ = p.Z - 0.2 - face             // the face 0.2 into the hero (his r is 0.35)
+	g.pushOutOfMonsters(wallFrom(wall))
+	if want := float64(wall) - p.Width/2; math.Abs(p.Z-want) > 1e-9 || !collide.Fits(wallFrom(wall), p.Box()) {
+		t.Fatalf("pushed to z %.3f, want %.3f against the wall", p.Z, want)
+	}
+	p.Z = float64(wall) - p.Width/2 - 0.05
+	g.pushOutOfMonsters(wallFrom(1 << 30))
+	if want := face + m.leanZ + 0.35; math.Abs(p.Z-want) > 1e-9 {
+		t.Fatalf("no wall: pushed to z %.3f, want %.3f", p.Z, want)
 	}
 }

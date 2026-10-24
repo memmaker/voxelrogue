@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/particles"
+	"github.com/memmaker/voxellib/voxel/collide"
 	"image"
 	"math"
 	"slices"
@@ -790,8 +791,10 @@ func (g *game) monsterPos(m *monster, alpha float64) (x, y, z float64) {
 	return x, y, z
 }
 
-// pushOutOfMonsters keeps the hero's body out of the monsters' boxes.
-func (g *game) pushOutOfMonsters() {
+// pushOutOfMonsters keeps the hero's body out of the monsters' boxes,
+// backing him out through the world w only as far as its blocks let his
+// box go: a push can never put him into a wall.
+func (g *game) pushOutOfMonsters(w collide.Solids) {
 	p := g.player
 	r := p.Width/2 + 0.05 // ponytail: the hero as a circle; the box faces him, so his square's corners hardly matter
 	for _, m := range g.monsters {
@@ -814,10 +817,11 @@ func (g *game) pushOutOfMonsters() {
 		if d > 1e-6 {
 			ux, uz = (p.X-nx)/d, (p.Z-nz)/d
 		}
-		// back out, but never into a wall
-		x, z := nx+ux*r, nz+uz*r
-		if !g.terrain.Solid(int(math.Floor(x)), int(math.Floor(p.Y+0.5)), int(math.Floor(z))) {
-			p.X, p.Z = x, z
+		// back out, his box swept against the blocks, and only to where it
+		// fits (a box already in a block would sweep through it)
+		mx, _, mz := collide.Move(w, p.Box(), nx+ux*r-p.X, 0, nz+uz*r-p.Z)
+		if collide.Fits(w, p.Box().Offset(mx, 0, mz)) {
+			p.X, p.Z = p.X+mx, p.Z+mz
 		}
 	}
 }

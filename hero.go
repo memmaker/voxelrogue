@@ -251,7 +251,7 @@ func (g *game) tickHero() {
 		in.Sprint = false
 	}
 	p.Tick(g.terrain, in)
-	g.pushOutOfMonsters()
+	g.pushOutOfMonsters(g.terrain)
 	g.prevWalk = g.walkDist
 	if p.OnGround {
 		g.walkDist += math.Hypot(p.X-p.PrevX, p.Z-p.PrevZ)
