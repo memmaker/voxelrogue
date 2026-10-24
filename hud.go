@@ -20,6 +20,7 @@ import (
 	"github.com/memmaker/voxellib/platform/glfw"
 	"github.com/memmaker/voxellib/ui"
 	"github.com/memmaker/voxellib/ui/guicanvas"
+	"github.com/memmaker/voxellib/ui/guientity"
 	"github.com/memmaker/voxellib/voxel/render"
 	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
@@ -87,8 +88,8 @@ func (g *game) tickHUD() {
 }
 
 // setupGUI loads the GUI textures, font and language from the client jar
-// and makes the inventory's PlayerGUI: no crafting, no player model (the
-// game is first person), no hearts and shanks (the status line has them).
+// and makes the inventory's PlayerGUI: no crafting, no hearts and shanks
+// (the status line has them), the player in the jar's skin.
 func (g *game) setupGUI(jar string) error {
 	zr, err := zip.OpenReader(jar)
 	if err != nil {
@@ -106,7 +107,21 @@ func (g *game) setupGUI(jar string) error {
 	ctx.InWorld = true
 	g.pg = ui.NewPlayerGUI(ctx, g.inv, g.cont, g.itemStack)
 	g.pg.Keys = []int{ui.KeyE, ui.KeyTab, int(glfw.KeyI)}
-	g.pg.NoCrafting, g.pg.NoPreview, g.pg.HUD.State.Creative = true, true, true
+	g.pg.NoCrafting, g.pg.HUD.State.Creative = true, true
+	f, err := zr.Open("assets/minecraft/textures/entity/steve.png")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		return err
+	}
+	skin := image.NewNRGBA(img.Bounds())
+	draw.Draw(skin, skin.Rect, img, img.Bounds().Min, draw.Src)
+	g.pg.Model, g.pg.EquipAt = (&guientity.Player{Skin: skin}).Draw, rogueEquipAt
+	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["ring_01"]))
+	ctx.SetTexture("rogue:amulet_slot", slotIcon(g.sprite["amulet_01"]))
 	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
 	g.pg.OnClose = func() {
 		if g.prompt == 'i' {
