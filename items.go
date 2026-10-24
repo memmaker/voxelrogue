@@ -7,11 +7,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-gl/mathgl/mgl32"
+	"image"
 	"math"
 	"slices"
 	"strings"
 
+	"github.com/go-gl/mathgl/mgl32"
 	"github.com/memmaker/voxellib/voxel/render"
 	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
@@ -43,9 +44,9 @@ func (g *game) setupArt(spriteDir, weaponDir string) error {
 	if g.itemRend, err = render.NewItemRenderer(g.eng.Renderer, names, imgs); err != nil {
 		return err
 	}
-	g.com = map[string][2]float32{}
+	g.com, g.sprite = map[string][2]float32{}, map[string]image.Image{}
 	for i, n := range names {
-		g.com[n] = massCenter(imgs[i])
+		g.com[n], g.sprite[n] = massCenter(imgs[i]), imgs[i]
 	}
 	if g.partRend, err = render.NewParticleRenderer(g.eng.Renderer); err != nil {
 		return err
@@ -84,8 +85,96 @@ func isMagic(o *rogue.Object) bool {
 	return false
 }
 
+// pack is what the hero carries: the inventory's slots in order (the
+// equipment last), then the stack on the mouse.
+func (g *game) pack() []*rogue.Object {
+	var os []*rogue.Object
+	if g.inv == nil {
+		return nil
+	}
+	for i := range g.inv.Size() {
+		if o := obj(g.inv.Get(i)); o != nil {
+			os = append(os, o)
+		}
+	}
+	if o := obj(g.inv.Cursor); o != nil {
+		os = append(os, o)
+	}
+	return os
+}
+
+// give puts objects into the pack as they are, without a word.
+func (g *game) give(os ...*rogue.Object) {
+	for _, o := range os {
+		g.inv.Add(stackOf(o))
+	}
+}
+
 // packCount is the slots in use (a stack of a group takes one).
-func (g *game) packCount() int { return len(g.pack) }
+func (g *game) packCount() int { return len(g.pack()) }
+
+// place swaps o into slot i of the player inventory.
+func (g *game) place(o *rogue.Object, i int) {
+	p := g.inv
+	if o == nil || obj(p.Get(i)) == o {
+		return
+	}
+	for j := range p.Size() {
+		if obj(p.Get(j)) == o {
+			s := p.Get(j)
+			p.Set(j, p.Get(i))
+			p.Set(i, s)
+			return
+		}
+	}
+}
+
+// hold wields what the held hotbar slot has: a weapon in hand, a wand
+// held, anything else (or nothing) is bare hands.
+func (g *game) hold() {
+	o := obj(g.inv.Current())
+	g.zapping = nil
+	switch {
+	case o != nil && o.Type == rogue.Weapon:
+		if o != g.weapon {
+			g.wield(o)
+		}
+		return
+	case o != nil && o.Type == rogue.Stick:
+		g.zapping = o
+	}
+	g.weapon = nil
+}
+
+// heldUse is the held item right click uses: food, potions, scrolls,
+// armour and rings; nil for weapons, wands and nothing.
+func (g *game) heldUse() *rogue.Object {
+	if g.inv == nil {
+		return nil
+	}
+	o := obj(g.inv.Current())
+	if o == nil {
+		return nil
+	}
+	switch o.Type {
+	case rogue.Food, rogue.Potion, rogue.Scroll, rogue.Armor, rogue.Ring:
+		return o
+	}
+	return nil
+}
+
+// dropAll throws a whole object out of the inventory window onto the
+// floor.
+func (g *game) dropAll(o *rogue.Object) {
+	if o == nil {
+		return
+	}
+	g.removeFromPack(o, true)
+	h := g.heroTile()
+	g.floor = append(g.floor, &floorObj{o: o, tile: h})
+	g.lastTile = h
+	g.msg("Dropped " + lowerFirst(g.rg.Name(o)) + ".")
+}
 
 // pickUp takes whatever lies on the hero's square.
 func (g *game) pickUp() {
@@ -121,7 +210,7 @@ func (g *game) pickUp() {
 // of the wall is ready again.
 func (g *game) addPack(o *rogue.Object) bool {
 	p := o
-	for _, q := range g.pack {
+	for _, q := range g.pack() {
 		if rogue.Stacks(q, o) {
 			p = q
 			p.Count += o.Count
@@ -133,17 +222,20 @@ func (g *game) addPack(o *rogue.Object) bool {
 			g.msg("You can't carry anything else.")
 			return false
 		}
-		g.pack = append(g.pack, o)
+		if !g.inv.Add(stackOf(o)) {
+			g.msg("You can't carry anything else.")
+			return false
+		}
 	}
 	g.msg("You now have " + lowerFirst(g.rg.Name(p)) + fmt.Sprintf(" (%c).", g.packLetter(p)))
 	if g.weapon == nil && p.Type == rogue.Weapon && weaponItem[p.Which] != "" {
-		g.wield(p)
+		g.place(p, g.inv.Held)
 	}
 	return true
 }
 
 func (g *game) packLetter(o *rogue.Object) byte {
-	for i, p := range g.pack {
+	for i, p := range g.pack() {
 		if p == o {
 			return byte('a' + i)
 		}
@@ -156,12 +248,6 @@ func (g *game) removeFromPack(o *rogue.Object, all bool) {
 	if o.Count > 1 && !all {
 		o.Count--
 		return
-	}
-	for i, p := range g.pack {
-		if p == o {
-			g.pack = append(g.pack[:i], g.pack[i+1:]...)
-			break
-		}
 	}
 	if g.weapon == o {
 		g.weapon = nil
@@ -179,6 +265,14 @@ func (g *game) removeFromPack(o *rogue.Object, all bool) {
 	}
 	if o.Type == rogue.Amulet {
 		g.amulet = false
+	}
+	if obj(g.inv.Cursor) == o {
+		g.inv.Cursor = nil
+	}
+	for i := range g.inv.Size() {
+		if obj(g.inv.Get(i)) == o {
+			g.inv.Set(i, nil)
+		}
 	}
 }
 
@@ -223,11 +317,22 @@ func (g *game) useItem(o *rogue.Object) {
 	case rogue.Scroll:
 		g.read(o)
 	case rogue.Weapon:
-		g.wield(o)
-	case rogue.Armor:
-		g.wear(o)
+		g.place(o, g.inv.Held)
+	case rogue.Armor: // into the armour slot, which wears it
+		if g.armor != nil {
+			g.wear(o)
+		} else {
+			g.place(o, 36+equipArmor)
+		}
 	case rogue.Ring:
-		g.ringOnOff(o)
+		switch {
+		case g.inv.Equip[equipRingL] == nil:
+			g.place(o, 36+equipRingL)
+		case g.inv.Equip[equipRingR] == nil:
+			g.place(o, 36+equipRingR)
+		default:
+			g.ringOnOff(o)
+		}
 	case rogue.Stick:
 		g.zapping = o
 		g.msg("You hold " + lowerFirst(g.rg.Name(o)) + ". Right click zaps it; it strikes like a spear.")
@@ -477,7 +582,7 @@ func (g *game) read(o *rogue.Object) {
 		know = true
 		g.msg("This scroll is an identify scroll. Pick something to identify.")
 		g.prompt = 'i'
-		g.showInv = true
+		g.openInv()
 	case rogue.SScare:
 		g.msg("You hear maniacal laughter in the distance.")
 	case rogue.SGFind:
@@ -600,7 +705,7 @@ func (g *game) genocide(letter byte) {
 
 // findAmmo is the pack's ammunition for the wielded launcher, nil for none.
 func (g *game) findAmmo() *rogue.Object {
-	for _, o := range g.pack {
+	for _, o := range g.pack() {
 		if o.Type == rogue.Weapon && o != g.weapon && g.weapon != nil && rogue.Launches(g.weapon.Which, o) {
 			return o
 		}

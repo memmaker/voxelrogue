@@ -13,14 +13,14 @@ import (
 //
 //	WASD walk, mouse look, Space jump, LMB a melee weapon's first attack
 //	pattern or fire a launcher (hold to draw a bow; a spanned crossbow
-//	shoots), RMB the second pattern or zap a held wand, F the third
-//	pattern, T throw the wielded weapon, R span a crossbow,
-//	C search, < climb (with the Amulet), Tab/I inventory, M map, F1 help,
-//	F9 debug weapon menu, 3 next weapon, Esc release mouse (again: quit), R new game
-//	after death or victory.
+//	shoots), RMB the second pattern, zap a held wand or use the held
+//	food, potion, scroll, ring or armour, F the third pattern, T throw
+//	the wielded weapon, R span a crossbow, 1-9 and the wheel hold a
+//	hotbar slot, C search, < climb (with the Amulet), E/Tab/I inventory,
+//	M map, F1 help, F9 debug weapon menu, Esc release mouse (again:
+//	quit), R new game after death or victory.
 type inputState struct {
 	captured  bool
-	showInv   bool
 	showMap   bool
 	showHelp  bool
 	showDebug bool // F9: every weapon, to try them out
@@ -50,30 +50,23 @@ func (g *game) setupInput() {
 			}
 			return
 		}
-		if g.showDebug && k >= glfw.KeyA && k < glfw.KeyA+rogue.MaxWeapons {
-			g.debugWeapon(int(k - glfw.KeyA))
+		if g.pg.Key(int(k), int(a), int(m)) { // the inventory, its keys and the hotbar's
 			return
 		}
-		if g.showInv && k >= glfw.KeyA && k <= glfw.KeyW {
-			g.invKey(int(k-glfw.KeyA), m&glfw.ModShift != 0)
+		if g.showDebug && k >= glfw.KeyA && k < glfw.KeyA+rogue.MaxWeapons {
+			g.debugWeapon(int(k - glfw.KeyA))
 			return
 		}
 		switch k {
 		case glfw.KeyEscape:
 			switch {
-			case g.showInv || g.showMap || g.showHelp || g.showDebug:
-				g.showInv, g.showMap, g.showHelp, g.showDebug, g.detect = false, false, false, false, 0
-				if g.prompt == 'i' {
-					g.prompt = 0
-				}
+			case g.showMap || g.showHelp || g.showDebug:
+				g.showMap, g.showHelp, g.showDebug, g.detect = false, false, false, 0
 			case g.captured:
 				g.capture(false)
 			default:
 				w.SetShouldClose(true)
 			}
-		case glfw.KeyTab, glfw.KeyI:
-			g.showDebug = false
-			g.showInv = !g.showInv
 		case glfw.KeyM:
 			g.showMap = !g.showMap
 			g.detect = 0
@@ -81,13 +74,10 @@ func (g *game) setupInput() {
 			g.showHelp = !g.showHelp
 		case glfw.KeyF9:
 			g.showDebug = !g.showDebug
-			g.showInv = false
 		case glfw.KeyComma:
 			if m&glfw.ModShift != 0 && g.noCommand == 0 {
 				g.ascend()
 			}
-		case glfw.Key0 + 3:
-			g.nextWeapon()
 		case glfw.KeyT:
 			if g.attackCD == 0 && g.noCommand == 0 {
 				g.throwItem()
@@ -99,6 +89,9 @@ func (g *game) setupInput() {
 		}
 	})
 	g.win.SetMouseButtonCallback(func(w *glfw.Window, b glfw.MouseButton, a glfw.Action, m glfw.ModifierKey) {
+		if g.pg.Button(int(b), int(a), int(m)) {
+			return
+		}
 		if b == glfw.MouseButtonLeft && a == glfw.Release {
 			g.releaseDraw()
 			return
@@ -116,12 +109,22 @@ func (g *game) setupInput() {
 			g.startDraw()
 		case b == glfw.MouseButtonRight && g.zapping != nil && g.attackCD == 0:
 			g.zap(g.zapping)
+		case b == glfw.MouseButtonRight && g.heldUse() != nil && g.attackCD == 0:
+			g.useItem(g.heldUse())
+		}
+	})
+	g.win.SetScrollCallback(func(w *glfw.Window, dx, dy float64) {
+		if !g.dead && !g.won {
+			g.pg.Scroll(dx, dy)
 		}
 	})
 	lastX, lastY := g.win.GetCursorPos()
 	g.win.SetCursorPosCallback(func(w *glfw.Window, x, y float64) {
 		dx, dy := x-lastX, y-lastY
 		lastX, lastY = x, y
+		if g.pg.Cursor(x, y) {
+			return
+		}
 		if !g.captured || g.dead || g.won {
 			return
 		}
@@ -129,30 +132,6 @@ func (g *game) setupInput() {
 		g.cam.Yaw += dx * sens
 		g.cam.Pitch = math.Max(-1.55, math.Min(1.55, g.cam.Pitch-dy*sens))
 	})
-}
-
-// invKey handles a pack letter on the inventory screen: use it, or drop
-// it with Shift.
-func (g *game) invKey(i int, drop bool) {
-	if i >= len(g.pack) {
-		return
-	}
-	o := g.pack[i]
-	switch {
-	case g.prompt == 'i':
-		g.prompt = 0
-		g.identify(o)
-	case drop:
-		g.dropItem(o)
-	case g.noCommand > 0:
-		g.msg("You can't move.")
-		return
-	default:
-		g.useItem(o)
-	}
-	if g.prompt == 0 {
-		g.showInv = false
-	}
 }
 
 // debugWeapon puts a new, identified weapon of a kind into the pack
@@ -174,21 +153,20 @@ func (g *game) nextWeapon() {
 	}
 	o := rogue.NewWeapon(g.rng, which)
 	o.Flags |= rogue.IsKnow
-	for _, p := range g.pack {
+	for _, p := range g.pack() {
 		if p.Type == rogue.Weapon && p.Which == which {
 			o = p
 		}
 	}
-	if o != g.weapon && !slices.Contains(g.pack, o) {
-		if g.packCount() >= maxPack { // ponytail: a full pack swaps the fresh weapon in for the wielded one
-			g.pack[slices.Index(g.pack, g.weapon)] = o
-		} else {
-			g.pack = append(g.pack, o)
+	if !slices.Contains(g.pack(), o) {
+		if g.packCount() >= maxPack && g.weapon != nil { // ponytail: a full pack swaps the fresh weapon in for the wielded one
+			g.removeFromPack(g.weapon, true)
 		}
+		g.give(o)
 	}
-	g.weapon = o
+	g.place(o, g.inv.Held)
+	g.hold()
 	g.giveAmmo()
-	g.msg("You are now wielding " + lowerFirst(g.rg.Name(o)) + ".")
 }
 
 // launcherAmmo is what each launcher shoots.
@@ -225,7 +203,7 @@ func (g *game) key(k glfw.Key) bool {
 // moveInput reads the walking keys.
 func (g *game) moveInput() character.Input {
 	in := character.Input{Yaw: g.cam.Yaw, Pitch: g.cam.Pitch}
-	if g.dead || g.won || g.showInv || g.showDebug {
+	if g.dead || g.won || g.pg.IsOpen() || g.showDebug {
 		return in
 	}
 	if g.key(glfw.KeyW) {
@@ -245,7 +223,7 @@ func (g *game) moveInput() character.Input {
 }
 
 func (g *game) wantAttack(b glfw.MouseButton) bool {
-	return !g.automated && g.captured && !g.won && !g.showInv && !g.showDebug && g.win.GetMouseButton(b) == glfw.Press
+	return !g.automated && g.captured && !g.won && !g.pg.IsOpen() && !g.showDebug && g.win.GetMouseButton(b) == glfw.Press
 }
 
 // wantPattern is the melee attack pattern held down: 0 left button, 1
@@ -256,7 +234,7 @@ func (g *game) wantPattern() int {
 	case g.launcher():
 	case g.wantAttack(glfw.MouseButtonLeft):
 		return 0
-	case g.zapping == nil && g.wantAttack(glfw.MouseButtonRight):
+	case g.zapping == nil && g.heldUse() == nil && g.wantAttack(glfw.MouseButtonRight):
 		return 1
 	case g.key(glfw.KeyF):
 		return 2

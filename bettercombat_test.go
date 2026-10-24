@@ -241,10 +241,12 @@ func TestCrossbowReload(t *testing.T) {
 	g.weapon = &rogue.Object{Type: rogue.Weapon, Which: rogue.ChainCrossbow}
 	g.arrowObjs = map[*projectile.Arrow]*rogue.Object{}
 	g.player = &character.Character{}
+	g.resetInv()
+	g.give(g.weapon) // into the held slot
 	for range 9 {
 		b := rogue.NewWeapon(rand.New(rand.NewSource(1)), rogue.Bolt)
 		b.Count = 1
-		g.pack = append(g.pack, b)
+		g.give(b)
 	}
 	g.startDraw() // empty
 	if use, _ := g.handUse(0); len(g.arrowObjs) != 0 || use != useNone {
@@ -276,8 +278,8 @@ func TestCrossbowReload(t *testing.T) {
 	}
 	g.startDraw()
 	g.startDraw()
-	if len(g.chambers) != 1 || len(g.arrowObjs) != 2 || len(g.pack) != 6 {
-		t.Fatalf("second shot: %d chambers, %d bolts, %d in the pack", len(g.chambers), len(g.arrowObjs), len(g.pack))
+	if len(g.chambers) != 1 || len(g.arrowObjs) != 2 || g.packCount() != 7 { // six bolts and the crossbow
+		t.Fatalf("second shot: %d chambers, %d bolts, %d in the pack", len(g.chambers), len(g.arrowObjs), g.packCount())
 	}
 }
 

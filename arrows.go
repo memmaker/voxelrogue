@@ -232,7 +232,7 @@ func (g *game) tickDraw() {
 	if g.cooldown > 0 {
 		g.cooldown--
 	}
-	if !g.launcher() || g.dead || g.showInv || g.noCommand > 0 {
+	if !g.launcher() || g.dead || g.pg != nil && g.pg.IsOpen() || g.noCommand > 0 {
 		g.drawing, g.fireHeld, g.spanning, g.reload, g.sling = false, false, false, 0, slingAction{}
 		return
 	}

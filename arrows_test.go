@@ -18,7 +18,8 @@ func TestLaunchers(t *testing.T) {
 		g := &game{rng: rand.New(rand.NewSource(1))}
 		g.arrowObjs, g.player, g.rg = map[*projectile.Arrow]*rogue.Object{}, &character.Character{}, rogue.NewGame(g.rng)
 		g.weapon = rogue.NewWeapon(g.rng, which)
-		g.pack = []*rogue.Object{g.weapon}
+		g.resetInv()
+		g.give(g.weapon)
 		g.giveAmmo()
 		if isCrossbow(which) {
 			g.startReload()
@@ -35,7 +36,7 @@ func TestLaunchers(t *testing.T) {
 			g.tickDraw()
 		}
 		if len(g.arrowObjs) == 0 {
-			t.Errorf("weapon %d: nothing shot (pack %d)", which, len(g.pack))
+			t.Errorf("weapon %d: nothing shot (pack %d)", which, g.packCount())
 		}
 	}
 }
@@ -50,7 +51,8 @@ func TestThrowWeapon(t *testing.T) {
 	darts.Count = 3
 	dagger := rogue.NewWeapon(g.rng, rogue.Dagger)
 	mace := rogue.NewWeapon(g.rng, rogue.Mace)
-	g.pack = []*rogue.Object{darts, dagger, mace}
+	g.resetInv()
+	g.give(darts, dagger, mace)
 	g.weapon = darts
 	g.throwItem()
 	if darts.Count != 2 || g.weapon != darts || len(g.arrowObjs) != 1 {
@@ -59,8 +61,8 @@ func TestThrowWeapon(t *testing.T) {
 	g.weapon = dagger
 	g.throwItem()
 	g.throwItem() // bare hands
-	if g.weapon != nil || len(g.pack) != 2 || len(g.arrowObjs) != 2 {
-		t.Fatalf("dagger: wielding %v, pack %d, %d flying", g.weapon, len(g.pack), len(g.arrowObjs))
+	if g.weapon != nil || g.packCount() != 2 || len(g.arrowObjs) != 2 {
+		t.Fatalf("dagger: wielding %v, pack %d, %d flying", g.weapon, g.packCount(), len(g.arrowObjs))
 	}
 	g.addPack(dagger) // pulled back out of the wall: bare hands wield it
 	if g.weapon != dagger {

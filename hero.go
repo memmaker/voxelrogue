@@ -33,7 +33,6 @@ const (
 type heroState struct {
 	stats    rogue.Stats
 	maxStr   rogue.Str
-	pack     []*rogue.Object
 	weapon   *rogue.Object
 	armor    *rogue.Object
 	rings    [2]*rogue.Object
@@ -95,8 +94,10 @@ func (g *game) initHero() {
 	sling.Flags |= rogue.IsKnow
 	rocks := rogue.NewWeapon(g.rng, rogue.RockW)
 	rocks.Flags |= rogue.IsKnow
-	g.pack = []*rogue.Object{mace, bow, arrows, sling, rocks, mail, food}
-	g.weapon, g.armor = mace, mail
+	g.weapon, g.armor = mace, mail // before the slots, which then wield and wear nothing new
+	g.resetInv()
+	g.give(mace, bow, arrows, sling, rocks, mail, food)
+	g.place(mail, 36+equipArmor)
 }
 
 // enterLevel puts the hero on a level at a random spot (the start, and
@@ -577,13 +578,14 @@ func (g *game) totalWinner() {
 	g.won = true
 	g.winLoot = g.winLoot[:0]
 	gold := g.purse
-	for _, o := range g.pack {
+	for _, o := range g.pack() {
 		w := g.rg.Worth(o)
 		g.winLoot = append(g.winLoot, fmt.Sprintf("%c) %5d  %s", g.packLetter(o), w, g.rg.Name(o)))
 		g.purse += w
 	}
 	g.winLoot = append(g.winLoot, fmt.Sprintf("   %5d  Gold Pieces", gold))
-	g.showInv, g.showMap, g.showHelp, g.showDebug = false, false, false, false
+	g.closeInv()
+	g.showMap, g.showHelp, g.showDebug = false, false, false
 	g.capture(false)
 }
 
@@ -655,7 +657,7 @@ func (g *game) die(killer string) {
 	}
 	g.dead, g.killer = true, killer
 	g.stats.HP = 0
-	g.showInv = false
+	g.closeInv()
 	g.capture(false)
 }
 

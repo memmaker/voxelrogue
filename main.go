@@ -27,6 +27,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -53,6 +54,7 @@ func main() {
 	var (
 		seed    = flag.Int64("seed", 0, "dungeon seed (0 = random)")
 		libDir  = flag.String("voxellib", "../VoxelLib", "voxellib checkout (texture pack and item sprites)")
+		jar     = flag.String("jar", filepath.Join(os.Getenv("HOME"), "Library/Application Support/PrismLauncher/libraries/com/mojang/minecraft/1.7.10/minecraft-1.7.10-client.jar"), "client jar (GUI textures and font)")
 		shot    = flag.String("shot", "", "save a screenshot PNG at tick -shot-at and quit (never grabs input)")
 		shotAt  = flag.Int("shot-at", 120, "tick for -shot")
 		depth   = flag.Int("depth", 1, "debug: start on this level")
@@ -66,6 +68,7 @@ func main() {
 		zapKind = flag.Int("zap", -1, "debug: with -shot, hold a wand of this kind and zap it -zap-at ticks before the shot")
 		zapAt   = flag.Int("zap-at", 10, "debug: ticks before -shot to zap the -zap wand")
 		throwAt = flag.Int("throw", -1, "debug: with -shot, throw the wielded weapon (T) this many ticks before the shot")
+		inv     = flag.Bool("inv", false, "debug: with -shot, open the inventory screen with the mouse over the hotbar")
 		combo   = flag.Int("combo", 0, "debug: with -swing, the attack of the weapon's combo to play")
 		pattern = flag.Int("pattern", 0, "debug: with -swing, the weapon's attack pattern to play")
 		amulet  = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
@@ -143,22 +146,27 @@ func main() {
 	if err := g.setupArt(*libDir+"/assets/items", "assets/weapons"); err != nil {
 		log.Fatal(err)
 	}
+	if err := g.setupGUI(*jar); err != nil {
+		log.Fatal(err)
+	}
 	g.tp, g.animName, g.animAt = *tp, *anim, float32(*animAt)
 	if err := g.setupDebugView(); err != nil {
 		log.Fatal(err)
 	}
 	g.enterLevel(*depth)
 	if *wield >= 0 {
-		for _, o := range g.pack {
+		var w *rogue.Object
+		for _, o := range g.pack() {
 			if o.Type == rogue.Weapon && o.Which == *wield {
-				g.weapon = o
+				w = o
 			}
 		}
-		if g.weapon == nil || g.weapon.Which != *wield { // past the pack's limit
-			g.weapon = rogue.NewWeapon(g.rng, *wield)
-			g.weapon.Flags |= rogue.IsKnow
-			g.pack = append(g.pack, g.weapon)
+		if w == nil { // past the pack's limit
+			w = rogue.NewWeapon(g.rng, *wield)
+			w.Flags |= rogue.IsKnow
+			g.give(w)
 		}
+		g.place(w, g.inv.Held)
 		g.giveAmmo()
 	}
 	if *amulet {
@@ -173,7 +181,7 @@ func main() {
 	if *zapKind >= 0 {
 		w := &rogue.Object{Type: rogue.Stick, Which: *zapKind, Charges: 9}
 		g.addPack(w)
-		g.zapping = w
+		g.place(w, g.inv.Held)
 		g.zapShot = *shotAt - *zapAt
 	}
 	if *looseAt >= 0 {
@@ -181,6 +189,10 @@ func main() {
 	}
 	if *throwAt >= 0 {
 		g.throwShot = *shotAt - *throwAt
+	}
+	if *inv {
+		g.openInv()
+		g.pg.In.X, g.pg.In.Y = 141, 203 // over the first hotbar slot (1280x800), for the tooltip
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
 	if *look >= 0 {
@@ -215,6 +227,7 @@ type game struct {
 	fxState
 	combatState
 	hudState
+	invState
 	inputState
 	debugView
 
@@ -252,7 +265,8 @@ func (g *game) newGame(seed int64) {
 		g.stack = newAttackStack()
 	}
 	g.msgs, g.winLoot = nil, nil
-	g.showInv, g.showMap, g.showHelp, g.showDebug, g.prompt, g.detect = false, false, false, false, 0, 0
+	g.closeInv()
+	g.showMap, g.showHelp, g.showDebug, g.prompt, g.detect = false, false, false, 0, 0
 	g.initHero()
 	g.enterLevel(1)
 }
@@ -298,6 +312,9 @@ func (g *game) run(shotPath string, shotAt int) {
 		g.drawHand(alpha)
 		g.eng.Renderer.DrawCrosshair(float32(g.cam.Aspect))
 		g.drawHUD(fw, fh)
+		ww, wh := g.win.GetSize()
+		g.pg.HUD.State.Hidden = g.dead || g.won
+		g.pg.Draw(fw, fh, ww, wh, float32(alpha))
 		if capture {
 			if err := writePNG(shotPath, render.ReadFrame(fw, fh)); err != nil {
 				log.Print(err)

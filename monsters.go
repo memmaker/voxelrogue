@@ -481,7 +481,7 @@ func (g *game) monsterAttack(m *monster) {
 	case 'N':
 		var steal *rogue.Object
 		n := 0
-		for _, o := range g.pack {
+		for _, o := range g.pack() {
 			if o != g.armor && o != g.weapon && o != g.rings[0] && o != g.rings[1] && isMagic(o) {
 				if n++; rogue.Rnd(g.rng, n) == 0 {
 					steal = o

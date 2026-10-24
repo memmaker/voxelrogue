@@ -6,6 +6,7 @@ package main
 // when its text changes.
 
 import (
+	"archive/zip"
 	"fmt"
 	"image"
 	"image/color"
@@ -15,6 +16,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/memmaker/voxellib/i18n"
+	"github.com/memmaker/voxellib/platform/glfw"
+	"github.com/memmaker/voxellib/ui"
+	"github.com/memmaker/voxellib/ui/guicanvas"
 	"github.com/memmaker/voxellib/voxel/render"
 	"github.com/memmaker/voxelrogue/dungeon"
 	"github.com/memmaker/voxelrogue/rogue"
@@ -32,7 +37,9 @@ var helpLines = [][2]string{
 	{"Left mouse", "attack: the weapon's first pattern (sideways);"},
 	{"", "fire a launcher: hold to draw a bow (let go to shoot),"},
 	{"", "whirl the sling, shoot a spanned crossbow"},
-	{"Right mouse", "the weapon's second pattern (overhead); zap held wand"},
+	{"Right mouse", "the weapon's second pattern (overhead); zap held wand;"},
+	{"", "use the held food, potion, scroll, ring or armor"},
+	{"1-9, wheel", "hold a hotbar slot: a weapon is wielded, a wand held"},
 	{"F", "the weapon's third attack pattern"},
 	{"T", "throw the wielded weapon"},
 	{"R", "span a crossbow (slow going)"},
@@ -40,11 +47,11 @@ var helpLines = [][2]string{
 	{"Walk down", "the stairs to descend"},
 	{"< (Shift+,)", "on the stairs: climb, once you have the Amulet"},
 	{"C (hold)", "search for secret doors and traps"},
-	{"Tab / I", "inventory: letter uses, Shift+letter drops"},
+	{"E / Tab / I", "inventory: drag items; the left column wears the"},
+	{"", "Amulet, armor and rings; drop outside the window"},
 	{"M", "map"},
 	{"F1", "this help"},
 	{"F9", "debug: take any weapon"},
-	{"3", "wield the next weapon in the pack"},
 	{"F9", "debug: take any weapon"},
 	{"Esc", "close panel / release mouse / quit"},
 }
@@ -55,10 +62,10 @@ type panel struct {
 }
 
 type hudState struct {
-	msgs                                                      []string
-	msgAge                                                    int
-	status, message, inv, mapP, help, debug, tint, tomb, winP panel
-	winLoot                                                   []string // total_winner's worth table
+	msgs                                                 []string
+	msgAge                                               int
+	status, message, mapP, help, debug, tint, tomb, winP panel
+	winLoot                                              []string // total_winner's worth table
 }
 
 func (g *game) msg(s string) {
@@ -74,6 +81,62 @@ func (g *game) tickHUD() {
 	if g.msgAge++; g.msgAge > msgTicks {
 		g.msgs = nil
 	}
+	if g.pg != nil {
+		g.pg.Update()
+	}
+}
+
+// setupGUI loads the GUI textures, font and language from the client jar
+// and makes the inventory's PlayerGUI: no crafting, no player model (the
+// game is first person), no hearts and shanks (the status line has them).
+func (g *game) setupGUI(jar string) error {
+	zr, err := zip.OpenReader(jar)
+	if err != nil {
+		return fmt.Errorf("GUI assets (-jar): %w", err)
+	}
+	cat := i18n.New()
+	if err := cat.LoadFS(zr); err != nil {
+		return err
+	}
+	cat.SetLanguage("en_US")
+	ctx, err := ui.NewContext(guicanvas.New(), zr, cat)
+	if err != nil {
+		return err
+	}
+	ctx.InWorld = true
+	g.pg = ui.NewPlayerGUI(ctx, g.inv, g.cont, g.itemStack)
+	g.pg.Keys = []int{ui.KeyE, ui.KeyTab, int(glfw.KeyI)}
+	g.pg.NoCrafting, g.pg.NoPreview, g.pg.HUD.State.Creative = true, true, true
+	g.pg.OnOpen = func() { g.showDebug = false; g.capture(false) }
+	g.pg.OnClose = func() {
+		if g.prompt == 'i' {
+			g.prompt = 0
+		}
+		g.capture(true)
+	}
+	g.icons = map[string]*ui.Sprite{}
+	return nil
+}
+
+func (g *game) openInv() {
+	if g.pg != nil {
+		g.pg.Open()
+	}
+}
+
+func (g *game) closeInv() {
+	if g.pg != nil {
+		g.pg.Close()
+	}
+}
+
+// hotbarH is the hotbar's height in framebuffer pixels (22 GUI px).
+func (g *game) hotbarH(fbW int) int {
+	if g.pg == nil {
+		return 0
+	}
+	ww, _ := g.win.GetSize()
+	return 22 * g.pg.Ctx.Scale * fbW / max(1, ww)
 }
 
 // show draws a panel, rebuilding its image when key changed.
@@ -168,7 +231,7 @@ func (g *game) drawHUD(fbW, fbH int) {
 	st := g.statusLine()
 	g.status.show(st, func() *image.NRGBA {
 		return textImage([]line{{st, yellow}}, color.NRGBA{0, 0, 0, 160})
-	}, center(fbW), func(w, h int) int { return fbH - h - 6*s }, s, fbW, fbH)
+	}, center(fbW), func(w, h int) int { return fbH - h - 6*s - g.hotbarH(fbW) }, s, fbW, fbH) // above the hotbar
 
 	if g.showMap || g.wizard && g.automated {
 		lines := g.mapLines()
@@ -179,12 +242,6 @@ func (g *game) drawHUD(fbW, fbH int) {
 			}
 			return textImage(ls, color.NRGBA{0, 0, 0, 200})
 		}, center(fbW), middle(fbH), max(1, min(fbW/(80*7+20), fbH/(25*14+20))), fbW, fbH)
-	}
-
-	if g.showInv {
-		ls := g.invLines()
-		key := fmt.Sprint(ls)
-		g.inv.show(key, func() *image.NRGBA { return textImage(ls, panelBG) }, center(fbW), middle(fbH), s, fbW, fbH)
 	}
 
 	if g.showHelp {
@@ -251,40 +308,6 @@ func (g *game) statusLine() string {
 	hunger := [...]string{"", "  Hungry", "  Weak", "  Fainting"}[min(g.hungry, 3)]
 	return fmt.Sprintf("Level: %d  Gold: %-5d  Hp: %d(%d)  Str: %s(%s)  Ac: %d  Exp: %d/%d%s",
 		g.depth, g.purse, st.HP, st.MaxHP, str(st.Str), str(g.maxStr), g.armorClass(), st.Lvl, st.Exp, hunger)
-}
-
-func (g *game) invLines() []line {
-	title := "Inventory  (letter: use   Shift+letter: drop   Esc: close)"
-	if g.prompt == 'i' {
-		title = "Identify what?"
-	}
-	ls := []line{{title, white}, {"", white}}
-	if len(g.pack) == 0 {
-		ls = append(ls, line{"You are empty handed.", grey})
-	}
-	for i, o := range g.pack {
-		s := fmt.Sprintf("%c) %s", 'a'+i, g.rg.Name(o))
-		c := cyan
-		switch {
-		case o == g.weapon:
-			s += " (weapon in hand)"
-			c = yellow
-		case o == g.armor:
-			s += " (being worn)"
-			c = yellow
-		case o == g.rings[0]:
-			s += " (on left hand)"
-			c = yellow
-		case o == g.rings[1]:
-			s += " (on right hand)"
-			c = yellow
-		case o == g.zapping:
-			s += " (held)"
-			c = yellow
-		}
-		ls = append(ls, line{s, c})
-	}
-	return ls
 }
 
 // mapLines is the ASCII map of what the hero has seen.
