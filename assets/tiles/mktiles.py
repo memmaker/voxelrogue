@@ -4,9 +4,10 @@ rec files that say which cell each game id uses. The sheets hold only
 what the game draws; ids are the game's own names (a potion by its
 colour, a ring by its stone, a wall by where it stands):
 
-  tiles8.png   items.rec     %rec: item    rings, food, wands, gold, the Amulet (written whole)
+  tiles8.png   items.rec     %rec: item    rings, wands, gold, the Amulet (written whole)
   tiles16.png  gear.rec      %rec: gear    the armour: hand-written records, each naming its picture
                potions.rec   %rec: potion  Rogue's potion colours: hand-written, each an rgb tinting the potion sprite
+               food.rec      %rec: food    the food ration (bread) and the slime-mold (assets/food)
                scrolls.rec   %rec: scroll  the scroll looks (assets/scrolls, BigWander's Art of Scrolls), a game's scroll kinds draw theirs from them
                weapons.rec   %rec: weapon  the weapons and their pictures in use (%rec: frame): hand-written, each naming its picture
                textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
@@ -156,7 +157,7 @@ def item(rid, sprite, name=None):
 items = []
 for j, s in enumerate(golist(rules, 'stones')):  # a ring looks like its stone
     items.append(item(s + ' ring', f'ring_{j % 18 + 1:02d}'))
-items += [item('food ration', 'misc_01'), item('slime-mold', 'misc_21'), item('staff', 'staff_01'), item('wand', 'staff_10'),
+items += [item('staff', 'staff_01'), item('wand', 'staff_10'),
           item('gold', 'valuable_09'), item('amulet of yendor', 'amulet_01', 'the Amulet of Yendor')]
 t8.save()
 t8.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
@@ -198,7 +199,10 @@ for m in re.finditer(r'^# tile \d+ \((.*?)\).*\n\{\n((?:  .{16}\n){16})\}', txt,
 SCROLLS = os.path.join(ROOT, 'assets', 'scrolls')
 scrolls = [(f'scroll {i}', f'scroll (look {i})', t16.add('s:' + f, rgba(os.path.join(SCROLLS, f))))
            for i, f in enumerate(sorted(f for f in os.listdir(SCROLLS) if f.endswith('.png')), 1)]
+FOOD = os.path.join(ROOT, 'assets', 'food')
+food = [(rid, rid, t16.add('f:' + f, rgba(os.path.join(FOOD, f + '.png')))) for rid, f in [('food ration', 'bread'), ('slime-mold', 'slime-mold')]]
 t16.save()
+t16.rec(os.path.join(HERE, 'food.rec'), 'Food', 'food', food)
 t16.rec(os.path.join(HERE, 'scrolls.rec'), 'Scroll looks', 'scroll', scrolls)
 t16.rec(os.path.join(HERE, 'textures.rec'), 'Block textures', 'block', blocks)
 t16.rec(os.path.join(HERE, 'monsters.rec'), 'Monsters', 'monster', monsters)

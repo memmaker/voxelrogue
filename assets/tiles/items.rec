@@ -95,26 +95,18 @@ id: turquoise ring
 name: turquoise ring
 icon: 1
 
-id: food ration
-name: food ration
-icon: 18
-
-id: slime-mold
-name: slime-mold
-icon: 19
-
 id: staff
 name: staff
-icon: 20
+icon: 18
 
 id: wand
 name: wand
-icon: 21
+icon: 19
 
 id: gold
 name: gold
-icon: 22
+icon: 20
 
 id: amulet of yendor
 name: the Amulet of Yendor
-icon: 23
+icon: 21
