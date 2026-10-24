@@ -1,0 +1,2 @@
+The Amulet of Yendor is item833.png of an "items" sprite pack (16x16).
+The download carried no licence file; check the pack's page before distributing.

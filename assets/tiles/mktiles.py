@@ -4,10 +4,11 @@ rec files that say which cell each game id uses. The sheets hold only
 what the game draws; ids are the game's own names (a potion by its
 colour, a scroll or ring by its look, a wall by where it stands):
 
-  tiles8.png   items.rec     %rec: item    gold, the Amulet (written whole)
+  tiles8.png   items.rec     %rec: item    gold (written whole)
   tiles16.png  gear.rec      %rec: gear    the armour: hand-written records, each naming its picture
                potions.rec   %rec: potion  Rogue's potion colours: hand-written, each an rgb tinting the potion sprite
                food.rec      %rec: food    the food ration (bread) and the slime-mold (assets/food)
+               amulet.rec    %rec: amulet  the Amulet of Yendor (assets/amulet)
                scrolls.rec   %rec: scroll  the scroll looks (assets/scrolls, BigWander's Art of Scrolls), a game's scroll kinds draw theirs from them
                rings.rec     %rec: ring    the ring looks (assets/rings), likewise
                staffs.rec    %rec: staff   the staff looks (assets/staffs, RPG Items 16x16 Pack 1), likewise
@@ -157,7 +158,7 @@ t8 = Sheet('tiles8.png', 8, 16)
 def item(rid, sprite, name=None):
     return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
 items = []
-items += [item('gold', 'valuable_09'), item('amulet of yendor', 'amulet_01', 'the Amulet of Yendor')]
+items += [item('gold', 'valuable_09')]
 t8.save()
 t8.rec(os.path.join(HERE, 'items.rec'), 'Items', 'item', items)
 
@@ -203,8 +204,10 @@ def looks(kind):
 scrolls, rings, staffs = looks('scroll'), looks('ring'), looks('staff')
 FOOD = os.path.join(ROOT, 'assets', 'food')
 food = [(rid, rid, t16.add('f:' + f, rgba(os.path.join(FOOD, f + '.png')))) for rid, f in [('food ration', 'bread'), ('slime-mold', 'slime-mold')]]
+amulet = [('amulet of yendor', 'the Amulet of Yendor', t16.add('amulet', rgba(os.path.join(ROOT, 'assets', 'amulet', 'amulet.png'))))]
 t16.save()
 t16.rec(os.path.join(HERE, 'food.rec'), 'Food', 'food', food)
+t16.rec(os.path.join(HERE, 'amulet.rec'), 'The Amulet', 'amulet', amulet)
 t16.rec(os.path.join(HERE, 'scrolls.rec'), 'Scroll looks', 'scroll', scrolls)
 t16.rec(os.path.join(HERE, 'rings.rec'), 'Ring looks', 'ring', rings)
 t16.rec(os.path.join(HERE, 'staffs.rec'), 'Staff looks', 'staff', staffs)
