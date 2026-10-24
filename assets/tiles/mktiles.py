@@ -4,9 +4,10 @@ rec files that say which cell each game id uses. The sheets hold only
 what the game draws; ids are the game's own names (a potion by its
 colour, a ring by its stone, a wall by where it stands):
 
-  tiles8.png   items.rec     %rec: item    scrolls, rings, food, wands, gold, the Amulet (written whole)
+  tiles8.png   items.rec     %rec: item    rings, food, wands, gold, the Amulet (written whole)
   tiles16.png  gear.rec      %rec: gear    the armour: hand-written records, each naming its picture
                potions.rec   %rec: potion  Rogue's potion colours: hand-written, each an rgb tinting the potion sprite
+               scrolls.rec   %rec: scroll  the scroll looks (assets/scrolls, BigWander's Art of Scrolls), a game's scroll kinds draw theirs from them
                weapons.rec   %rec: weapon  the weapons and their pictures in use (%rec: frame): hand-written, each naming its picture
                textures.rec  %rec: block   the room's and the corridor's floor, wall and ceiling, light, trap, stairs, door frame
                monsters.rec  %rec: monster the 26 monsters (DynaHack, shadows stripped)
@@ -153,8 +154,6 @@ t8 = Sheet('tiles8.png', 8, 16)
 def item(rid, sprite, name=None):
     return (rid, name or rid, t8.add(sprite, rgba(os.path.join(ITEMS, sprite + '.png'))))
 items = []
-for i in range(1, 16):  # a scroll's title is random each game; it has one of 15 looks
-    items.append(item(f'scroll {i}', f'scroll_{i:02d}', f'scroll (look {i})'))
 for j, s in enumerate(golist(rules, 'stones')):  # a ring looks like its stone
     items.append(item(s + ' ring', f'ring_{j % 18 + 1:02d}'))
 items += [item('food ration', 'misc_01'), item('slime-mold', 'misc_21'), item('staff', 'staff_01'), item('wand', 'staff_10'),
@@ -196,6 +195,10 @@ for m in re.finditer(r'^# tile \d+ \((.*?)\).*\n\{\n((?:  .{16}\n){16})\}', txt,
             if c != 'M':
                 im.putpixel((x, y), pal[c] + (255,))
     monsters.append((m.group(1), m.group(1), t16.add('m:' + m.group(1), im)))
+SCROLLS = os.path.join(ROOT, 'assets', 'scrolls')
+scrolls = [(f'scroll {i}', f'scroll (look {i})', t16.add('s:' + f, rgba(os.path.join(SCROLLS, f))))
+           for i, f in enumerate(sorted(f for f in os.listdir(SCROLLS) if f.endswith('.png')), 1)]
 t16.save()
+t16.rec(os.path.join(HERE, 'scrolls.rec'), 'Scroll looks', 'scroll', scrolls)
 t16.rec(os.path.join(HERE, 'textures.rec'), 'Block textures', 'block', blocks)
 t16.rec(os.path.join(HERE, 'monsters.rec'), 'Monsters', 'monster', monsters)

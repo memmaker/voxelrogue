@@ -27,3 +27,23 @@ func TestAttackScale(t *testing.T) {
 		t.Errorf("full %d, scaled %d", full, scaled)
 	}
 }
+
+// TestScrollLooks: every scroll kind gets a look of its own each game,
+// drawn from the whole pool.
+func TestScrollLooks(t *testing.T) {
+	ScrollLooks = 62
+	seen := map[int]bool{}
+	for seed := int64(1); seed <= 20; seed++ {
+		g := NewGame(rand.New(rand.NewSource(seed)))
+		used := map[int]bool{}
+		for _, l := range g.SLook {
+			if l < 0 || l >= ScrollLooks || used[l] {
+				t.Fatalf("seed %d: looks %v", seed, g.SLook)
+			}
+			used[l], seen[l] = true, true
+		}
+	}
+	if len(seen) < 40 {
+		t.Errorf("only %d of %d looks drawn over 20 games", len(seen), ScrollLooks)
+	}
+}

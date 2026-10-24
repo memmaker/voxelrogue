@@ -223,6 +223,7 @@ func NewGame(rng *rand.Rand) *Game {
 		used[j] = true
 		g.PColors[i], g.PLook[i] = rainbow[j], j
 	}
+	looks := rng.Perm(ScrollLooks) // every kind its own look this game
 	for i := range g.SNames {
 		var words []string
 		for n := Rnd(rng, 4) + 2; n > 0; n-- {
@@ -232,7 +233,7 @@ func NewGame(rng *rand.Rand) *Game {
 			}
 			words = append(words, w)
 		}
-		g.SNames[i], g.SLook[i] = strings.Join(words, " "), Rnd(rng, 1000)
+		g.SNames[i], g.SLook[i] = strings.Join(words, " "), looks[i]
 	}
 	clear(used)
 	for i := range g.RStones {

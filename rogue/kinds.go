@@ -70,10 +70,13 @@ type ArmorKind struct {
 var (
 	Weapons []WeaponKind
 	Armors  []ArmorKind
+	// ScrollLooks is how many scroll pictures there are to draw a game's
+	// scroll kinds from (scrolls.rec's records); SLook indexes them.
+	ScrollLooks = 1000
 )
 
 // LoadKinds reads dir's weapons.rec (with animations.rec, its attacks'
-// upswings) and gear.rec.
+// upswings), gear.rec and scrolls.rec (its looks are counted).
 func LoadKinds(dir string) error {
 	recs, err := ReadRecs(filepath.Join(dir, "weapons.rec"))
 	if err != nil {
@@ -137,6 +140,19 @@ func LoadKinds(dir string) error {
 			return fmt.Errorf("gear.rec: %s: ac is required", r["id"])
 		}
 		Armors = append(Armors, ArmorKind{r["id"], r["name"], atoi(r["ac"]), atoi(r["prob"]), atoi(r["worth"]), r["skin"]})
+	}
+	recs, err = ReadRecs(filepath.Join(dir, "scrolls.rec"))
+	if err != nil {
+		return err
+	}
+	ScrollLooks = 0
+	for _, r := range recs {
+		if r["%rec"] == "scroll" && r["id"] != "" {
+			ScrollLooks++
+		}
+	}
+	if ScrollLooks < MaxScrolls {
+		return fmt.Errorf("scrolls.rec: %d looks for %d scroll kinds", ScrollLooks, MaxScrolls)
 	}
 	return nil
 }

@@ -97,9 +97,9 @@ func weaponKind(sprite string) *rogue.WeaponKind {
 // (name+"_hand"), filled by loadSprites.
 var handSprites = map[string]bool{}
 
-// spriteFor is the items.rec id an object is drawn with: its name, or
-// for potions, rings and scrolls the colour, stone or one of 15 looks
-// it has this game; wands are a staff or a wand.
+// spriteFor is the rec id an object is drawn with: its name, or for
+// potions, rings and scrolls the colour, stone or look (scrolls.rec) it
+// has this game; wands are a staff or a wand.
 func spriteFor(g *rogue.Game, o *rogue.Object) string {
 	switch o.Type {
 	case rogue.Weapon:
@@ -107,7 +107,7 @@ func spriteFor(g *rogue.Game, o *rogue.Object) string {
 	case rogue.Armor:
 		return rogue.Armors[o.Which].ID
 	case rogue.Scroll:
-		return fmt.Sprintf("scroll %d", g.SLook[o.Which]%15+1)
+		return fmt.Sprintf("scroll %d", g.SLook[o.Which]+1)
 	case rogue.Potion:
 		return g.PColors[o.Which] + " potion"
 	case rogue.Ring:
