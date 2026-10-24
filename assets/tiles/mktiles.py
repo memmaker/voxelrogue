@@ -19,8 +19,9 @@ gear.rec, weapons.rec and potions.rec are the game's data (every field of an arm
 weapon or a potion); this script only cuts each record's picture: (relative to the rec, an
 animation strip's first 16px frame) or tints the potion sprite with its rgb: (tint_potion)
 onto the sheet and fills its icon: in, touching no other line. A rerun keeps
-the recs' icons (the remapper's edits); after adding or cutting a look, run it with --fresh,
-since the cells behind the kept icons have moved.
+the recs' icons and the sheet's cells behind them (the remapper's edits), cutting only
+new records' pictures; after adding or cutting a look, run it with --fresh, since the
+cells behind the kept icons have moved (it cuts every picture again).
 The game reads only the recs and the sheet (tiles.go); the remapper edits
 the recs (remap_*.sh). The first look of everything comes from the art
 the game used before: VoxelLib's CC0 item sprites and RPG16 pack, the
@@ -72,12 +73,24 @@ class Sheet:
         return self.index[key]
 
     def save(self):
+        """Writes the sheet. The remapper edits its cells (drops a picture on one, mirrors one), so
+        a plain run keeps the sheet there is and cuts only the cells past its end; --fresh cuts
+        them all."""
         s, rows = self.size, (len(self.cells) + self.cols - 1) // self.cols
+        path, kept, old = os.path.join(HERE, self.name), 0, None
+        if not FRESH and os.path.exists(path):
+            old = Image.open(path).convert('RGBA')
+            rows, kept = max(rows, old.size[1] // s), old.size[0] // s * (old.size[1] // s)
         im = Image.new('RGBA', (self.cols * s, max(rows, 1) * s), (0, 0, 0, 0))
-        for i, c in enumerate(self.cells):
+        if old:
+            im.paste(old, (0, 0))
+        for i, c in enumerate(self.cells[kept:], kept):
             im.paste(c, ((i % self.cols) * s, (i // self.cols) * s))
-        im.save(os.path.join(HERE, self.name))
-        print(f'{self.name}: {len(self.cells)} cells of {s}px, {self.cols} per row')
+        if old and old.size == im.size and old.tobytes() == im.tobytes():
+            print(f'{self.name}: unchanged')
+            return
+        im.save(path)
+        print(f'{self.name}: {len(self.cells)} cells of {s}px, {self.cols} per row, {max(len(self.cells) - kept, 0)} cut')
 
     def rec(self, path, doc, cat, records):
         """records: (id, name, icon[, w, h]); a remapped id keeps its icon."""
