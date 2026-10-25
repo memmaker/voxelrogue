@@ -55,6 +55,7 @@ func main() {
 		seed     = flag.Int64("seed", 0, "dungeon seed (0 = random)")
 		libDir   = flag.String("voxellib", "../VoxelLib", "voxellib checkout (the block models)")
 		tileDir  = flag.String("tiles", "assets/tiles", "tile sheets and their rec mappings (remap_*.sh)")
+		monArt   = flag.String("monsters", "assets/monsters/remastered", "the monsters' big pictures, <id>.png each (remaster.py); empty: the 16px tiles of the sheet")
 		jar      = flag.String("jar", filepath.Join(os.Getenv("HOME"), "Library/Application Support/PrismLauncher/libraries/com/mojang/minecraft/1.7.10/minecraft-1.7.10-client.jar"), "client jar (GUI textures and font)")
 		shot     = flag.String("shot", "", "save a screenshot PNG at tick -shot-at and quit (never grabs input)")
 		shotAt   = flag.Int("shot-at", 120, "tick for -shot")
@@ -162,7 +163,7 @@ func main() {
 	g.showBoxes = *boxes
 	g.cam = render.Camera{FOV: fov, Near: 0.05}
 	g.initHero()
-	if err := g.setupArt(*tileDir); err != nil {
+	if err := g.setupArt(*tileDir, *monArt); err != nil {
 		log.Fatal(err)
 	}
 	if err := g.setupGUI(*jar, filepath.Join(*tileDir, "..", "hobbit")); err != nil {

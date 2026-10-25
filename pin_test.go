@@ -12,7 +12,7 @@ import (
 // behind is carried to it, its back against the wall and the tip in it;
 // with the wall farther than pinReach it is not pinned.
 func TestPin(t *testing.T) {
-	names, imgs, err := loadSprites("assets/tiles")
+	names, imgs, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Skip(err)
 	}

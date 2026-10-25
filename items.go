@@ -40,9 +40,10 @@ type itemState struct {
 }
 
 // setupArt loads the item, weapon and monster sprites from the tile
-// sheets, the crossbow model and the attack animations.
-func (g *game) setupArt(tileDir string) error {
-	names, imgs, err := loadSprites(tileDir)
+// sheets (the monsters' big pictures from monsters, loadSprites), the
+// crossbow model and the attack animations.
+func (g *game) setupArt(tileDir, monsters string) error {
+	names, imgs, err := loadSprites(tileDir, monsters)
 	if err != nil {
 		return err
 	}
@@ -63,7 +64,8 @@ func (g *game) setupArt(tileDir string) error {
 	for _, mk := range rogue.Monsters {
 		if img := g.sprite["m:"+mk.Name]; img != nil {
 			bb := bbox(img)
-			g.monSprite[mk.Letter] = monSprite{rows: float32(bb.Dy()), cy: float32(bb.Min.Y+bb.Max.Y) / 2}
+			b := img.Bounds()
+			g.monSprite[mk.Letter] = monSprite{rows: float32(bb.Dy()), cy: float32(bb.Min.Y+bb.Max.Y) / 2, size: float32(max(b.Dx(), b.Dy()))}
 		}
 	}
 	if err := g.loadAnimations("assets/bettercombat"); err != nil {

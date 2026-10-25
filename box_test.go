@@ -16,7 +16,7 @@ import (
 // the dragon's whole cell; the box is as high as the drawn rows and as
 // wide as the farthest opaque column sweeps.
 func TestMonsterBoxes(t *testing.T) {
-	names, imgs, err := loadSprites("assets/tiles")
+	names, imgs, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Skip(err)
 	}
@@ -48,7 +48,7 @@ func TestMonsterBoxes(t *testing.T) {
 // turned slab, not the air a sweep radius in front of it, and one
 // passing beside the opaque columns misses.
 func TestSlabHit(t *testing.T) {
-	names, imgs, err := loadSprites("assets/tiles")
+	names, imgs, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Skip(err)
 	}
@@ -80,7 +80,7 @@ func TestSlabHit(t *testing.T) {
 // TestSlabReach: a blow reaches a monster by the distance to its box's
 // face, not to a radius around it, and the face is where it lands.
 func TestSlabReach(t *testing.T) {
-	names, imgs, err := loadSprites("assets/tiles")
+	names, imgs, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Skip(err)
 	}
@@ -115,7 +115,7 @@ func TestSlabReach(t *testing.T) {
 // reach, the nearest first; its overhead strike and other weapons the
 // nearest only.
 func TestSweep(t *testing.T) {
-	names, imgs, err := loadSprites("assets/tiles")
+	names, imgs, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Skip(err)
 	}
@@ -164,7 +164,7 @@ func (w wallFrom) Solid(x, y, z int) bool { return z >= int(w) }
 // TestPushIntoWall: a monster's box pushes the hero back only as far as
 // the wall behind him lets his body go, never into it.
 func TestPushIntoWall(t *testing.T) {
-	names, imgs, err := loadSprites("assets/tiles")
+	names, imgs, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Skip(err)
 	}

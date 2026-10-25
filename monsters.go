@@ -831,9 +831,10 @@ func (g *game) pushOutOfMonsters(w collide.Solids) {
 	}
 }
 
-// monSprite is how a monster's 16px sprite fills its look: the opaque
-// rows and their centre row, so the creature (not the cell) stands h high.
-type monSprite struct{ rows, cy float32 }
+// monSprite is how a monster's sprite fills its look: the opaque rows
+// and their centre row out of the sprite's size texels (the extruded
+// slab's side), so the creature (not the cell) stands h high.
+type monSprite struct{ rows, cy, size float32 }
 
 // monsterScale makes the looks blocks, alike for all so they keep their
 // sizes relative to each other: the tallest, the dragon (2.8), fills a
@@ -850,10 +851,10 @@ type monsterBox struct{ r, h, hover, x0, x1, d float32 }
 // outlineBox is the box of a 16px sprite whose opaque bounds are bb,
 // drawn with its opaque rows h high, turning about the cell's centre
 // column.
-func outlineBox(bb image.Rectangle, h, hover float32) monsterBox {
+func outlineBox(bb image.Rectangle, mid, h, hover float32) monsterBox {
 	px := h / float32(max(bb.Dy(), 1))
-	return monsterBox{r: float32(max(8-bb.Min.X, bb.Max.X-8)) * px, h: h, hover: hover,
-		x0: float32(bb.Min.X-8) * px, x1: float32(bb.Max.X-8) * px, d: px / 2}
+	return monsterBox{r: max(mid-float32(bb.Min.X), float32(bb.Max.X)-mid) * px, h: h, hover: hover,
+		x0: (float32(bb.Min.X) - mid) * px, x1: (float32(bb.Max.X) - mid) * px, d: px / 2}
 }
 
 // slab is a monster's hit box where it stands: its sprite's opaque
@@ -923,12 +924,12 @@ func (g *game) box(letter byte) monsterBox {
 	if b, ok := g.boxes[letter]; ok {
 		return b
 	}
-	bb := image.Rect(0, 0, 16, 16)
+	bb, mid := image.Rect(0, 0, 16, 16), float32(8) // the sprite's centre column
 	if img := g.sprite["m:"+rogue.Monsters[letter-'A'].Name]; img != nil {
-		bb = bbox(img)
+		bb, mid = bbox(img), float32(img.Bounds().Dx())/2
 	}
 	lk := monsterLooks[letter]
-	b := outlineBox(bb, lk.h*monsterScale, lk.hover)
+	b := outlineBox(bb, mid, lk.h*monsterScale, lk.hover)
 	if g.boxes == nil {
 		g.boxes = map[byte]monsterBox{}
 	}
@@ -988,10 +989,11 @@ func (g *game) drawMonsters(alpha float64) {
 // back tilt radians about its feet.
 func (g *game) monsterPose(letter byte, x, y, z, yaw float64, tilt float32) render.ItemPose {
 	lk, sp := g.box(letter), g.monSprite[letter]
-	s := lk.h * 16 / max(sp.rows, 1)
+	size := max(sp.size, 16)
+	s := lk.h * size / max(sp.rows, 1)
 	// the slab pivots at the feet; its centre sits where the creature's centre is h/2 up
 	mat := mgl32.HomogRotate3DY(float32(-yaw)).Mul4(mgl32.HomogRotate3DX(tilt)).
-		Mul4(mgl32.Translate3D(0, lk.h/2-s*(0.5-sp.cy/16), 0)).Mul4(mgl32.Scale3D(s, s, s))
+		Mul4(mgl32.Translate3D(0, lk.h/2-s*(0.5-sp.cy/size), 0)).Mul4(mgl32.Scale3D(s, s, s))
 	return render.ItemPose{Item: "m:" + rogue.Monsters[letter-'A'].Name, X: x, Y: y, Z: z, M: mat}
 }
 

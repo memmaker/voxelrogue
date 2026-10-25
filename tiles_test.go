@@ -14,7 +14,7 @@ import (
 // weapons, monsters) and every block texture the dungeon uses is assigned
 // a cell in assets/tiles.
 func TestTilesCoverEveryName(t *testing.T) {
-	names, _, err := loadSprites("assets/tiles")
+	names, _, err := loadSprites("assets/tiles", "")
 	if err != nil {
 		t.Fatal(err)
 	}

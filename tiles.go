@@ -157,8 +157,10 @@ func (s *sheetTextures) TextureFrames(name string) ([]image.Image, int, error) {
 }
 
 // loadSprites loads the item, gear, weapon ("w:" + id) and monster ("m:" + id)
-// sprites of the tile directory's rec files.
-func loadSprites(dir string) ([]string, []image.Image, error) {
+// sprites of the tile directory's rec files. A monster whose <id>.png
+// (spaces as _) is in monsters replaces its 16px tile with that picture
+// (assets/monsters/remaster.py's 256px remasters); "" keeps the tiles.
+func loadSprites(dir, monsters string) ([]string, []image.Image, error) {
 	var names []string
 	var imgs []image.Image
 	for _, f := range []struct{ rec, prefix string }{{"items.rec", ""}, {"gear.rec", ""}, {"potions.rec", ""}, {"food.rec", ""}, {"scrolls.rec", ""}, {"rings.rec", ""}, {"staffs.rec", ""}, {"weapons.rec", "w:"}, {"monsters.rec", "m:"}} {
@@ -167,6 +169,11 @@ func loadSprites(dir string) ([]string, []image.Image, error) {
 			return nil, nil, err
 		}
 		for id, img := range tiles {
+			if f.rec == "monsters.rec" && monsters != "" {
+				if big, err := loadPNG(filepath.Join(monsters, strings.ReplaceAll(id, " ", "_")+".png")); err == nil {
+					img = big
+				}
+			}
 			n := f.prefix + id
 			names, imgs = append(names, n), append(imgs, img)
 			if base, ok := strings.CutSuffix(n, "_hand"); ok {
@@ -175,6 +182,15 @@ func loadSprites(dir string) ([]string, []image.Image, error) {
 		}
 	}
 	return names, imgs, nil
+}
+
+func loadPNG(path string) (image.Image, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return png.Decode(f)
 }
 
 // avgColor is the mean colour of an image's opaque pixels, grey for none.
