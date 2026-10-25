@@ -19,7 +19,8 @@ import (
 //	crossbow, 1-9 and the wheel hold a hotbar slot, C search, < climb
 //	(with the Amulet), E/Tab/I inventory, M map (on a panel, over the
 //	view, off), F1 help, F2 manual, F7/F8/F9/F10 debug scroll, staff, weapon and armour menus, Esc release
-//	mouse (again: quit), R new game after death or victory.
+//	mouse and pause (S save the game, L load it, a click resumes, Esc
+//	again quits), R new game and L load after death or victory.
 type inputState struct {
 	captured   bool
 	showMap    int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
@@ -42,6 +43,8 @@ func (g *game) setupInput() {
 			switch k {
 			case glfw.KeyR:
 				g.newGame(0)
+			case glfw.KeyL:
+				g.load()
 			case glfw.KeyEscape:
 				w.SetShouldClose(true)
 			}
@@ -70,6 +73,12 @@ func (g *game) setupInput() {
 				g.capture(false)
 			default:
 				w.SetShouldClose(true)
+			}
+		case glfw.KeyS, glfw.KeyL: // the pause menu
+			if g.paused() && k == glfw.KeyS {
+				g.save()
+			} else if g.paused() {
+				g.load()
 			}
 		case glfw.KeyLeftShift, glfw.KeyRightShift:
 			g.sprinting = true
@@ -254,6 +263,9 @@ func (g *game) giveAmmo() {
 		g.debugWeapon(a)
 	}
 }
+
+// paused: the mouse is free and the pause menu up; the world waits.
+func (g *game) paused() bool { return !g.automated && !g.captured && !g.dead && !g.won }
 
 func (g *game) capture(on bool) {
 	if g.automated {

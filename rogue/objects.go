@@ -175,9 +175,14 @@ func NewArmor(which int) *Object {
 }
 
 // Game is the per-game state objects need: the random names and what the
-// hero has identified.
+// hero has identified (State, which a save keeps), and the dice.
 type Game struct {
-	Rng     *rand.Rand
+	Rng *rand.Rand
+	State
+}
+
+// State is a Game without its dice.
+type State struct {
 	PColors [MaxPotions]string
 	SNames  [MaxScrolls]string
 	RStones [MaxRings]string
@@ -193,7 +198,7 @@ type Game struct {
 	RLook       [MaxRings]int
 	StLook      [MaxSticks]int
 	NoFood      int
-	groupSerial int
+	GroupSerial int
 }
 
 var (
@@ -319,8 +324,8 @@ func (g *Game) NewThing() *Object {
 		g.FixStick(o)
 	}
 	if o.Flags&IsMany != 0 {
-		g.groupSerial++
-		o.Group = g.groupSerial
+		g.GroupSerial++
+		o.Group = g.GroupSerial
 	}
 	return o
 }

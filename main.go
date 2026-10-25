@@ -86,6 +86,9 @@ func main() {
 		amulet   = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
 		renew    = flag.Int("renew", -1, "debug: start a new game (as R does) at this tick")
 		renewTo  = flag.Int64("renew-seed", 0, "debug: with -renew, the new game's seed (0 = random)")
+		saveFile = flag.String("save", filepath.Join(configDir(), "VoxelRogue", "save.gob"), "the saved game (the pause menu's S writes it, L loads it)")
+		loadAt   = flag.Int("load", -1, "debug: load -save at this tick (as the pause menu's L does)")
+		saveAt   = flag.Int("save-at", -1, "debug: save the game to -save at this tick (as the pause menu's S does)")
 		tp       = flag.Bool("tp", false, "debug: show attacks in third person, the whole model seen from the front")
 		anim     = flag.String("anim", "", "debug: always show this Better Combat animation, at -anim-at")
 		animAt   = flag.Float64("anim-at", 0, "debug: with -anim, the animation tick to show")
@@ -236,6 +239,7 @@ func main() {
 		g.pg.In.X, g.pg.In.Y = 141, 203 // over the first hotbar slot (1280x800), for the tooltip
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
+	g.saveFile, g.loadAt, g.saveAt = *saveFile, *loadAt, *saveAt
 	g.showMap = *mapMode
 	g.killShot = -1
 	if *mobs != "" {
@@ -299,20 +303,34 @@ type game struct {
 	killMob   *monster // the first -mobs monster
 	renewAt   int      // -renew: the tick to start a new game on
 	renewSeed int64    // its seed
+	saveFile  string   // -save: the saved game (save.go)
+	loadAt    int      // -load: the tick to load it on
+	saveAt    int      // -save-at: the tick to save on
 }
 
 // newGame starts over in this process (R after death or victory): a new
-// dungeon from seed (0 = random) in place of the old one, which the
-// engine drops and streams in again, and a new hero on level 1. What was
-// loaded once (renderers, models, animations) stays.
+// dungeon from seed (0 = random) in place of the old one and a new hero
+// on level 1.
 func (g *game) newGame(seed int64) {
 	if seed == 0 {
 		seed = time.Now().UnixNano()
 	}
-	g.gen.reset(buildLevels(seed))
-	g.eng.Regenerate()
-	g.rng = rand.New(rand.NewSource(seed))
+	g.reset(buildLevels(seed), seed)
 	g.rg = rogue.NewGame(g.rng)
+	g.initHero()
+	g.enterLevel(1)
+}
+
+// reset clears the running game for another (newGame, restore): levels in
+// place of the old ones, which the engine drops and streams in again, the
+// dice seeded anew, and nothing in hand, in flight or on screen. What was
+// loaded once (renderers, models, animations) stays.
+func (g *game) reset(levels []*dungeon.Level, seed int64) {
+	g.gen.reset(levels)
+	if g.eng != nil {
+		g.eng.Regenerate()
+	}
+	g.rng.Seed(seed)
 	g.depth, g.ready = 0, false
 	g.heroState = heroState{}
 	g.monsters, g.corpses, g.distTick = nil, nil, -1
@@ -327,8 +345,6 @@ func (g *game) newGame(seed int64) {
 	g.msgs, g.winLoot = nil, nil
 	g.closeInv()
 	g.showMap, g.showHelp, g.showManual, g.showDebug, g.prompt, g.detect = 0, false, false, 0, 0, 0
-	g.initHero()
-	g.enterLevel(1)
 }
 
 // slot is where the current level is in the world: its depth.
@@ -391,13 +407,19 @@ func (g *game) step() {
 	if g.tick == g.renewAt {
 		g.newGame(g.renewSeed)
 	}
+	if g.tick == g.loadAt {
+		g.load()
+	}
+	if g.tick == g.saveAt {
+		g.save()
+	}
 	p := g.player
 	if !g.eng.ChunkReady(voxel.ChunkPos{X: int(math.Floor(p.X)) >> 4, Z: int(math.Floor(p.Z)) >> 4}) {
 		p.PrevX, p.PrevY, p.PrevZ = p.X, p.Y, p.Z
 		return
 	}
 	g.ready = true
-	if g.dead || g.won {
+	if g.dead || g.won || g.paused() {
 		return
 	}
 	if g.tick == g.looseShot {

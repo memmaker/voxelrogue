@@ -60,7 +60,7 @@ var helpLines = [][2]string{
 	{"F2", "the manual: the rules of the dungeon"},
 	{"F3", "debug: show the monsters' hit boxes"},
 	{"F7 / F8 / F9 / F10", "debug: take any scroll / staff / weapon / armor"},
-	{"Esc", "close panel / release mouse / quit"},
+	{"Esc", "close panel / pause (S save, L load, click resumes) / quit"},
 }
 
 // manualLines is the F2 manual: Rogue's rules in short.
@@ -119,10 +119,10 @@ type panel struct {
 }
 
 type hudState struct {
-	msgs                                                               []string
-	msgAge                                                             int
-	status, message, mapP, mini, help, manual, debug, tint, tomb, winP panel
-	winLoot                                                            []string // total_winner's worth table
+	msgs                                                                      []string
+	msgAge                                                                    int
+	status, message, mapP, mini, help, manual, debug, tint, tomb, winP, pause panel
+	winLoot                                                                   []string // total_winner's worth table
 }
 
 func (g *game) msg(s string) {
@@ -371,6 +371,13 @@ func (g *game) drawHUD(fbW, fbH int) {
 		}, center(fbW), middle(fbH), max(1, min(fbW/(80*7+20), fbH/(25*14+20))), fbW, fbH)
 	}
 
+	if g.paused() {
+		g.pause.show("pause", func() *image.NRGBA {
+			return textImage([]line{{"Paused", white}, {"", white}, {"click    resume", cyan}, {"S        save the game", cyan},
+				{"L        load the saved game", cyan}, {"Esc      quit", cyan}}, panelBG)
+		}, center(fbW), middle(fbH), 2*s, fbW, fbH)
+	}
+
 	if g.showHelp {
 		g.help.show("help", func() *image.NRGBA {
 			ls := []line{{"VoxelRogue - controls", white}, {"", white}}
@@ -413,7 +420,7 @@ func (g *game) drawHUD(fbW, fbH int) {
 			{"killed by " + g.killer, white},
 			{fmt.Sprintf("on level %d", g.depth), white},
 			{"", white},
-			{"R: new game   Esc: quit", grey},
+			{"R: new game   L: load   Esc: quit", grey},
 		}
 		g.tomb.show(g.killer, func() *image.NRGBA { return textImage(ls, panelBG) }, center(fbW), middle(fbH), 2*s, fbW, fbH)
 	}
@@ -432,7 +439,7 @@ func (g *game) drawHUD(fbW, fbH int) {
 			ls = append(ls, line{s, cyan})
 		}
 		ls = append(ls, line{"", white}, line{fmt.Sprintf("Total: %d gold pieces", g.purse), yellow},
-			line{"", white}, line{"R: new game   Esc: quit", grey})
+			line{"", white}, line{"R: new game   L: load   Esc: quit", grey})
 		g.winP.show("win", func() *image.NRGBA { return textImage(ls, panelBG) }, center(fbW), middle(fbH), s, fbW, fbH)
 	}
 }
