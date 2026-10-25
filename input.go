@@ -18,9 +18,9 @@ import (
 //	armour, F the third pattern, T throw the wielded weapon, R span a
 //	crossbow, 1-9 and the wheel hold a hotbar slot, C search, < climb
 //	(with the Amulet), E/Tab/I inventory, M map (on a panel, over the
-//	view, off), F1 help, F2 manual, F7/F8/F9/F10 debug scroll, staff, weapon and armour menus, Esc release
-//	mouse and pause (S save the game, L load it, a click resumes, Esc
-//	again quits), R new game and L load after death or victory.
+//	view, off), F1 help, F2 manual, F7/F8/F9/F10 debug scroll, staff, weapon and armour menus, Esc the
+//	game menu (menu.go: back to game, save, load, new game, options,
+//	quit; the world waits), R new game and L load after death or victory.
 type inputState struct {
 	captured   bool
 	showMap    int // M cycles: 0 off, 1 the map on a dark panel, 2 the map laid over the view (Diablo style)
@@ -70,15 +70,9 @@ func (g *game) setupInput() {
 			case g.showMap != 0 || g.showHelp || g.showManual || g.showDebug != 0:
 				g.showMap, g.showHelp, g.showManual, g.showDebug, g.detect = 0, false, false, 0, 0
 			case g.captured:
-				g.capture(false)
+				g.openMenu(false)
 			default:
 				w.SetShouldClose(true)
-			}
-		case glfw.KeyS, glfw.KeyL: // the pause menu
-			if g.paused() && k == glfw.KeyS {
-				g.save()
-			} else if g.paused() {
-				g.load()
 			}
 		case glfw.KeyLeftShift, glfw.KeyRightShift:
 			g.sprinting = true
@@ -264,8 +258,8 @@ func (g *game) giveAmmo() {
 	}
 }
 
-// paused: the mouse is free and the pause menu up; the world waits.
-func (g *game) paused() bool { return !g.automated && !g.captured && !g.dead && !g.won }
+// paused: a menu is up; the world waits.
+func (g *game) paused() bool { return g.menu }
 
 func (g *game) capture(on bool) {
 	if g.automated {

@@ -86,9 +86,11 @@ func main() {
 		amulet   = flag.Bool("amulet", false, "debug: start with the Amulet of Yendor")
 		renew    = flag.Int("renew", -1, "debug: start a new game (as R does) at this tick")
 		renewTo  = flag.Int64("renew-seed", 0, "debug: with -renew, the new game's seed (0 = random)")
-		saveFile = flag.String("save", filepath.Join(configDir(), "VoxelRogue", "save.gob"), "the saved game (the pause menu's S writes it, L loads it)")
-		loadAt   = flag.Int("load", -1, "debug: load -save at this tick (as the pause menu's L does)")
-		saveAt   = flag.Int("save-at", -1, "debug: save the game to -save at this tick (as the pause menu's S does)")
+		saveFile = flag.String("save", filepath.Join(configDir(), "VoxelRogue", "save.gob"), "the saved game (the game menu's Save Game writes it, Load Game loads it)")
+		loadAt   = flag.Int("load", -1, "debug: load -save at this tick (as the game menu's Load Game does)")
+		saveAt   = flag.Int("save-at", -1, "debug: save the game to -save at this tick (as the game menu's Save Game does)")
+		menu     = flag.String("menu", "", "debug: with -shot, open this menu (main, game, options)")
+		pixelAt  = flag.Int("pixel-at", -1, "debug: with -shot, switch the Monsters option to the sheet's tiles at this tick (setMonsterArt)")
 		tp       = flag.Bool("tp", false, "debug: show attacks in third person, the whole model seen from the front")
 		anim     = flag.String("anim", "", "debug: always show this Better Combat animation, at -anim-at")
 		animAt   = flag.Float64("anim-at", 0, "debug: with -anim, the animation tick to show")
@@ -164,14 +166,19 @@ func main() {
 		automated: *shot != "", wizard: *wizard}
 	g.terrain = &terrain{eng: eng}
 	g.showBoxes = *boxes
+	g.tileDir, g.monArt = *tileDir, *monArt
+	if !g.automated {
+		g.opts = loadOptions()
+	}
 	g.cam = render.Camera{FOV: fov, Near: 0.05}
 	g.initHero()
-	if err := g.setupArt(*tileDir, *monArt); err != nil {
+	if err := g.setupArt(); err != nil {
 		log.Fatal(err)
 	}
 	if err := g.setupGUI(*jar, filepath.Join(*tileDir, "..", "hobbit")); err != nil {
 		log.Fatal(err)
 	}
+	g.pg.Ctx.GUIScale = g.opts.GUIScale
 	g.tp, g.animName, g.animAt = *tp, *anim, float32(*animAt)
 	if err := g.setupDebugView(); err != nil {
 		log.Fatal(err)
@@ -239,7 +246,7 @@ func main() {
 		g.pg.In.X, g.pg.In.Y = 141, 203 // over the first hotbar slot (1280x800), for the tooltip
 	}
 	g.renewAt, g.renewSeed = *renew, *renewTo
-	g.saveFile, g.loadAt, g.saveAt = *saveFile, *loadAt, *saveAt
+	g.saveFile, g.loadAt, g.saveAt, g.pixelAt = *saveFile, *loadAt, *saveAt, *pixelAt
 	g.showMap = *mapMode
 	g.killShot = -1
 	if *mobs != "" {
@@ -262,6 +269,14 @@ func main() {
 	g.cam.Pitch = *pitch * math.Pi / 180
 	if !g.automated {
 		g.setupInput()
+		g.openMenu(true)
+	}
+	switch *menu {
+	case "main", "game":
+		g.openMenu(*menu == "main")
+	case "options":
+		g.openMenu(false)
+		g.pg.Ctx.Screens.Open(g.optionsScreen())
 	}
 	g.run(*shot, *shotAt)
 }
@@ -290,6 +305,7 @@ type game struct {
 	hudState
 	invState
 	inputState
+	menuState
 	debugView
 
 	automated bool // -shot: no input
@@ -306,6 +322,7 @@ type game struct {
 	saveFile  string   // -save: the saved game (save.go)
 	loadAt    int      // -load: the tick to load it on
 	saveAt    int      // -save-at: the tick to save on
+	pixelAt   int      // -pixel-at: the tick to switch the monsters to the sheet's tiles on
 }
 
 // newGame starts over in this process (R after death or victory): a new
@@ -412,6 +429,10 @@ func (g *game) step() {
 	}
 	if g.tick == g.saveAt {
 		g.save()
+	}
+	if g.tick == g.pixelAt {
+		g.opts.PixelMonsters = true
+		g.setMonsterArt()
 	}
 	p := g.player
 	if !g.eng.ChunkReady(voxel.ChunkPos{X: int(math.Floor(p.X)) >> 4, Z: int(math.Floor(p.Z)) >> 4}) {

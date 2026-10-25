@@ -39,26 +39,43 @@ type itemState struct {
 	zapping    *rogue.Object
 }
 
-// setupArt loads the item, weapon and monster sprites from the tile
-// sheets (the monsters' big pictures from monsters, loadSprites), the
-// crossbow model and the attack animations.
-func (g *game) setupArt(tileDir, monsters string) error {
-	names, imgs, err := loadSprites(tileDir, monsters)
-	if err != nil {
+// setupArt loads the sprites (loadArt), the crossbow model and the attack
+// animations.
+func (g *game) setupArt() error {
+	var err error
+	if err = g.loadArt(); err != nil {
 		return err
-	}
-	if g.itemRend, err = render.NewItemRenderer(g.eng.Renderer, names, imgs); err != nil {
-		return err
-	}
-	g.com, g.sprite = map[string][2]float32{}, map[string]image.Image{}
-	for i, n := range names {
-		g.com[n], g.sprite[n] = massCenter(imgs[i]), imgs[i]
 	}
 	if g.partRend, err = render.NewParticleRenderer(g.eng.Renderer); err != nil {
 		return err
 	}
 	if g.modelRend, err = render.NewModelRenderer(g.eng.Renderer); err != nil {
 		return err
+	}
+	if err := g.loadAnimations("assets/bettercombat"); err != nil {
+		return err
+	}
+	g.setupSounds("assets/sounds")
+	return g.setupArrows()
+}
+
+// loadArt loads the item, weapon and monster sprites from the tile sheets
+// (the monsters' big pictures from monsterDir, loadSprites) into a fresh
+// item renderer and measures them; the Monsters option reloads them
+// (setMonsterArt).
+func (g *game) loadArt() error {
+	names, imgs, err := loadSprites(g.tileDir, g.monsterDir())
+	if err != nil {
+		return err
+	}
+	ir, err := render.NewItemRenderer(g.eng.Renderer, names, imgs)
+	if err != nil {
+		return err
+	}
+	g.itemRend = ir
+	g.com, g.sprite = map[string][2]float32{}, map[string]image.Image{}
+	for i, n := range names {
+		g.com[n], g.sprite[n] = massCenter(imgs[i]), imgs[i]
 	}
 	g.monSprite = map[byte]monSprite{}
 	for _, mk := range rogue.Monsters {
@@ -68,11 +85,8 @@ func (g *game) setupArt(tileDir, monsters string) error {
 			g.monSprite[mk.Letter] = monSprite{rows: float32(bb.Dy()), cy: float32(bb.Min.Y+bb.Max.Y) / 2, size: float32(max(b.Dx(), b.Dy()))}
 		}
 	}
-	if err := g.loadAnimations("assets/bettercombat"); err != nil {
-		return err
-	}
-	g.setupSounds("assets/sounds")
-	return g.setupArrows()
+	g.boxes = nil // measured from the sprites (box)
+	return nil
 }
 
 func lowerFirst(s string) string {

@@ -60,7 +60,7 @@ var helpLines = [][2]string{
 	{"F2", "the manual: the rules of the dungeon"},
 	{"F3", "debug: show the monsters' hit boxes"},
 	{"F7 / F8 / F9 / F10", "debug: take any scroll / staff / weapon / armor"},
-	{"Esc", "close panel / pause (S save, L load, click resumes) / quit"},
+	{"Esc", "close panel / the game menu: save, load, new game, options, quit"},
 }
 
 // manualLines is the F2 manual: Rogue's rules in short.
@@ -119,10 +119,10 @@ type panel struct {
 }
 
 type hudState struct {
-	msgs                                                                      []string
-	msgAge                                                                    int
-	status, message, mapP, mini, help, manual, debug, tint, tomb, winP, pause panel
-	winLoot                                                                   []string // total_winner's worth table
+	msgs                                                               []string
+	msgAge                                                             int
+	status, message, mapP, mini, help, manual, debug, tint, tomb, winP panel
+	winLoot                                                            []string // total_winner's worth table
 }
 
 func (g *game) msg(s string) {
@@ -224,6 +224,14 @@ func (g *game) setupGUI(jar, hobbit string) error {
 	}
 	g.pg.EquipAt = rogueEquipAt
 	ctx.SetTexture("rogue:ring_slot", slotIcon(g.sprite["ring 1"]))
+	ctx.Screens.OnEmpty = func() { // the last screen closed: the inventory's, or a menu's
+		if g.pg.IsOpen() {
+			g.pg.Close()
+			return
+		}
+		g.menu = false
+		g.capture(true)
+	}
 	g.pg.OnOpen = func() { g.showDebug = 0; g.capture(false) }
 	g.pg.OnClose = func() {
 		if g.prompt == 'i' {
@@ -369,13 +377,6 @@ func (g *game) drawHUD(fbW, fbH int) {
 			}
 			return textImage(ls, bg)
 		}, center(fbW), middle(fbH), max(1, min(fbW/(80*7+20), fbH/(25*14+20))), fbW, fbH)
-	}
-
-	if g.paused() {
-		g.pause.show("pause", func() *image.NRGBA {
-			return textImage([]line{{"Paused", white}, {"", white}, {"click    resume", cyan}, {"S        save the game", cyan},
-				{"L        load the saved game", cyan}, {"Esc      quit", cyan}}, panelBG)
-		}, center(fbW), middle(fbH), 2*s, fbW, fbH)
 	}
 
 	if g.showHelp {
