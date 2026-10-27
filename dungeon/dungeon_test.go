@@ -13,7 +13,7 @@ func TestConnected(t *testing.T) {
 	for seed := int64(0); seed < 100; seed++ {
 		var above *Level
 		for depth := 1; depth <= 40; depth++ {
-			l := New(depth, rand.New(rand.NewSource(seed*31+int64(depth))), above)
+			l := New(depth, rand.New(rand.NewSource(seed*31+int64(depth))), above, false)
 			checkLevel(t, seed, l)
 			if above != nil {
 				land := above.Landing()
@@ -46,6 +46,36 @@ func checkLevel(t *testing.T, seed int64, l *Level) {
 			if tl.Walkable() && !seen[Coord{x, y}] {
 				t.Fatalf("seed %d depth %d: %d,%d unreachable\n%s", seed, depth, x, y, l)
 			}
+		}
+	}
+}
+
+// A linear level is one chain of rooms from Start to the stairs' room:
+// every room has one door in and one out, the ends one each.
+func TestLinear(t *testing.T) {
+	for seed := int64(0); seed < 100; seed++ {
+		var above *Level
+		for depth := 1; depth <= 40; depth++ {
+			l := New(depth, rand.New(rand.NewSource(seed*31+int64(depth))), above, true)
+			checkLevel(t, seed, l)
+			if above != nil && l.RoomAt(above.Landing()) != &l.Rooms[l.Start] {
+				t.Fatalf("seed %d depth %d: staircase lands outside the start room\n%s", seed, depth, l)
+			}
+			end := l.RoomAt(l.Stairs)
+			for i := range l.Rooms {
+				r := &l.Rooms[i]
+				if r.Gone {
+					continue
+				}
+				want := 2
+				if i == l.Start || r == end {
+					want = 1
+				}
+				if len(r.Exits) != want {
+					t.Fatalf("seed %d depth %d: room %d has %d doors\n%s", seed, depth, i, len(r.Exits), l)
+				}
+			}
+			above = l
 		}
 	}
 }

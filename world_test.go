@@ -9,7 +9,7 @@ import (
 
 // TestGenerate checks that a generated chunk has rock and a carved room.
 func TestGenerate(t *testing.T) {
-	levels := buildLevels(7)
+	levels := buildLevels(7, false)
 	reg := voxel.NewRegistry()
 	gen := newLevelGen(reg, levels)
 	w := voxel.NewWorld(reg, worldMinY, worldHeight)
@@ -31,7 +31,7 @@ func TestGenerate(t *testing.T) {
 // half (no air over the steps, the upper floor whole), while its foot in
 // the room below stays open; reopened, it is the staircase again.
 func TestSealStairs(t *testing.T) {
-	levels := buildLevels(7)
+	levels := buildLevels(7, false)
 	gen := newLevelGen(voxel.NewRegistry(), levels)
 	l, f := levels[0], floorY(1)
 	column := func(i int) map[int]voxel.StateID {

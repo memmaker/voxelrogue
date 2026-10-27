@@ -17,6 +17,7 @@ import (
 type options struct {
 	PixelMonsters bool // the sheet's 16px monster tiles instead of their remastered pictures
 	GUIScale      int  // ui.Context.GUIScale: 0 auto, 1 small, 2 normal, 3 large
+	Linear        bool // levels as one chain of rooms, from the next new game on
 }
 
 type menuState struct {
@@ -64,7 +65,12 @@ func (g *game) openMenu(main bool) {
 	options := func() { ctx.Screens.Open(g.optionsScreen()) }
 	quit := func() { g.win.SetShouldClose(true) }
 	if main {
-		m := ui.NewMainMenu(ctx, []ui.MenuItem{{Label: "New Game", OnClick: resume}, load}, options, quit, nil)
+		m := ui.NewMainMenu(ctx, []ui.MenuItem{{Label: "New Game", OnClick: func() {
+			if g.gen.level(1).Linear != g.opts.Linear {
+				g.newGame(0) // the dungeon rolled at the start is the other kind
+			}
+			resume()
+		}}, load}, options, quit, nil)
 		m.Title, m.TitleY = "VoxelRogue", 40
 		ctx.Screens.Open(mainMenu{m})
 		return
@@ -98,6 +104,12 @@ func (g *game) optionsScreen() ui.Screen {
 			g.opts.PixelMonsters = !g.opts.PixelMonsters
 			g.setMonsterArt()
 		}},
+		{Label: "Linear mode", Text: func() string {
+			if g.opts.Linear {
+				return "On"
+			}
+			return "Off"
+		}, OnClick: func() { g.opts.Linear = !g.opts.Linear }},
 		ui.GUIScaleSetting(g.pg.Ctx, func(s int) { g.opts.GUIScale = s }),
 	}, OnDone: g.saveOptions}
 }

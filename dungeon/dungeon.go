@@ -92,6 +92,10 @@ type Level struct {
 	Stairs    Coord
 	StairsDir int // +1: the staircase runs east, -1: west
 	Traps     []Trap
+	// Linear: the rooms are one chain, from Start (where the staircase
+	// from above lands) to the room with the stairs, with no branches.
+	Linear bool
+	Start  int
 }
 
 // At returns the tile at c (Rock off the map).
@@ -160,9 +164,10 @@ func (g *gen) rnd(n int) int {
 // the room under its landing is placed around it first and the rest of
 // the level is built from there. Rogue joins all rooms of a level, so
 // every level reaches its stairs and the dungeon is connected from top
-// to bottom.
-func New(depth int, rng *rand.Rand, above *Level) *Level {
-	g := &gen{l: &Level{Depth: depth}, rng: rng, above: above}
+// to bottom. A linear level (linearPassages) joins the rooms in one chain
+// instead and puts the stairs in its last room.
+func New(depth int, rng *rand.Rand, above *Level, linear bool) *Level {
+	g := &gen{l: &Level{Depth: depth, Linear: linear}, rng: rng, above: above}
 	if above != nil {
 		g.ramp, g.landing = above.Ramp(), above.Landing()
 	}
@@ -172,9 +177,14 @@ func New(depth int, rng *rand.Rand, above *Level) *Level {
 		}
 	}
 	g.doRooms()
-	g.doPassages()
 	l := g.l
-	l.Stairs, l.StairsDir = g.stairs()
+	end := -1
+	if linear {
+		end = g.linearPassages()
+	} else {
+		g.doPassages()
+	}
+	l.Stairs, l.StairsDir = g.stairs(end)
 	l.Grid[l.Stairs.Y][l.Stairs.X] = Stairs
 	l.Grid[l.Stairs.Y][l.Stairs.X+l.StairsDir] = Stairs // the stairwell
 	if g.rnd(10) < depth {
@@ -189,10 +199,16 @@ func New(depth int, rng *rand.Rand, above *Level) *Level {
 // stairs picks the stairs as new_level() does, on a free floor spot, but
 // one where the staircase can start down through the floor beside it and
 // land where a room can stand on the level below. Every room has such a
-// spot (its westmost or eastmost floor column).
-func (g *gen) stairs() (Coord, int) {
+// spot (its westmost or eastmost floor column). With room >= 0 the stairs
+// go in that room.
+func (g *gen) stairs(room int) (Coord, int) {
 	for {
 		s := g.randomFloor()
+		if room >= 0 {
+			if s = g.rndPos(&g.l.Rooms[room]); g.l.At(s) != Floor {
+				continue
+			}
+		}
 		dirs := [2]int{1, -1}
 		if g.rnd(2) == 0 {
 			dirs = [2]int{-1, 1}
@@ -427,6 +443,64 @@ func (g *gen) doPassages() {
 			isconn[r1][r2], isconn[r2][r1] = true, true
 		}
 	}
+}
+
+// linearPassages joins the rooms in one chain of conn()s through the
+// rdes grid, the gone rooms passed through or left out, from the room the
+// staircase from above lands in (a random room at the top) to the room it
+// returns, where the stairs go. The staircase down lands in the same cell
+// of the level below, so the chain ends on a corner or the centre: on the
+// 3x3 grid's chessboard only those start a chain through all nine.
+func (g *gen) linearPassages() int {
+	l := g.l
+	present := 0
+	for i := range l.Rooms {
+		if !l.Rooms[i].Gone {
+			present++
+		}
+	}
+	var starts []int
+	if g.above != nil {
+		lo, _ := floorSpan(g.landing.X, g.above.StairsDir)
+		starts = []int{g.landing.Y/(Lines/3)*3 + (lo-1)/(Cols/3)}
+	} else {
+		for i := range l.Rooms {
+			if !l.Rooms[i].Gone && i%2 == 0 {
+				starts = append(starts, i)
+			}
+		}
+	}
+	var paths [][]int
+	var path []int
+	var used [MaxRooms]bool
+	var walk func(r, seen int)
+	walk = func(r, seen int) {
+		path, used[r] = append(path, r), true
+		if !l.Rooms[r].Gone {
+			seen++
+		}
+		if seen == present {
+			if r%2 == 0 && len(path) > 1 {
+				paths = append(paths, append([]int(nil), path...))
+			}
+		} else {
+			for i := range l.Rooms {
+				if adjacent[r][i] && !used[i] {
+					walk(i, seen)
+				}
+			}
+		}
+		path, used[r] = path[:len(path)-1], false
+	}
+	for _, s := range starts {
+		walk(s, 0)
+	}
+	p := paths[g.rnd(len(paths))]
+	for i := 1; i < len(p); i++ {
+		g.conn(p[i-1], p[i])
+	}
+	l.Start = p[0]
+	return p[len(p)-1]
 }
 
 // conn digs a corridor between two adjacent rooms (passages.c conn()).

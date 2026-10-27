@@ -55,15 +55,15 @@ func tileAt(x, z float64) dungeon.Coord {
 }
 
 // buildLevels rolls the whole dungeon for a seed, each level under the
-// one above.
-func buildLevels(seed int64) []*dungeon.Level {
+// one above; linear: as chains of rooms (the Linear option).
+func buildLevels(seed int64, linear bool) []*dungeon.Level {
 	levels := make([]*dungeon.Level, maxDepth)
 	for d := range levels {
 		var above *dungeon.Level
 		if d > 0 {
 			above = levels[d-1]
 		}
-		levels[d] = dungeon.New(d+1, rand.New(rand.NewSource(seed*31+int64(d))), above)
+		levels[d] = dungeon.New(d+1, rand.New(rand.NewSource(seed*31+int64(d))), above, linear)
 	}
 	return levels
 }

@@ -53,6 +53,7 @@ const (
 func main() {
 	var (
 		seed     = flag.Int64("seed", 0, "dungeon seed (0 = random)")
+		linear   = flag.Bool("linear", false, "linear mode: each level one chain of rooms (the Linear option)")
 		libDir   = flag.String("voxellib", "../VoxelLib", "voxellib checkout (the block models)")
 		tileDir  = flag.String("tiles", "assets/tiles", "tile sheets and their rec mappings (remap_*.sh)")
 		monArt   = flag.String("monsters", "assets/monsters/remastered", "the monsters' big pictures, <id>.png each (remaster.py); empty: the 16px tiles of the sheet")
@@ -105,7 +106,12 @@ func main() {
 	if *seed == 0 {
 		*seed = time.Now().UnixNano()
 	}
-	levels := buildLevels(*seed)
+	var opts options
+	if *shot == "" {
+		opts = loadOptions()
+	}
+	opts.Linear = opts.Linear || *linear
+	levels := buildLevels(*seed, opts.Linear)
 	if *dumpMap {
 		for _, l := range levels[:2] {
 			os.Stdout.WriteString(l.String())
@@ -167,9 +173,7 @@ func main() {
 	g.terrain = &terrain{eng: eng}
 	g.showBoxes = *boxes
 	g.tileDir, g.monArt = *tileDir, *monArt
-	if !g.automated {
-		g.opts = loadOptions()
-	}
+	g.opts = opts
 	g.cam = render.Camera{FOV: fov, Near: 0.05}
 	g.initHero()
 	if err := g.setupArt(); err != nil {
@@ -183,7 +187,11 @@ func main() {
 	if err := g.setupDebugView(); err != nil {
 		log.Fatal(err)
 	}
-	g.enterLevel(*depth)
+	if *depth == 1 {
+		g.startLevel()
+	} else {
+		g.enterLevel(*depth)
+	}
 	if *wield >= 0 {
 		var w *rogue.Object
 		for _, o := range g.pack() {
@@ -332,10 +340,27 @@ func (g *game) newGame(seed int64) {
 	if seed == 0 {
 		seed = time.Now().UnixNano()
 	}
-	g.reset(buildLevels(seed), seed)
+	g.reset(buildLevels(seed, g.opts.Linear), seed)
 	g.rg = rogue.NewGame(g.rng)
 	g.initHero()
-	g.enterLevel(1)
+	g.startLevel()
+}
+
+// startLevel puts the hero on the first level: a random spot, or in a
+// linear dungeon one in the chain's first room.
+func (g *game) startLevel() {
+	l := g.gen.level(1)
+	if !l.Linear {
+		g.enterLevel(1)
+		return
+	}
+	g.switchLevel(1)
+	for {
+		if c := l.RndPos(&l.Rooms[l.Start], g.rng); l.At(c) == dungeon.Floor && l.TrapAt(c) == nil {
+			g.placeHero(c)
+			return
+		}
+	}
 }
 
 // reset clears the running game for another (newGame, restore): levels in

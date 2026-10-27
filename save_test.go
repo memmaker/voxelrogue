@@ -19,7 +19,7 @@ import (
 func TestSaveLoad(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "save.gob")
 	newG := func(seed int64) *game {
-		g := &game{rng: rand.New(rand.NewSource(seed)), gen: newLevelGen(voxel.NewRegistry(), buildLevels(seed)), saveFile: path}
+		g := &game{rng: rand.New(rand.NewSource(seed)), gen: newLevelGen(voxel.NewRegistry(), buildLevels(seed, false)), saveFile: path}
 		g.rg = rogue.NewGame(g.rng)
 		g.initHero()
 		g.enterLevel(1)

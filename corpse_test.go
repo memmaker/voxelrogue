@@ -13,7 +13,7 @@ import (
 // monsters, fallen flat on the floor where it was, drawn the same with
 // the hero elsewhere, and still there 1000 ticks on.
 func TestCorpse(t *testing.T) {
-	levels := buildLevels(7)
+	levels := buildLevels(7, false)
 	g := &game{rng: rand.New(rand.NewSource(1)), gen: newLevelGen(voxel.NewRegistry(), levels)}
 	g.rg, g.player, g.depth = rogue.NewGame(g.rng), &character.Character{}, 1
 	c := g.level().RandomFloor(g.rng)
