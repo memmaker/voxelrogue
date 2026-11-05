@@ -2,3 +2,4 @@
 .*cache/
 /voxelrogue
 /voxelrogue.test
+crash_logs/
